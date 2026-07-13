@@ -140,8 +140,12 @@ def main() -> None:
     med = fevd_b["median"]
     med = med / med.sum(axis=1, keepdims=True)
     h1 = min(4, med.shape[2] - 1)
-    global_shocks = WORLD_SHOCKS + [3]     # incl. unidentified-global
-    domestic_shocks = UK_SHOCKS + [7]      # incl. unidentified-UK
+    # Headline comparison uses the IDENTIFIED shocks only, matching the
+    # paper's ~40%/~50% claims (world demand+supply+energy vs UK
+    # demand+supply+monetary). Unidentified shocks reported separately.
+    global_shocks = WORLD_SHOCKS
+    domestic_shocks = UK_SHOCKS
+    unident_shocks = [3, 7]
     lines = [
         "# Replication summary",
         "",
@@ -151,17 +155,24 @@ def main() -> None:
         "",
         "## FEVD at 1-year horizon (median shares)",
         "",
-        "| Variable | Global shocks | Domestic shocks |",
-        "|---|---|---|",
+        "| Variable | Identified global | Identified domestic | Unidentified |",
+        "|---|---|---|---|",
     ]
     for name, i in [("UK GDP", i_gdp), ("UK CPI", i_cpi)]:
         g = med[i, global_shocks, h1].sum()
         d = med[i, domestic_shocks, h1].sum()
-        lines.append(f"| {name} | {100 * g:.1f}% | {100 * d:.1f}% |")
+        u = med[i, unident_shocks, h1].sum()
+        lines.append(
+            f"| {name} | {100 * g:.1f}% | {100 * d:.1f}% | {100 * u:.1f}% |")
     lines += [
         "",
-        "Paper benchmark: global shocks explain roughly ~40% of UK GDP and "
-        "~50% of UK CPI variation at business-cycle horizons.",
+        "Paper benchmark: identified global shocks explain roughly ~40% of "
+        "UK GDP and ~50% of UK CPI variation at business-cycle horizons.",
+        "",
+        "Known discrepancy: the paper reports UK monetary policy as the "
+        "largest domestic contributor to CPI variance; in this replication "
+        "it is not (see detailed table) — likely driven by the proxy world "
+        "aggregates and fewer accepted draws.",
         "",
         "## Detailed 1-year FEVD (median, %)",
         "",
