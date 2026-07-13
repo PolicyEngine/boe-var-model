@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "boe_var"
+version = "0.1.0"
+description = "Python replication of BoE Macro Technical Paper No. 3: A structural VAR model for the UK economy (Brignone & Piffer, 2025)"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "Vahid Ahmadi", email = "va.vahidahmadi@gmail.com" }]
+dependencies = [
+    "numpy",
+    "scipy",
+    "pandas",
+    "matplotlib",
+    "requests",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]

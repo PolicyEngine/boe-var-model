@@ -1,0 +1,16 @@
+# Raw downloaded data (assembled CSV is reproducible via scripts/download_data.py)
+data/raw/
+
+# Results: PNGs are kept in git for qualitative comparison; uncomment to ignore
+# results/*.png
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+build/
+dist/
+
+# OS
+.DS_Store
