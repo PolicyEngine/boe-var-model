@@ -72,6 +72,9 @@ def main() -> None:
     ap.add_argument("--accepted", type=int, default=200)
     ap.add_argument("--lags", type=int, default=4)
     ap.add_argument("--horizons", type=int, default=21)
+    ap.add_argument("--optimize-hyper", action="store_true",
+                    help="select (lam, mu, theta) by maximizing the "
+                         "closed-form log marginal likelihood")
     args = ap.parse_args()
 
     import pandas as pd
@@ -87,7 +90,17 @@ def main() -> None:
     k = y.shape[1]
 
     # 2. Estimate and 3. identify
-    model = BVAR(y, lags=args.lags, dummies=dummies)
+    hyper = {"lam": 0.2, "mu": 1.0, "theta": 1.0}
+    opt_line = None
+    if args.optimize_hyper:
+        from boe_var.bvar import optimize_hyperparameters
+        opt = optimize_hyperparameters(y, lags=args.lags, dummies=dummies)
+        hyper = {"lam": opt["lam"], "mu": opt["mu"], "theta": opt["theta"]}
+        opt_line = (f"- ML-optimal hyperparameters: lam = {opt['lam']:.4f}, "
+                    f"mu = {opt['mu']:.4f}, theta = {opt['theta']:.4f} "
+                    f"(log ML = {opt['log_ml']:.2f}).")
+        print(opt_line[2:])
+    model = BVAR(y, lags=args.lags, dummies=dummies, **hyper)
     n_draws = max(args.draws, args.accepted)
     draws = model.sample_posterior(n_draws)
     # One Q per posterior draw: pass all draws and keep whatever is accepted.
@@ -147,19 +160,25 @@ def main() -> None:
                          index=idx.to_timestamp(),
                          title="Figure 5: estimated structural shocks")
 
-    # 7. Historical decomposition of YoY inflation & YoY GDP growth (fig 6)
-    contrib = analysis.hd_median(pairs, resid_fn, weights=weights)          # (T, k, k)
+    # 7. Historical decomposition of YoY inflation & YoY GDP growth (fig 6),
+    # with the Covid-dummy contribution as its own (black) component and the
+    # decomposition expressed in deviation from the deterministic path.
+    contrib, covid = analysis.hd_median(
+        pairs, resid_fn, weights=weights, dummies=dummies[args.lags:])
     stoch = contrib.sum(axis=2)
-    deterministic = y[args.lags:] - stoch
+    deterministic = y[args.lags:] - stoch - covid
     c_yoy, d_yoy = yoy_decomposition(contrib, deterministic, y, args.lags)
+    covid_yoy = covid[4:] - covid[:-4]
     idx_yoy = idx[4:]
     i_cpi, i_gdp = 5, 7
     analysis.plot_hist_decomp(
         c_yoy, d_yoy, [i_cpi, i_gdp],
         os.path.join(RESULTS, "fig6_hist_decomp.png"),
-        index=np.arange(len(idx_yoy)),
+        index=idx_yoy,
+        covid=covid_yoy,
         panel_titles=["YoY CPI inflation (pp)", "YoY GDP growth (pp)"],
-        title="Figure 6: historical decomposition")
+        title="Figure 6: historical decomposition "
+              "(deviation from deterministic)")
 
     # 8. Summary numbers: FEVD of UK GDP / CPI at 1 year (h = 4)
     med = fevd_b["median"]
@@ -182,6 +201,9 @@ def main() -> None:
            "weighted results may be unreliable."
            if ess < 0.1 * len(pairs) else "."),
         f"- Sample: {df.index[0]}–{df.index[-1]} ({len(df)} quarters).",
+        f"- Hyperparameters: lam = {hyper['lam']:.4f}, mu = {hyper['mu']:.4f}, "
+        f"theta = {hyper['theta']:.4f}.",
+        *([opt_line] if opt_line else []),
         "",
         "## FEVD at 1-year horizon (median shares)",
         "",

@@ -225,3 +225,114 @@ def test_plot_helpers_write_pngs(tmp_path):
             assert os.path.getsize(p) > 0
     finally:
         analysis.VARIABLE_NAMES, analysis.SHOCK_NAMES = orig_v, orig_s
+
+
+# ---------------------------------------------------------------------------
+# Covid-dummy component in the historical decomposition (Figure 6 polish)
+# ---------------------------------------------------------------------------
+
+class FakeDrawWithDummies(FakeDraw):
+    """VAR(1) fake draw whose Pi carries a trailing dummy-coefficient block."""
+
+    def __init__(self, A, Sigma, D):
+        super().__init__(A, Sigma)
+        self.D = np.asarray(D, dtype=float)
+        self.Pi = np.hstack([self.A, np.zeros((self.A.shape[0], 1)), self.D])
+
+
+def test_historical_decomposition_covid_component_and_adding_up():
+    B = np.array([[1.0, 0.0], [0.5, 2.0]])
+    D = np.array([[3.0, 0.0], [1.0, -2.0]])
+    draw = FakeDrawWithDummies(A, B @ B.T, D)
+    rng = np.random.default_rng(5)
+    T = 24
+    u = rng.standard_normal((T, 2))
+    d = np.zeros((T, 2))
+    d[8:10, 0] = 1.0
+    d[15, 1] = 1.0
+    # simulate y_t = A y_{t-1} + D d_t + u_t from zero initial conditions,
+    # plus a deterministic drift
+    y_stoch = np.zeros((T, 2))
+    y_covid = np.zeros((T, 2))
+    for t in range(T):
+        prev_s = y_stoch[t - 1] if t > 0 else np.zeros(2)
+        prev_c = y_covid[t - 1] if t > 0 else np.zeros(2)
+        y_stoch[t] = A @ prev_s + u[t]
+        y_covid[t] = A @ prev_c + D @ d[t]
+    det = np.outer(np.arange(T), [0.05, -0.1])
+    y = y_stoch + y_covid + det
+
+    hd = analysis.historical_decomposition(draw, B, u, dummies=d)
+    # covid component is the dynamic (companion-recursion) dummy path
+    np.testing.assert_allclose(hd["covid"], y_covid, atol=1e-10)
+    # adding-up identity: shocks + covid + deterministic = data
+    deterministic = y - hd["stochastic"] - hd["covid"]
+    np.testing.assert_allclose(
+        hd["shocks"].sum(axis=2) + hd["covid"] + deterministic, y, atol=1e-10)
+    np.testing.assert_allclose(deterministic, det, atol=1e-10)
+    # backwards compatibility: without dummies, covid is zero
+    hd0 = analysis.historical_decomposition(draw, B, u)
+    np.testing.assert_allclose(hd0["covid"], 0.0)
+    np.testing.assert_allclose(hd0["shocks"], hd["shocks"], atol=1e-12)
+
+
+def test_historical_decomposition_dummies_validation():
+    B = np.eye(2)
+    draw = FakeDrawWithDummies(A, B @ B.T, np.ones((2, 1)))
+    u = np.zeros((10, 2))
+    with pytest.raises(ValueError):
+        analysis.historical_decomposition(draw, B, u, dummies=np.ones((7, 1)))
+
+
+def test_hd_median_with_dummies_returns_contrib_and_covid():
+    B = np.array([[1.0, 0.0], [0.5, 2.0]])
+    D = np.array([[1.0], [0.5]])
+    pairs = [(FakeDrawWithDummies(A * s, B @ B.T, D), B)
+             for s in (0.8, 0.9, 1.0)]
+    u = np.random.default_rng(6).standard_normal((12, 2))
+    d = np.zeros((12, 1))
+    d[4] = 1.0
+    contrib, covid = analysis.hd_median(pairs, lambda dr: u, dummies=d)
+    assert contrib.shape == (12, 2, 2)
+    assert covid.shape == (12, 2)
+    # without dummies the old single-array return is preserved
+    only = analysis.hd_median(pairs, lambda dr: u)
+    assert isinstance(only, np.ndarray) and only.shape == (12, 2, 2)
+    np.testing.assert_allclose(only, contrib, atol=1e-12)
+
+
+def test_plot_hist_decomp_with_covid_and_dates(tmp_path):
+    pytest.importorskip("matplotlib")
+    pd = pytest.importorskip("pandas")
+    B = np.array([[1.0, 0.0], [0.5, 2.0]])
+    D = np.array([[1.0], [0.5]])
+    draw = FakeDrawWithDummies(A, B @ B.T, D)
+    T = 12
+    u = np.random.default_rng(7).standard_normal((T, 2))
+    d = np.zeros((T, 1))
+    d[5] = 1.0
+    hd = analysis.historical_decomposition(draw, B, u, dummies=d)
+    idx = pd.period_range("2019Q1", periods=T, freq="Q")
+    orig_v, orig_s = analysis.VARIABLE_NAMES, analysis.SHOCK_NAMES
+    analysis.VARIABLE_NAMES = ["v1", "v2"]
+    analysis.SHOCK_NAMES = ["s1", "s2"]
+    try:
+        p = analysis.plot_hist_decomp(
+            hd["shocks"], np.zeros((T, 2)), [0, 1],
+            str(tmp_path / "hd_covid.png"), index=idx, covid=hd["covid"])
+        assert os.path.getsize(p) > 0
+    finally:
+        analysis.VARIABLE_NAMES, analysis.SHOCK_NAMES = orig_v, orig_s
+
+
+def test_plot_hist_decomp_eight_shock_grouping(tmp_path):
+    pytest.importorskip("matplotlib")
+    # k = 8 exercises the identified / non-identified / covid grouping path
+    rng = np.random.default_rng(8)
+    T = 10
+    contrib = rng.standard_normal((T, 8, 8))
+    covid = rng.standard_normal((T, 8))
+    p = analysis.plot_hist_decomp(
+        contrib, np.zeros((T, 8)), [5, 7],
+        str(tmp_path / "hd8.png"), covid=covid)
+    assert os.path.getsize(p) > 0

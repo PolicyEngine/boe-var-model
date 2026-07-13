@@ -81,15 +81,30 @@ def estimated_shocks(draw, B, residuals) -> np.ndarray:
     return np.linalg.solve(np.asarray(B, dtype=float), u.T).T
 
 
-def historical_decomposition(draw, B, residuals) -> dict:
+def historical_decomposition(draw, B, residuals, dummies=None) -> dict:
     """Historical decomposition over the residual sample.
+
+    Parameters
+    ----------
+    dummies : optional (T, n_d) array of the exogenous dummy regressors
+        aligned with the rows of ``residuals`` (i.e. rows ``lags..T-1`` of
+        the full-sample dummy matrix). When given, the Covid-dummy
+        contribution is fed through the companion recursion separately from
+        the constant/initial-condition deterministic path (VAR-Toolbox
+        ``compute_HD.m`` pattern) and returned as its own component. The
+        dummy coefficient block is read from the trailing ``n_d`` columns of
+        ``draw.Pi``.
 
     Returns dict with:
       - ``"shocks"``: array (T, k_var, k_shock); ``[t, i, j]`` is the cumulative
         contribution of shock j to variable i at time t.
       - ``"stochastic"``: (T, k_var) = sum over shocks (equals the moving-average
-        reconstruction of the residuals).  The deterministic-plus-initial-
-        conditions-plus-dummies component of the data is ``y - stochastic``.
+        reconstruction of the residuals).
+      - ``"covid"``: (T, k_var) dynamic contribution of the dummy columns
+        (zeros when ``dummies`` is None).  The remaining deterministic
+        (constant + initial conditions) component of the data is
+        ``y - stochastic - covid``, so
+        shocks + covid + deterministic = data.
       - ``"eps"``: (T, k_shock) estimated structural shocks.
     """
     u = np.asarray(residuals, dtype=float)
@@ -102,7 +117,29 @@ def historical_decomposition(draw, B, residuals) -> dict:
         for h in range(t + 1):
             contrib[t] += Psi[h] * eps[t - h][np.newaxis, :]
     stochastic = contrib.sum(axis=2)
-    return {"shocks": contrib, "stochastic": stochastic, "eps": eps}
+
+    covid = np.zeros((T, k))
+    if dummies is not None:
+        d = np.asarray(dummies, dtype=float)
+        if d.ndim == 1:
+            d = d[:, None]
+        if d.shape[0] != T:
+            raise ValueError("dummies must have same number of rows as "
+                             "residuals")
+        n_d = d.shape[1]
+        Pi = np.asarray(draw.Pi)
+        D = Pi[:, Pi.shape[1] - n_d:]            # (k, n_d) dummy coefficients
+        F = _companion(draw)
+        km = F.shape[0]
+        # state-space recursion: s_t = F s_{t-1} + J' D d_t, covid_t = J s_t
+        s = np.zeros(km)
+        for t in range(T):
+            s = F @ s
+            s[:k] += D @ d[t]
+            covid[t] = s[:k]
+
+    return {"shocks": contrib, "stochastic": stochastic, "covid": covid,
+            "eps": eps}
 
 
 # ---------------------------------------------------------------------------
@@ -183,11 +220,22 @@ def shock_bands(pairs, residuals_fn, weights=None) -> dict:
                      weights=weights)
 
 
-def hd_median(pairs, residuals_fn, weights=None) -> np.ndarray:
-    """Pointwise-median historical decomposition contributions (T, k, k)."""
-    stack = np.stack([historical_decomposition(d, B, residuals_fn(d))["shocks"]
-                      for d, B in pairs], axis=0)
-    return _quantile(stack, 0.50, weights)
+def hd_median(pairs, residuals_fn, weights=None, dummies=None):
+    """Pointwise-median historical decomposition contributions.
+
+    Returns the (T, k, k) median shock contributions; if ``dummies`` is
+    given, returns a tuple ``(contrib_median, covid_median)`` where
+    ``covid_median`` is the (T, k) median Covid-dummy contribution.
+    """
+    hds = [historical_decomposition(d, B, residuals_fn(d), dummies=dummies)
+           for d, B in pairs]
+    contrib = _quantile(np.stack([h["shocks"] for h in hds], axis=0),
+                        0.50, weights)
+    if dummies is None:
+        return contrib
+    covid = _quantile(np.stack([h["covid"] for h in hds], axis=0),
+                      0.50, weights)
+    return contrib, covid
 
 
 # ---------------------------------------------------------------------------
@@ -295,38 +343,64 @@ def plot_shocks(bands: dict, out_path: str, index=None,
 
 def plot_hist_decomp(contrib: np.ndarray, deterministic: np.ndarray,
                      var_indices, out_path: str, index=None,
-                     panel_titles=None,
+                     panel_titles=None, covid: np.ndarray | None = None,
                      title: str = "Historical decomposition") -> str:
-    """Stacked-bar decomposition for selected variables.
+    """Stacked-bar decomposition for selected variables (paper Figure 6).
 
-    ``contrib``: (T, k_var, k_shock); ``deterministic``: (T, k_var) — the
-    deterministic + initial-conditions + dummy component plotted as its own bar.
-    Total line = deterministic + sum of shock contributions.
+    ``contrib``: (T, k_var, k_shock); ``covid``: optional (T, k_var)
+    Covid-dummy contribution plotted as its own black bar. The decomposition
+    is expressed in deviation from the deterministic component: the bars are
+    the 6 identified shocks + 'Non-identified' (sum of the 2 unidentified
+    shocks, pink) + 'Covid' (black), and the line is data minus the
+    deterministic component (= shocks + covid). ``deterministic`` is kept
+    for API compatibility but not plotted as a bar. ``index`` may be a
+    pandas PeriodIndex / DatetimeIndex or any label sequence; labels are
+    drawn as x tick labels.
     """
     plt = _mpl()
     T, _, k = contrib.shape
-    x = np.arange(T) if index is None else np.asarray(index)
     cmap = plt.get_cmap("tab10")
+
+    # group shocks: identified individually, unidentified summed (pink)
+    if k == len(SHOCK_NAMES) and k == 8:
+        ident = [j for j in range(k) if j not in (3, 7)]
+        groups = [(SHOCK_NAMES[j], cmap(n), contrib[:, :, j])
+                  for n, j in enumerate(ident)]
+        groups.append(("Non-identified", "#f781bf",
+                       contrib[:, :, [3, 7]].sum(axis=2)))
+    else:
+        groups = [(SHOCK_NAMES[j] if j < len(SHOCK_NAMES) else f"shock {j}",
+                   cmap(j), contrib[:, :, j]) for j in range(k)]
+    if covid is not None:
+        groups.append(("Covid", "black", np.asarray(covid, dtype=float)))
+
+    x = np.arange(T)
+    labels_idx = None if index is None else list(index)
     fig, axes = plt.subplots(len(var_indices), 1,
                              figsize=(11, 3.0 * len(var_indices)),
                              squeeze=False)
     for r, i in enumerate(var_indices):
         ax = axes[r][0]
-        parts = [contrib[:, i, j] for j in range(k)] + [deterministic[:, i]]
-        labels = SHOCK_NAMES + ["Deterministic + dummies"]
-        colors = [cmap(j) for j in range(k)] + ["0.6"]
         pos = np.zeros(T)
         neg = np.zeros(T)
-        for series, lab, col in zip(parts, labels, colors):
+        for lab, col, arr in groups:
+            series = arr[:, i]
             base = np.where(series >= 0, pos, neg)
             ax.bar(x, series, bottom=base, width=0.8, color=col,
                    label=lab if r == 0 else None)
             pos += np.clip(series, 0, None)
             neg += np.clip(series, None, 0)
-        total = deterministic[:, i] + contrib[:, i, :].sum(axis=1)
-        ax.plot(x, total, color="k", lw=1.2, label="Total" if r == 0 else None)
+        total = sum(arr[:, i] for _, _, arr in groups)
+        ax.plot(x, total, color="k", lw=1.2,
+                label="Data less deterministic" if r == 0 else None)
         ax.axhline(0, color="k", lw=0.5)
         ax.set_title(panel_titles[r] if panel_titles else VARIABLE_NAMES[i])
+        if labels_idx is not None:
+            step = max(1, T // 12)
+            ticks = x[::step]
+            ax.set_xticks(ticks)
+            ax.set_xticklabels([str(labels_idx[t]) for t in ticks],
+                               rotation=45, ha="right", fontsize=6)
     axes[0][0].legend(loc="upper left", fontsize=6, ncol=3)
     fig.suptitle(title)
     fig.tight_layout(rect=(0, 0, 1, 0.95))

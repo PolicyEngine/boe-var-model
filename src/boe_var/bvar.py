@@ -10,9 +10,10 @@ from dataclasses import dataclass
 
 import numpy as np
 from scipy.linalg import cholesky, solve_triangular
+from scipy.special import multigammaln
 from scipy.stats import invwishart
 
-__all__ = ["BVAR", "PosteriorDraw"]
+__all__ = ["BVAR", "PosteriorDraw", "optimize_hyperparameters"]
 
 
 @dataclass
@@ -93,6 +94,11 @@ class BVAR:
         Use 1.0 for (log-)level variables (random walk).
     eps_const : dummy-observation weight on constant/dummy columns; small
         values make the prior on them loose.
+    theta : dummy-initial-observation (single-unit-root) prior tightness,
+        or None (default) to switch the prior off. When on, one dummy row
+        ``Y = ybar'/theta``, ``X = [ybar' ... ybar' (p blocks), 1/theta,
+        0 ... 0]`` is added, with ``ybar`` the mean of the first ``lags``
+        observations (GLP 2015 default when active: theta = 1.0).
     """
 
     def __init__(
@@ -104,6 +110,7 @@ class BVAR:
         mu: float = 1.0,
         delta: float | np.ndarray = 1.0,
         eps_const: float = 1e-3,
+        theta: float | None = None,
     ):
         y = np.asarray(y, dtype=float)
         if y.ndim != 2:
@@ -118,6 +125,7 @@ class BVAR:
         self.mu = float(mu)
         self.delta = np.full(k, delta, dtype=float) if np.isscalar(delta) else np.asarray(delta, float)
         self.eps_const = float(eps_const)
+        self.theta = None if theta is None else float(theta)
 
         if dummies is not None:
             dummies = np.asarray(dummies, dtype=float)
@@ -206,7 +214,71 @@ class BVAR:
         rows_Y.append(Yb)
         rows_X.append(Xb)
 
+        # Dummy-initial-observation (single-unit-root) prior, GLP (2015):
+        # one row Y = ybar'/theta, X = [ybar' ... ybar', 1/theta, 0 ... 0]
+        if self.theta is not None:
+            theta = self.theta
+            ybar = self.y[: p].mean(axis=0)
+            Yb = (ybar / theta)[np.newaxis, :]
+            Xb = np.zeros((1, m))
+            for l in range(p):
+                Xb[0, l * k : (l + 1) * k] = ybar / theta
+            Xb[0, k * p] = 1.0 / theta
+            rows_Y.append(Yb)
+            rows_X.append(Xb)
+
         return np.vstack(rows_Y), np.vstack(rows_X)
+
+    # ------------------------------------------------------------------
+    def log_marginal_likelihood(self) -> float:
+        """Closed-form log marginal likelihood p(Y) of the conjugate NIW BVAR.
+
+        With the prior encoded as dummy observations (Y_d, X_d) and the
+        augmented sample (Y*, X*) = ([Y; Y_d], [X; X_d]), the marginal
+        likelihood is the ratio of posterior to prior NIW normalizing
+        constants (standard matrix-variate-t result; see Giannone, Lenza &
+        Primiceri, 2015, eq. (5), and Banbura, Giannone & Reichlin, 2010,
+        Appendix):
+
+            log p(Y) = -(T k / 2) log(pi)
+                       + log Gamma_k(d1 / 2) - log Gamma_k(d0 / 2)
+                       + (k / 2) [log|X_d' X_d| - log|X*' X*|]
+                       + (d0 / 2) log|S_0| - (d1 / 2) log|S_1|
+
+        where d0 = T_d - m, d1 = T + T_d - m are prior/posterior IW degrees
+        of freedom, S_0 and S_1 the prior/posterior IW scale matrices (dummy
+        and augmented least-squares residual sums of squares), and
+        Gamma_k the multivariate gamma function.
+        """
+        k = self.k
+        T = self.Y.shape[0]
+
+        Yd, Xd = self._prior_dummies(self.scales)
+        Td = Yd.shape[0]
+        d0 = Td - self.m
+        d1 = T + Td - self.m
+        if d0 <= k - 1:
+            raise ValueError("prior degrees of freedom too small for a "
+                             "proper marginal likelihood")
+
+        XdtXd = Xd.T @ Xd
+        B0 = np.linalg.solve(XdtXd, Xd.T @ Yd)
+        E0 = Yd - Xd @ B0
+        S0 = E0.T @ E0
+
+        sign0, ld_XdtXd = np.linalg.slogdet(XdtXd)
+        sign1, ld_XtX = np.linalg.slogdet(self._Xs.T @ self._Xs)
+        signS0, ld_S0 = np.linalg.slogdet(S0)
+        signS1, ld_S1 = np.linalg.slogdet(self.S_post)
+        if min(sign0, sign1, signS0, signS1) <= 0:
+            raise np.linalg.LinAlgError("non-PD matrix in marginal likelihood")
+
+        return (
+            -0.5 * T * k * np.log(np.pi)
+            + multigammaln(0.5 * d1, k) - multigammaln(0.5 * d0, k)
+            + 0.5 * k * (ld_XdtXd - ld_XtX)
+            + 0.5 * d0 * ld_S0 - 0.5 * d1 * ld_S1
+        )
 
     # ------------------------------------------------------------------
     def sample_posterior(self, n_draws: int, seed: int | None = None) -> list[PosteriorDraw]:
@@ -237,3 +309,63 @@ class BVAR:
         Returns a (T - lags, k) array aligned with rows lags..T-1 of ``y``.
         """
         return self.Y - self.X @ draw.Pi.T
+
+
+# ---------------------------------------------------------------------------
+def optimize_hyperparameters(
+    y: np.ndarray,
+    lags: int = 4,
+    dummies: np.ndarray | None = None,
+    lam_grid: np.ndarray | None = None,
+    mu_grid: np.ndarray | None = None,
+    theta_grid: np.ndarray | None = None,
+    refine: bool = True,
+    **bvar_kwargs,
+) -> dict:
+    """Maximize the closed-form log marginal likelihood over (lam, mu, theta).
+
+    Coarse grid search in log-space (GLP 2015 practice), optionally refined
+    with Nelder-Mead in log-space. Returns dict with keys ``lam``, ``mu``,
+    ``theta`` and ``log_ml``.
+    """
+    if lam_grid is None:
+        lam_grid = np.exp(np.linspace(np.log(0.05), np.log(5.0), 9))
+    if mu_grid is None:
+        mu_grid = np.exp(np.linspace(np.log(0.1), np.log(10.0), 5))
+    if theta_grid is None:
+        theta_grid = np.exp(np.linspace(np.log(0.1), np.log(10.0), 5))
+
+    def lml(lam, mu, theta):
+        try:
+            model = BVAR(y, lags=lags, dummies=dummies, lam=lam, mu=mu,
+                         theta=theta, **bvar_kwargs)
+            return model.log_marginal_likelihood()
+        except (ValueError, np.linalg.LinAlgError):
+            return -np.inf
+
+    best = (-np.inf, None)
+    for lam in lam_grid:
+        for mu in mu_grid:
+            for theta in theta_grid:
+                v = lml(lam, mu, theta)
+                if v > best[0]:
+                    best = (v, (lam, mu, theta))
+    if best[1] is None:
+        raise RuntimeError("marginal likelihood failed on the entire grid")
+
+    log_ml, (lam, mu, theta) = best
+    if refine:
+        from scipy.optimize import minimize
+
+        res = minimize(
+            lambda x: -lml(*np.exp(x)),
+            np.log([lam, mu, theta]),
+            method="Nelder-Mead",
+            options={"xatol": 1e-3, "fatol": 1e-4, "maxiter": 200},
+        )
+        if np.isfinite(res.fun) and -res.fun > log_ml:
+            lam, mu, theta = np.exp(res.x)
+            log_ml = -res.fun
+
+    return {"lam": float(lam), "mu": float(mu), "theta": float(theta),
+            "log_ml": float(log_ml)}
