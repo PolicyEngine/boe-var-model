@@ -55,6 +55,26 @@ python scripts/run_replication.py   # writes figures + summary to results/
 Outputs land in `results/`: `fig2_irf_world.png`, `fig3_irf_uk.png`,
 `fig4_fevd.png`, `fig5_shocks.png`, `fig6_hist_decomp.png`, `summary.md`.
 
+## Toolboxes that can replicate the paper's method (zero + sign restrictions, Minnesota prior)
+
+| Resource | Exact URL |
+|---|---|
+| BEAR toolbox (ECB, MATLAB — Bayesian VAR with sign/zero restrictions, used widely in central banks) | https://github.com/european-central-bank/BEAR-toolbox |
+| BEAR on MATLAB File Exchange | https://www.mathworks.com/matlabcentral/fileexchange/103370-bear |
+| Cesa-Bianchi VAR Toolbox (MATLAB — IRFs, FEVD, historical decompositions, sign restrictions; he's a BoE economist cited in the paper) | https://github.com/ambropo/VAR-Toolbox |
+| bsvarSIGNs (R — directly implements Arias–Rubio-Ramírez–Waggoner 2018, the exact algorithm this paper uses) | https://github.com/bsvars/bsvarSIGNs (docs: https://bsvars.org/bsvarSIGNs/) |
+| Arias et al. (2018) original replication files | Econometrica page (zip in "Supplemental Material"): https://www.econometricsociety.org/publications/econometrica/2018/03/01/inference-based-structural-vector-autoregressions-identified ; Jonas Arias' site: https://sites.google.com/site/jonasarias/home |
+| Haroon Mumtaz — Bayesian econometrics for central bankers, incl. sign-restriction VAR MATLAB code | https://sites.google.com/site/hmumtaz77/code |
+| Michele Piffer's own code page (paper co-author) | https://michelepiffer.github.io/#codes |
+
+## The paper itself (no official replication package released)
+
+- BoE page: https://www.bankofengland.co.uk/macro-technical-paper/2025/a-structural-var-model-for-the-uk-economy
+- BoE paper PDF: https://www.bankofengland.co.uk/-/media/boe/files/macro-technical-paper/2025/a-structural-var-model-for-the-uk-economy.pdf
+- Companion paper PDF: https://michelepiffer.github.io/pdf_research/BrignonePiffer_StucturalForecastAnalysis.pdf
+
+See `RESOURCES.md` for the full annotated list (method papers, data sources).
+
 ## Caveats
 
 - **World aggregates are proxies.** The paper uses the Bank's internal
