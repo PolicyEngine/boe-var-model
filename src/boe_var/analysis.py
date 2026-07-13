@@ -109,41 +109,85 @@ def historical_decomposition(draw, B, residuals) -> dict:
 # Aggregation across accepted (draw, B) pairs
 # ---------------------------------------------------------------------------
 
-def aggregate(arrays) -> dict:
+def weighted_quantile(values, q, weights) -> np.ndarray:
+    """Weighted quantile(s) of ``values`` along axis 0.
+
+    ``values``: array-like, shape (n, ...); ``q``: quantile in [0, 1] (scalar);
+    ``weights``: length-n nonnegative array. Uses the standard weighted
+    percentile: sort by value, compute cumulative weights at midpoints
+    (c_i = cum_i - w_i/2), rescale to [0, 1], and linearly interpolate.
+    With uniform weights this reproduces ``np.percentile`` (linear
+    interpolation) exactly.
+    """
+    values = np.asarray(values, dtype=float)
+    weights = np.asarray(weights, dtype=float)
+    if weights.ndim != 1 or weights.shape[0] != values.shape[0]:
+        raise ValueError("weights must be 1-D with length values.shape[0]")
+    if np.any(weights < 0):
+        raise ValueError("weights must be nonnegative")
+    if not np.any(weights > 0):
+        raise ValueError("weights must not all be zero")
+    n = values.shape[0]
+    flat = values.reshape(n, -1)
+    out = np.empty(flat.shape[1])
+    for c in range(flat.shape[1]):
+        v = flat[:, c]
+        order = np.argsort(v)
+        vs, ws = v[order], weights[order]
+        if n == 1:
+            out[c] = vs[0]
+            continue
+        # Cumulative weights at midpoints, rescaled to [0, 1] so that with
+        # uniform weights positions are i/(n-1), matching np.percentile's
+        # linear interpolation.
+        cmid = np.cumsum(ws) - 0.5 * ws
+        p = (cmid - cmid[0]) / (cmid[-1] - cmid[0])
+        out[c] = np.interp(q, p, vs)
+    return out.reshape(values.shape[1:])
+
+
+def _quantile(stack: np.ndarray, q: float, weights) -> np.ndarray:
+    if weights is None:
+        return np.quantile(stack, q, axis=0)
+    return weighted_quantile(stack, q, weights)
+
+
+def aggregate(arrays, weights=None) -> dict:
     """Pointwise median and 68%/90% bands across a list of equal-shape arrays.
 
+    If ``weights`` (one nonnegative weight per array) is given, the median and
+    bands are weighted quantiles; otherwise plain (equal-weight) quantiles.
     Returns dict with keys ``median, lo68, hi68, lo90, hi90``.
     """
     stack = np.stack([np.asarray(a) for a in arrays], axis=0)
     return {
-        "median": np.median(stack, axis=0),
-        "lo68": np.percentile(stack, 16, axis=0),
-        "hi68": np.percentile(stack, 84, axis=0),
-        "lo90": np.percentile(stack, 5, axis=0),
-        "hi90": np.percentile(stack, 95, axis=0),
+        "median": _quantile(stack, 0.50, weights),
+        "lo68": _quantile(stack, 0.16, weights),
+        "hi68": _quantile(stack, 0.84, weights),
+        "lo90": _quantile(stack, 0.05, weights),
+        "hi90": _quantile(stack, 0.95, weights),
     }
 
 
-def irf_bands(pairs, horizons: int = 21) -> dict:
-    return aggregate([irf(d, B, horizons) for d, B in pairs])
+def irf_bands(pairs, horizons: int = 21, weights=None) -> dict:
+    return aggregate([irf(d, B, horizons) for d, B in pairs], weights=weights)
 
 
-def fevd_bands(pairs, horizons: int = 21) -> dict:
-    return aggregate([fevd(d, B, horizons) for d, B in pairs])
+def fevd_bands(pairs, horizons: int = 21, weights=None) -> dict:
+    return aggregate([fevd(d, B, horizons) for d, B in pairs], weights=weights)
 
 
-def shock_bands(pairs, residuals_fn) -> dict:
+def shock_bands(pairs, residuals_fn, weights=None) -> dict:
     """Bands for estimated shock series. ``residuals_fn(draw)`` -> (T, k)."""
-    return aggregate([estimated_shocks(d, B, residuals_fn(d)) for d, B in pairs])
+    return aggregate([estimated_shocks(d, B, residuals_fn(d)) for d, B in pairs],
+                     weights=weights)
 
 
-def hd_median(pairs, residuals_fn) -> np.ndarray:
+def hd_median(pairs, residuals_fn, weights=None) -> np.ndarray:
     """Pointwise-median historical decomposition contributions (T, k, k)."""
-    return np.median(
-        np.stack([historical_decomposition(d, B, residuals_fn(d))["shocks"]
-                  for d, B in pairs], axis=0),
-        axis=0,
-    )
+    stack = np.stack([historical_decomposition(d, B, residuals_fn(d))["shocks"]
+                      for d, B in pairs], axis=0)
+    return _quantile(stack, 0.50, weights)
 
 
 # ---------------------------------------------------------------------------

@@ -88,10 +88,35 @@ def main() -> None:
 
     # 2. Estimate and 3. identify
     model = BVAR(y, lags=args.lags, dummies=dummies)
-    draws = model.sample_posterior(args.draws)
-    pairs = identify(draws, target_accepted=args.accepted,
-                     max_tries_per_draw=1000)
-    print(f"Accepted {len(pairs)} of target {args.accepted} (draw, B) pairs.")
+    n_draws = max(args.draws, args.accepted)
+    draws = model.sample_posterior(n_draws)
+    # One Q per posterior draw: pass all draws and keep whatever is accepted.
+    # Adapt to old identify() signatures defensively.
+    import inspect
+    id_params = inspect.signature(identify).parameters
+    id_kwargs = {}
+    if "target_accepted" in id_params:
+        id_kwargs["target_accepted"] = len(draws)
+    if "max_tries_per_draw" in id_params:
+        id_kwargs["max_tries_per_draw"] = 1
+    accepted = identify(draws, **id_kwargs)
+    # Unpack (draw, B[, w]) tuples; default to unit weights for old-style pairs.
+    pairs = [(t[0], t[1]) for t in accepted]
+    raw_w = np.array([t[2] if len(t) > 2 else 1.0 for t in accepted],
+                     dtype=float)
+    if len(pairs) == 0:
+        raise SystemExit("No accepted draws; cannot continue.")
+    weights = raw_w / raw_w.sum()
+    ess_fn = None
+    try:
+        from boe_var.identification import ess as ess_fn  # noqa: F811
+    except ImportError:
+        pass
+    ess = float(ess_fn(raw_w)) if ess_fn is not None else \
+        float(raw_w.sum() ** 2 / np.sum(raw_w ** 2))
+    accept_rate = len(pairs) / len(draws) if len(draws) else float("nan")
+    print(f"Accepted {len(pairs)} of {len(draws)} posterior draws "
+          f"({100 * accept_rate:.1f}%); importance-weight ESS = {ess:.1f}.")
 
     resid_cache = {}
 
@@ -102,7 +127,7 @@ def main() -> None:
         return resid_cache[key]
 
     # 4. IRFs (figs 2-3)
-    irf_b = analysis.irf_bands(pairs, args.horizons)
+    irf_b = analysis.irf_bands(pairs, args.horizons, weights=weights)
     analysis.plot_irf_grid(
         irf_b, WORLD_SHOCKS, os.path.join(RESULTS, "fig2_irf_world.png"),
         title="Figure 2: IRFs to world shocks (median, 68%/90% bands)")
@@ -111,19 +136,19 @@ def main() -> None:
         title="Figure 3: IRFs to UK shocks (median, 68%/90% bands)")
 
     # 5. FEVD (fig 4)
-    fevd_b = analysis.fevd_bands(pairs, args.horizons)
+    fevd_b = analysis.fevd_bands(pairs, args.horizons, weights=weights)
     analysis.plot_fevd(fevd_b, os.path.join(RESULTS, "fig4_fevd.png"),
                        title="Figure 4: FEVD (median shares)")
 
     # 6. Estimated shocks (fig 5)
-    shocks_b = analysis.shock_bands(pairs, resid_fn)
+    shocks_b = analysis.shock_bands(pairs, resid_fn, weights=weights)
     idx = df.index[args.lags:]
     analysis.plot_shocks(shocks_b, os.path.join(RESULTS, "fig5_shocks.png"),
                          index=idx.to_timestamp(),
                          title="Figure 5: estimated structural shocks")
 
     # 7. Historical decomposition of YoY inflation & YoY GDP growth (fig 6)
-    contrib = analysis.hd_median(pairs, resid_fn)          # (T, k, k)
+    contrib = analysis.hd_median(pairs, resid_fn, weights=weights)          # (T, k, k)
     stoch = contrib.sum(axis=2)
     deterministic = y[args.lags:] - stoch
     c_yoy, d_yoy = yoy_decomposition(contrib, deterministic, y, args.lags)
@@ -149,8 +174,13 @@ def main() -> None:
     lines = [
         "# Replication summary",
         "",
-        f"- Posterior draws: {args.draws}; accepted identified draws: "
-        f"{len(pairs)}; lags: {args.lags}.",
+        f"- Posterior draws: {len(draws)}; accepted identified draws: "
+        f"{len(pairs)} (acceptance rate {100 * accept_rate:.1f}%); "
+        f"lags: {args.lags}.",
+        f"- Importance-weight effective sample size (ESS): {ess:.1f}"
+        + (" — WARNING: ESS is below 10% of accepted draws; "
+           "weighted results may be unreliable."
+           if ess < 0.1 * len(pairs) else "."),
         f"- Sample: {df.index[0]}–{df.index[-1]} ({len(df)} quarters).",
         "",
         "## FEVD at 1-year horizon (median shares)",

@@ -116,6 +116,90 @@ def test_aggregate_median_and_bands():
     assert np.all(agg["hi68"] <= agg["hi90"])
 
 
+def test_weighted_quantile_uniform_matches_percentile():
+    rng = np.random.default_rng(7)
+    v = rng.standard_normal((9, 4, 3))
+    w = np.ones(9)
+    for q in [0.05, 0.16, 0.5, 0.84, 0.95]:
+        np.testing.assert_allclose(
+            analysis.weighted_quantile(v, q, w),
+            np.percentile(v, 100 * q, axis=0), atol=1e-12)
+    # scaling weights uniformly must not change anything
+    np.testing.assert_allclose(
+        analysis.weighted_quantile(v, 0.5, 3.7 * w),
+        np.median(v, axis=0), atol=1e-12)
+
+
+def test_weighted_quantile_extreme_weight_concentrates():
+    v = np.arange(10.0)
+    w = np.ones(10)
+    w[7] = 1e6
+    med = analysis.weighted_quantile(v, 0.5, w)
+    np.testing.assert_allclose(med, 7.0, atol=1e-3)
+    # quantiles just around the median stay pinned near the heavy value
+    assert abs(analysis.weighted_quantile(v, 0.499, w) - 7.0) < 0.01
+    assert abs(analysis.weighted_quantile(v, 0.501, w) - 7.0) < 0.01
+
+
+def test_weighted_quantile_hand_computed_three_points():
+    # values [1, 2, 4], weights [1, 2, 1], total W = 4
+    # cumulative midpoints: c = [0.5, 2.0, 3.5]; rescaled to [0, 1]:
+    # p = [0, 0.5, 1]. So q=0.25 interpolates halfway between 1 and 2 -> 1.5,
+    # q=0.5 -> 2, q=0.75 -> halfway between 2 and 4 -> 3.
+    v = np.array([1.0, 2.0, 4.0])
+    w = np.array([1.0, 2.0, 1.0])
+    np.testing.assert_allclose(analysis.weighted_quantile(v, 0.25, w), 1.5)
+    np.testing.assert_allclose(analysis.weighted_quantile(v, 0.5, w), 2.0)
+    np.testing.assert_allclose(analysis.weighted_quantile(v, 0.75, w), 3.0)
+    # order-invariance
+    perm = [2, 0, 1]
+    np.testing.assert_allclose(
+        analysis.weighted_quantile(v[perm], 0.75, w[perm]), 3.0)
+
+
+def test_weighted_quantile_rejects_bad_weights():
+    v = np.arange(3.0)
+    with pytest.raises(ValueError):
+        analysis.weighted_quantile(v, 0.5, np.array([1.0, -1.0, 1.0]))
+    with pytest.raises(ValueError):
+        analysis.weighted_quantile(v, 0.5, np.zeros(3))
+    with pytest.raises(ValueError):
+        analysis.weighted_quantile(v, 0.5, np.ones(4))
+
+
+def test_aggregate_with_weights_band_ordering_and_backcompat():
+    rng = np.random.default_rng(11)
+    arrays = [rng.standard_normal((3, 2)) for _ in range(25)]
+    w = rng.uniform(0.1, 2.0, size=25)
+    agg = analysis.aggregate(arrays, weights=w)
+    assert np.all(agg["lo90"] <= agg["lo68"])
+    assert np.all(agg["lo68"] <= agg["median"])
+    assert np.all(agg["median"] <= agg["hi68"])
+    assert np.all(agg["hi68"] <= agg["hi90"])
+    # uniform weights reproduce the unweighted aggregate exactly
+    agg_u = analysis.aggregate(arrays, weights=np.ones(25))
+    agg_none = analysis.aggregate(arrays)
+    for key in agg_none:
+        np.testing.assert_allclose(agg_u[key], agg_none[key], atol=1e-12)
+
+
+def test_band_helpers_accept_weights():
+    B = np.array([[1.0, 0.0], [0.5, 2.0]])
+    draws = [FakeDraw(A * s, B @ B.T) for s in (0.8, 0.9, 1.0)]
+    pairs = [(d, B) for d in draws]
+    w = np.array([0.2, 0.5, 0.3])
+    ib = analysis.irf_bands(pairs, 6, weights=w)
+    assert ib["median"].shape == (2, 2, 6)
+    assert np.all(ib["lo68"] <= ib["hi68"])
+    fb = analysis.fevd_bands(pairs, 6, weights=w)
+    assert np.all(fb["lo90"] <= fb["hi90"])
+    u = np.random.default_rng(4).standard_normal((10, 2))
+    sb = analysis.shock_bands(pairs, lambda d: u, weights=w)
+    assert sb["median"].shape == (10, 2)
+    hd = analysis.hd_median(pairs, lambda d: u, weights=w)
+    assert hd.shape == (10, 2, 2)
+
+
 def test_plot_helpers_write_pngs(tmp_path):
     pytest.importorskip("matplotlib")
     B = np.array([[1.0, 0.0], [0.5, 2.0]])
