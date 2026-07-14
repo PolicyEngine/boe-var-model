@@ -352,6 +352,10 @@ def main() -> None:
     out = df.copy()
     out.insert(0, "quarter", out.index.astype(str))
     out.to_csv(OUT, index=False, float_format="%.6f")
+    # Keep the packaged snapshot (shipped in pip installs) in sync.
+    pkg_copy = ROOT / "src" / "boe_var" / "_data" / "boe_var_data.csv"
+    pkg_copy.parent.mkdir(parents=True, exist_ok=True)
+    pkg_copy.write_bytes(OUT.read_bytes())
     out_v1 = df_v1.copy()
     out_v1.insert(0, "quarter", out_v1.index.astype(str))
     out_v1.to_csv(OUT.parent / "boe_var_data_v1_us_ea_only.csv", index=False, float_format="%.6f")

@@ -310,6 +310,11 @@ def main() -> None:
     ]
     with open(os.path.join(RESULTS, "forecast_summary.md"), "w") as f:
         f.write("\n".join(lines))
+    # Keep the packaged snapshot (shipped in pip installs) in sync.
+    pkg = os.path.join(os.path.dirname(__file__), "..", "src", "boe_var", "_results")
+    os.makedirs(pkg, exist_ok=True)
+    with open(os.path.join(pkg, "forecast_summary.md"), "w") as f:
+        f.write("\n".join(lines))
     print("Wrote results/forecast_summary.md and figures 1, 7, 8, 9.")
 
 

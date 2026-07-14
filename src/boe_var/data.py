@@ -16,7 +16,41 @@ COLUMNS = [
     "uk_gdp",
 ]
 
-_DATA_PATH = Path(__file__).resolve().parents[2] / "data" / "boe_var_data.csv"
+_REPO_ROOT = Path(__file__).resolve().parents[2]
+
+
+def _first_existing(repo_path: Path, packaged_path: Path) -> Path:
+    """Prefer the repo-root copy (development checkout), else the packaged one.
+
+    In a git checkout, `data/` and `results/` at the repo root are canonical
+    (rebuilt by the scripts in `scripts/`); the copies under `boe_var/_data`
+    and `boe_var/_results` are synchronised snapshots shipped as package data
+    so a plain `pip install` works without cloning the repo.
+    """
+    return repo_path if repo_path.exists() else packaged_path
+
+
+_DATA_PATH = _first_existing(
+    _REPO_ROOT / "data" / "boe_var_data.csv",
+    Path(__file__).resolve().parent / "_data" / "boe_var_data.csv",
+)
+
+
+def results_dir() -> Path:
+    """Directory holding summary.md / forecast_summary.md.
+
+    Repo-root `results/` in a development checkout; the packaged snapshot
+    under `boe_var/_results` in a pip install.
+    """
+    repo_results = _REPO_ROOT / "results"
+    if (repo_results / "summary.md").exists():
+        return repo_results
+    return Path(__file__).resolve().parent / "_results"
+
+
+def results_path(name: str) -> Path:
+    """Path to a committed results file (e.g. 'summary.md')."""
+    return results_dir() / name
 
 
 def load_data(path: str | Path = _DATA_PATH) -> pd.DataFrame:

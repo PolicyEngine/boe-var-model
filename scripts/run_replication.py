@@ -243,6 +243,11 @@ def main() -> None:
     ]
     with open(os.path.join(RESULTS, "summary.md"), "w") as f:
         f.write("\n".join(lines))
+    # Keep the packaged snapshot (shipped in pip installs) in sync.
+    pkg = os.path.join(os.path.dirname(__file__), "..", "src", "boe_var", "_results")
+    os.makedirs(pkg, exist_ok=True)
+    with open(os.path.join(pkg, "summary.md"), "w") as f:
+        f.write("\n".join(lines))
     print("Wrote results/summary.md and figures 2-6.")
 
 
