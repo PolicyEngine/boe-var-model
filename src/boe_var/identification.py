@@ -362,8 +362,10 @@ def _num_jacobian(f, x: np.ndarray, h: float = 1e-6) -> np.ndarray:
     J = np.empty((f0.size, x.size))
     for i in range(x.size):
         step = h * max(1.0, abs(x[i]))
-        xp = x.copy(); xp[i] += step
-        xm = x.copy(); xm[i] -= step
+        xp = x.copy()
+        xp[i] += step
+        xm = x.copy()
+        xm[i] -= step
         J[:, i] = (f(xp) - f(xm)) / (2.0 * step)
     return J
 
