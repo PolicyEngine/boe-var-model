@@ -69,7 +69,7 @@ class _Identified:
         self.weights = weights      # np.ndarray, sums to 1
 
 
-def _build_identified(compute_weights):
+def _build_identified(compute_weights, n_draws=N_DRAWS):
     import pandas as pd
 
     from boe_var.bvar import BVAR
@@ -83,7 +83,7 @@ def _build_identified(compute_weights):
     dummies = _covid_dummies(df.index)
 
     model = BVAR(y, lags=LAGS, dummies=dummies, lam=0.2, mu=1.0, theta=1.0)
-    draws = model.sample_posterior(N_DRAWS, seed=SAMPLE_SEED)
+    draws = model.sample_posterior(n_draws, seed=SAMPLE_SEED)
     accepted = identify(draws, rng=np.random.default_rng(IDENT_SEED),
                         compute_weights=compute_weights)
     pairs = [(d, B) for d, B, _ in accepted]
@@ -96,3 +96,14 @@ def _build_identified(compute_weights):
 def identified():
     """Fast, unweighted, fixed-seed identified real-data SVAR (session-cached)."""
     return _build_identified(compute_weights=False)
+
+
+@pytest.fixture(scope="session")
+def identified_weighted():
+    """Heavy, importance-WEIGHTED, high-draw identified SVAR (session-cached).
+
+    Used only by ``slow``-marked tests, so the nightly job re-checks the
+    published invariants under the configuration the paper actually targets
+    rather than only the fast fixture.
+    """
+    return _build_identified(compute_weights=True, n_draws=1500)

@@ -112,14 +112,25 @@ def test_fevd_shares_sum_to_one(identified):
         assert np.allclose(totals, 1.0, atol=1e-10)
 
 
-@pytest.mark.calibration
+def test_fevd_shares_are_valid_proportions_on_every_draw(identified):
+    """A variance share is a proportion: every FEVD entry lies in [0, 1] on
+    every accepted draw and every horizon. Summing to 1 (above) does not by
+    itself rule out a negative share offset by one above 1."""
+    for draw, B in identified.pairs:
+        shares = analysis.fevd(draw, B, horizons=21)
+        assert shares.min() >= -1e-12, f"negative FEVD share {shares.min()}"
+        assert shares.max() <= 1.0 + 1e-12, f"FEVD share > 1: {shares.max()}"
+
+
 def test_fevd_global_share_of_uk_gdp_and_cpi_in_paper_neighbourhood(identified):
-    """Paper benchmark (summary.md): identified GLOBAL shocks (world demand +
-    energy + supply) explain ~40% of UK GDP and ~50% of UK CPI variance at
-    business-cycle horizons. Assert a deliberately wide band [30%, 60%] that
-    brackets both the paper's ~40/50 and this fast unweighted config's
-    ~47/43, so the test flags a gross regression without being flaky to
-    Monte-Carlo variation across the ~50 accepted draws."""
+    """HARD GATE -- paper benchmark (summary.md): identified GLOBAL shocks
+    (world demand + energy + supply) explain ~40% of UK GDP and ~50% of UK CPI
+    variance at business-cycle horizons. The band [30%, 60%] is deliberately
+    wide: it brackets both the paper's ~40/50 and this fast unweighted config's
+    ~47/43, so it flags a gross regression without being flaky to Monte-Carlo
+    variation across the ~50 accepted draws. The band is a published invariant,
+    so it gates PRs; only the *tighter* weighted magnitudes
+    (test_weighted_fevd_matches_paper_benchmark) remain report-only."""
     bands = analysis.fevd_bands(identified.pairs, horizons=21)
     med = bands["median"]
     med = med / med.sum(axis=1, keepdims=True)
@@ -187,9 +198,83 @@ def test_historical_decomposition_reconstructs_the_data(identified):
     np.testing.assert_allclose(hd["shocks"].sum(axis=2), stochastic, atol=1e-10)
 
 
+def test_historical_decomposition_reconstructs_the_data_on_every_draw(identified):
+    """The adding-up identity above is a published invariant, so it must hold
+    for EVERY accepted draw, not just the first one: for each draw the shock
+    contributions plus the covid and deterministic components reproduce the
+    observed data exactly, and the stochastic component is the sum over
+    shocks."""
+    model = identified.model
+    lags = model.lags
+    y_eff = identified.y[lags:]
+    dummies = identified.dummies[lags:]
+    for idx, (draw, B) in enumerate(identified.pairs):
+        resid = model.residuals(draw)
+        hd = analysis.historical_decomposition(draw, B, resid, dummies=dummies)
+        stochastic = hd["stochastic"]
+        covid = hd["covid"]
+        deterministic = y_eff - stochastic - covid
+        recon = hd["shocks"].sum(axis=2) + covid + deterministic
+        np.testing.assert_allclose(
+            recon, y_eff, atol=1e-8,
+            err_msg=f"draw {idx}: historical decomposition does not reconstruct")
+        np.testing.assert_allclose(
+            hd["shocks"].sum(axis=2), stochastic, atol=1e-10,
+            err_msg=f"draw {idx}: shock sum != stochastic component")
+
+
 # ---------------------------------------------------------------------------
 # Slow: high-draw, importance-WEIGHTED benchmark (workflow_dispatch / schedule)
 # ---------------------------------------------------------------------------
+
+@pytest.mark.slow
+def test_published_invariants_hold_under_the_heavy_weighted_config(
+        identified_weighted):
+    """HARD GATE (nightly) -- the four published invariants re-checked on the
+    high-draw, importance-weighted configuration, so drift is caught under the
+    configuration the paper actually targets and not just the fast fixture.
+
+    Unlike the FEVD *magnitude* benchmark below, none of these is a
+    Monte-Carlo-sensitive quantity: they are exact algebraic identities and
+    accept/reject conditions, so a failure here is a real bug.
+    """
+    ident = identified_weighted
+    assert len(ident.pairs) >= 20, "heavy config accepted too few draws"
+
+    model = ident.model
+    lags = model.lags
+    y_eff = ident.y[lags:]
+    dummies = ident.dummies[lags:]
+
+    for idx, (draw, B) in enumerate(ident.pairs):
+        # (1) zero restrictions
+        for j, shock in enumerate(SHOCKS):
+            for v in ZERO_RESTRICTIONS[shock]:
+                assert abs(B[v, j]) < 1e-9, (
+                    f"draw {idx}: zero restriction {shock}/{VARIABLES[v]} "
+                    f"violated by {B[v, j]}")
+            # (2) sign restrictions
+            for v, s in SIGN_RESTRICTIONS[shock]:
+                assert s * B[v, j] > 0, (
+                    f"draw {idx}: {shock} on {VARIABLES[v]} = {B[v, j]} "
+                    f"violates Table 2 sign {s}")
+
+        # (3) FEVD shares are proportions and sum to 1
+        shares = analysis.fevd(draw, B, horizons=21)
+        assert np.all(np.isfinite(shares))
+        assert shares.min() >= -1e-12
+        assert shares.max() <= 1.0 + 1e-12
+        np.testing.assert_allclose(shares.sum(axis=1), 1.0, atol=1e-10)
+
+        # (4) historical decomposition reconstructs the observed data
+        resid = model.residuals(draw)
+        hd = analysis.historical_decomposition(draw, B, resid, dummies=dummies)
+        deterministic = y_eff - hd["stochastic"] - hd["covid"]
+        recon = hd["shocks"].sum(axis=2) + hd["covid"] + deterministic
+        np.testing.assert_allclose(
+            recon, y_eff, atol=1e-8,
+            err_msg=f"draw {idx}: historical decomposition does not reconstruct")
+
 
 @pytest.mark.slow
 @pytest.mark.calibration

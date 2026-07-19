@@ -4,11 +4,13 @@ on:
   pull_request:
   push:
     branches: [main]
-  # Manual / scheduled trigger for the expensive high-draw, importance-weighted
+  # Manual / nightly trigger for the expensive high-draw, importance-weighted
   # validation (the `slow` marker), which is skipped on every PR/push.
   workflow_dispatch:
   schedule:
-    - cron: "0 6 * * 1"   # Mondays 06:00 UTC
+    # Nightly, so drift in the heavy weighted validation is caught within a day
+    # rather than up to a week later.
+    - cron: "0 6 * * *"   # every day 06:00 UTC
 
 jobs:
   lint:
@@ -28,33 +30,23 @@ jobs:
       - uses: astral-sh/setup-uv@v5
       - name: Install
         run: uv sync
-      # HARD GATE: the Table 2 structural sign/zero restriction invariants
-      # (tests/test_validation.py) and the numerical stress suite
-      # (tests/test_stress.py). Excludes `calibration` (Monte-Carlo FEVD-share
-      # magnitudes -- report-only below) and `slow` (the weighted high-draw
-      # benchmark, run weekly/on-demand in slow-validation).
+      # HARD GATE -- the paper-published invariants, which must never regress:
+      #   1. zero restrictions hold on EVERY accepted draw
+      #   2. sign restrictions hold on EVERY accepted draw
+      #   3. FEVD shares sum to 1 (and each lies in [0, 1]) on EVERY draw
+      #   4. the historical decomposition reconstructs the observed data on
+      #      EVERY accepted draw
+      #   plus the global FEVD shares sitting inside the paper's stated band,
+      #   and the numerical stress suite (tests/test_stress.py).
+      # Excludes only `slow` (the weighted high-draw *magnitude* benchmark,
+      # re-run nightly in slow-validation) and `calibration` (Monte-Carlo
+      # magnitudes that are genuinely uncertain -- report-only, nightly only).
       - name: Fast structural + stress tests
         run: uv run pytest -q -m "not calibration and not slow"
 
-  calibration-report:
-    name: Calibration report (FEVD shares) -- REPORT ONLY
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v5
-      - name: Install
-        run: uv sync
-      # REPORT ONLY: Monte-Carlo FEVD-share magnitudes drift with sampling and
-      # are a known-soft calibration target, so a benign move must not red the
-      # build. continue-on-error keeps this informational, matching the OBR
-      # emulator's calibration-report policy.
-      - name: Calibration tests (non-gating)
-        continue-on-error: true
-        run: uv run pytest -q -m "calibration and not slow"
-
   slow-validation:
-    name: Slow validation (high-draw, weighted) -- REPORT ONLY
-    # Only on manual dispatch or the weekly schedule -- never on PRs/pushes.
+    name: Slow validation (high-draw, weighted) -- invariants HARD GATE
+    # Only on manual dispatch or the nightly schedule -- never on PRs/pushes.
     if: github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
     runs-on: ubuntu-latest
     steps:
@@ -62,9 +54,17 @@ jobs:
       - uses: astral-sh/setup-uv@v5
       - name: Install
         run: uv sync
-      # The weighted high-draw benchmark is a calibration target (report-only):
-      # it is the definitive FEVD-share check, but Monte-Carlo drift must not
-      # red the scheduled build.
-      - name: Slow tests (non-gating)
+      # HARD GATE: the published invariants (zero/sign restrictions, FEVD
+      # shares summing to 1, historical-decomposition reconstruction) re-checked
+      # on the high-draw weighted config. These are exact identities, not
+      # Monte-Carlo magnitudes, so drift here is a real bug and must red the
+      # nightly build.
+      - name: Slow published invariants -- HARD GATE
+        run: uv run pytest -q --runslow -m "slow and not calibration"
+      # REPORT ONLY: the weighted high-draw FEVD-share *magnitudes* are the
+      # definitive calibration check, but benign Monte-Carlo drift must not red
+      # the scheduled build.
+      - name: Slow calibration magnitudes (non-gating)
+        if: always()
         continue-on-error: true
-        run: uv run pytest -q --runslow -m slow
+        run: uv run pytest -q --runslow -m "slow and calibration"
