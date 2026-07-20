@@ -81,10 +81,10 @@ def main() -> None:
 
     os.makedirs(RESULTS, exist_ok=True)
 
-    # 1. Data (estimation sample 1992Q1-2023Q2)
+    # 1. Data (estimation sample 1992Q1-2025Q1)
     df = load_data()
     df = df.loc[(df.index >= pd.Period("1992Q1", "Q"))
-                & (df.index <= pd.Period("2023Q2", "Q"))]
+                & (df.index <= pd.Period("2025Q1", "Q"))]
     y = df.to_numpy(dtype=float)
     dummies = covid_dummies(df.index)
     k = y.shape[1]
