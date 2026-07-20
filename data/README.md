@@ -6,8 +6,8 @@ final dataset is `data/boe_var_data.csv`: one row per quarter (`quarter` column,
 e.g. `1992Q1`), variables already transformed — **100·log of the level for every
 column except `bank_rate`, which is the level in percent**.
 
-Coverage: 1992Q1–2024Q2, 130 quarters, no NaNs (the estimation window
-1992Q1–2023Q2 is complete). The binding start is FRED's Brent series
+Coverage: 1992Q1–2026Q1, 137 quarters, no NaNs (the estimation window
+1992Q1–2025Q1 is complete). The binding start is FRED's Brent series
 `POILBREUSDQ`, which begins 1992Q1.
 
 ## Series and sources
@@ -17,11 +17,11 @@ Coverage: 1992Q1–2024Q2, 130 quarters, no NaNs (the estimation window
 | `uk_gdp` | UK real GDP, chained volume, SA, £m | ONS (UKEA) | `ABMI` — https://www.ons.gov.uk/generator?format=csv&uri=/economy/grossdomesticproductgdp/timeseries/abmi/ukea |
 | `cpisa` | UK CPI, seasonally adjusted (see note) | ONS (MM23) | `D7BT` (CPI all items, NSA, 2015=100) — https://www.ons.gov.uk/generator?format=csv&uri=/economy/inflationandpriceindices/timeseries/d7bt/mm23 |
 | `cpi_energy` | UK CPI energy (see note) | ONS (MM23) | `D7CH` (CPI 04.5 electricity, gas & other fuels), `D7EC` (CPI 07.2.2 fuels & lubricants) |
-| `bank_rate` | Bank Rate, quarterly average, % | BoE IADB | `IUQABEDR` — https://www.bankofengland.co.uk/boeapps/iadb/fromshowcolumns.asp?csv.x=yes&Datefrom=01/Jan/1988&Dateto=01/Oct/2024&SeriesCodes=IUQABEDR,XUQABK67,XUQAUSS&CSVF=TN&UsingCodes=Y&VPD=Y&VFD=N |
+| `bank_rate` | Bank Rate, quarterly average, % | BoE IADB | `IUQABEDR` — https://www.bankofengland.co.uk/boeapps/iadb/fromshowcolumns.asp?csv.x=yes&Datefrom=01/Jan/1988&Dateto=01/Jul/2026&SeriesCodes=IUQABEDR,XUQABK67,XUQAUSS&CSVF=TN&UsingCodes=Y&VPD=Y&VFD=N |
 | `eri` | Sterling broad effective exchange-rate index, quarterly avg | BoE IADB | `XUQABK67` (same URL) |
 | `oil_price` | Real Brent price in sterling (see note) | FRED + BoE | `POILBREUSDQ` (Brent, USD/bbl, IMF via FRED) — https://fred.stlouisfed.org/graph/fredgraph.csv?id=POILBREUSDQ ; `XUQAUSS` (USD per GBP, quarterly avg, BoE) |
 | `world_gdp` | UK-trade-weighted world real GDP proxy (see note) | FRED | `GDPC1` (US real GDP), `CLVMNACSCAB1GQEA19` (Euro Area 19 real GDP, 1995Q1–), `CLVMNACSCAB1GQDE` (Germany real GDP, used for backcasting), `JPNRGDPEXP` (Japan real GDP, 1994Q1–), `RGDPNACNA666NRUG` (China real GDP at constant national prices, annual, Penn World Table via FRED, interpolated to quarterly) |
-| `world_cpi` | UK-trade-weighted world CPI proxy (see note) | FRED | `CPALTT01USQ661S` (US CPI, SA), `CP0000EZ19M086NEST` (EA19 HICP all items, monthly, Dec 1996–), `DEUCPIALLMINMEI` (Germany CPI, used for backcasting), `CPALTT01JPQ661S` (Japan CPI, quarterly, ends 2021Q2, extended with `FPCPITOTLZGJPN` World Bank annual inflation), `CHNCPIALLMINMEI` (China CPI, monthly, 1993M1–) |
+| `world_cpi` | UK-trade-weighted world CPI proxy (see note) | FRED | `CPALTT01USQ661S` (US CPI, SA; OECD MEI series discontinued after 2025Q1, spliced forward with BLS `CPIAUCSL` growth), `CP0000EZ19M086NEST` (EA19 HICP all items, monthly, Dec 1996–), `DEUCPIALLMINMEI` (Germany CPI, used for backcasting), `CPALTT01JPQ661S` (Japan CPI, quarterly, ends 2021Q2, extended with `FPCPITOTLZGJPN` World Bank annual inflation), `CHNCPIALLMINMEI` (China CPI, monthly, 1993M1–) |
 
 ## Construction notes and caveats
 
@@ -53,7 +53,7 @@ Coverage: 1992Q1–2024Q2, 130 quarters, no NaNs (the estimation window
   |---|---|---|---|---|
   | 1992Q1–1999Q4 | 0.50 | 0.17 | 0.04 | 0.01 |
   | 2000Q1–2009Q4 | 0.48 | 0.16 | 0.03 | 0.05 |
-  | 2010Q1–2024Q2 | 0.45 | 0.16 | 0.02 | 0.07 |
+  | 2010Q1–2026Q1 | 0.45 | 0.16 | 0.02 | 0.07 |
 
   These are raw shares of total UK trade, informed by ONS Pink Book /
   UK trade statistics and the IMF Direction of Trade Statistics literature
@@ -99,6 +99,6 @@ Coverage: 1992Q1–2024Q2, 130 quarters, no NaNs (the estimation window
   growth ≈0.998/0.989 for GDP/CPI) but the new world GDP grows visibly faster
   over 2000–2010 (China) and the new world CPI slightly slower (Japanese
   deflation, low Chinese inflation).
-- Sample restricted to 1990Q1–2024Q2 then rows with any NaN dropped; the
+- Sample restricted to 1990Q1–2026Q1 then rows with any NaN dropped; the
   binding start is 1992Q1 (start of FRED `POILBREUSDQ`). The script asserts the
-  1992Q1–2023Q2 estimation window is complete.
+  1992Q1–2025Q1 estimation window is complete.

@@ -32,7 +32,7 @@ UA = {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) boe-var-rep
 ONS_URL = "https://www.ons.gov.uk/generator?format=csv&uri=/economy/{area}/timeseries/{cdid}/{dataset}"
 BOE_URL = (
     "https://www.bankofengland.co.uk/boeapps/iadb/fromshowcolumns.asp?csv.x=yes"
-    "&Datefrom=01/Jan/1988&Dateto=01/Oct/2024&SeriesCodes={codes}"
+    "&Datefrom=01/Jan/1988&Dateto=01/Jul/2026&SeriesCodes={codes}"
     "&CSVF=TN&UsingCodes=Y&VPD=Y&VFD=N"
 )
 FRED_URL = "https://fred.stlouisfed.org/graph/fredgraph.csv?id={sid}"
@@ -57,6 +57,9 @@ DOWNLOADS = {
     "fred_CPALTT01JPQ661S.csv": FRED_URL.format(sid="CPALTT01JPQ661S"),
     "fred_FPCPITOTLZGJPN.csv": FRED_URL.format(sid="FPCPITOTLZGJPN"),
     "fred_CHNCPIALLMINMEI.csv": FRED_URL.format(sid="CHNCPIALLMINMEI"),
+    # successor series: OECD MEI CPALTT01USQ661S was discontinued after
+    # 2025Q1; extend the US CPI with BLS headline CPI (CPIAUCSL) growth.
+    "fred_CPIAUCSL.csv": FRED_URL.format(sid="CPIAUCSL"),
 }
 
 # UK trade shares (goods+services, approximate era averages, ONS Pink Book /
@@ -66,7 +69,7 @@ TRADE_WEIGHT_ERAS = [
     # (start, end, {country: raw UK trade share})
     ("1990Q1", "1999Q4", {"ea": 0.50, "us": 0.17, "jp": 0.04, "cn": 0.01}),
     ("2000Q1", "2009Q4", {"ea": 0.48, "us": 0.16, "jp": 0.03, "cn": 0.05}),
-    ("2010Q1", "2024Q4", {"ea": 0.45, "us": 0.16, "jp": 0.02, "cn": 0.07}),
+    ("2010Q1", "2026Q4", {"ea": 0.45, "us": 0.16, "jp": 0.02, "cn": 0.07}),
 ]
 
 
@@ -301,12 +304,18 @@ def build() -> tuple[pd.DataFrame, pd.DataFrame]:
 
     # --- World CPI: same trade weights, US + EA + Japan + China
     us_cpi = fred_quarterly("fred_CPALTT01USQ661S.csv")
+    # OECD series discontinued after 2025Q1: splice forward with BLS CPIAUCSL
+    us_cpi_bls = fred_quarterly("fred_CPIAUCSL.csv")
+    ext = us_cpi_bls[us_cpi_bls.index > us_cpi.index[-1]]
+    if len(ext):
+        link = us_cpi.iloc[-1] / us_cpi_bls.loc[us_cpi.index[-1]]
+        us_cpi = pd.concat([us_cpi, ext * link])
     ea_cpi = fred_quarterly("fred_CP0000EZ19M086NEST.csv")
     de_cpi = fred_quarterly("fred_DEUCPIALLMINMEI.csv")
     ea_cpi = splice_back(ea_cpi, de_cpi)
     jp_cpi = fred_quarterly("fred_CPALTT01JPQ661S.csv")  # ends 2021Q2 (OECD exit)
     jp_cpi = extend_with_annual_inflation(
-        jp_cpi, read_fred("fred_FPCPITOTLZGJPN.csv"), "2024Q4"
+        jp_cpi, read_fred("fred_FPCPITOTLZGJPN.csv"), "2026Q4"
     )
     cn_cpi = fred_quarterly("fred_CHNCPIALLMINMEI.csv")  # 1993M1-
     world_cpi = chain_weighted_tv(
@@ -329,7 +338,7 @@ def build() -> tuple[pd.DataFrame, pd.DataFrame]:
             "uk_gdp": 100 * np.log(uk_gdp),
         }
     )
-    df = df.loc["1990Q1":"2024Q2"].dropna()
+    df = df.loc["1990Q1":"2026Q1"].dropna()
     # verify required window
     req = df.loc["1992Q1":"2023Q2"]
     n_req = (pd.Period("2023Q2") - pd.Period("1992Q1")).n + 1

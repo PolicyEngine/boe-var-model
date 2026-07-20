@@ -4,8 +4,8 @@ Usage:
     conda run -n python313 python scripts/run_forecast_revision.py \
         [--draws 3000] [--lags 4] [--horizons 13] [--seed 0]
 
-Estimates on 1992Q1-2023Q2 (as run_replication), treats 2024Q2 as period T
-and 2024Q1 as T-1, and writes results/fig1_forecast.png,
+Estimates on 1992Q1-2025Q1 (as run_replication), treats 2026Q1 as period T
+and 2025Q4 as T-1, and writes results/fig1_forecast.png,
 fig7_shock_distributions.png, fig8_composite_irf.png,
 fig9_forecast_revision.png and results/forecast_summary.md.
 """
@@ -74,11 +74,11 @@ def main() -> None:
     os.makedirs(RESULTS, exist_ok=True)
     rng = np.random.default_rng(args.seed)
 
-    # ---- data: estimation sample vs full sample through 2024Q2 (= T) ----
+    # ---- data: estimation sample vs full sample through 2026Q1 (= T) ----
     df_full = load_data()
     df_full = df_full.loc[df_full.index >= pd.Period("1992Q1", "Q")]
-    assert df_full.index[-1] == pd.Period("2024Q2", "Q"), df_full.index[-1]
-    df_est = df_full.loc[df_full.index <= pd.Period("2023Q2", "Q")]
+    assert df_full.index[-1] == pd.Period("2026Q1", "Q"), df_full.index[-1]
+    df_est = df_full.loc[df_full.index <= pd.Period("2025Q1", "Q")]
     y_est = df_est.to_numpy(dtype=float)
     y_full = df_full.to_numpy(dtype=float)
     dummies_est = covid_dummies(df_est.index)
@@ -106,7 +106,7 @@ def main() -> None:
                 draw, y_full, dummies_full)
         return resid_cache[key]
 
-    # ---- Fig 7: distribution of the 6 identified shocks at T = 2024Q2 --
+    # ---- Fig 7: distribution of the 6 identified shocks at T = 2026Q1 --
     dist = forecast.shock_distribution_T(pairs, resid_fn, weights=w)
     eps_T = dist["samples"]
     plt = _mpl()
@@ -126,7 +126,7 @@ def main() -> None:
         ax.text(0.02, 0.95, f"P(+) = {p:.2f}\nP(−) = {1 - p:.2f}",
                 transform=ax.transAxes, va="top", fontsize=7,
                 bbox=dict(fc="white", alpha=0.7, ec="none"))
-    fig.suptitle("Figure 7: posterior distribution of structural shocks, 2024Q2")
+    fig.suptitle("Figure 7: posterior distribution of structural shocks, 2026Q1")
     fig.tight_layout(rect=(0, 0, 1, 0.95))
     fig.savefig(os.path.join(RESULTS, "fig7_shock_distributions.png"))
     plt.close(fig)
@@ -159,8 +159,8 @@ def main() -> None:
         ax.fill_between(x, b["lo68"], b["hi68"], color="#4292c6", alpha=0.5, lw=0)
         ax.plot(x, b["median"], color="#08306b", lw=1.4)
         ax.axhline(0, color="k", lw=0.6)
-        ax.set_title(f"Composite effect of 2024Q2 shocks: {lab}")
-        ax.set_xlabel("quarters after 2024Q2")
+        ax.set_title(f"Composite effect of 2026Q1 shocks: {lab}")
+        ax.set_xlabel("quarters after 2026Q1")
 
         ax = axes[1][col]
         pos = np.zeros(Hc); neg = np.zeros(Hc)
@@ -174,9 +174,9 @@ def main() -> None:
                 label="Total (median decomp.)" if col == 0 else None)
         ax.axhline(0, color="k", lw=0.6)
         ax.set_title(f"Decomposition of median: {lab}")
-        ax.set_xlabel("quarters after 2024Q2")
+        ax.set_xlabel("quarters after 2026Q1")
     axes[1][0].legend(fontsize=6, ncol=2, loc="best")
-    fig.suptitle("Figure 8: composite impulse response to the 2024Q2 shocks")
+    fig.suptitle("Figure 8: composite impulse response to the 2026Q1 shocks")
     fig.tight_layout(rect=(0, 0, 1, 0.95))
     fig.savefig(os.path.join(RESULTS, "fig8_composite_irf.png"))
     plt.close(fig)
@@ -237,10 +237,10 @@ def main() -> None:
         ax.axvline(0, color="0.5", lw=0.8)
         ax.axhline(0, color="k", lw=0.5)
         ax.set_title(lab)
-        ax.set_xlabel("quarters relative to T = 2024Q2")
+        ax.set_xlabel("quarters relative to T = 2026Q1")
         if r_ == 0:
             ax.legend(fontsize=6, ncol=2)
-    fig.suptitle("Figure 9: forecast revision between 2024Q1 and 2024Q2")
+    fig.suptitle("Figure 9: forecast revision between 2025Q4 and 2026Q1")
     fig.tight_layout(rect=(0, 0, 1, 0.95))
     fig.savefig(os.path.join(RESULTS, "fig9_forecast_revision.png"))
     plt.close(fig)
@@ -262,8 +262,8 @@ def main() -> None:
         ax.set_title(lab)
         if r_ == 0:
             ax.legend(fontsize=7)
-        ax.set_xlabel("quarters relative to 2024Q2")
-    fig.suptitle("Figure 1: unconditional forecast from 2024Q2 (fan chart)")
+        ax.set_xlabel("quarters relative to 2026Q1")
+    fig.suptitle("Figure 1: unconditional forecast from 2026Q1 (fan chart)")
     fig.tight_layout(rect=(0, 0, 1, 0.95))
     fig.savefig(os.path.join(RESULTS, "fig1_forecast.png"))
     plt.close(fig)
@@ -276,13 +276,13 @@ def main() -> None:
     lines = [
         "# Forecast-revision exercise (Section 5)",
         "",
-        f"- Estimation sample 1992Q1–2023Q2; T = 2024Q2, T−1 = 2024Q1; "
+        f"- Estimation sample 1992Q1–2025Q1; T = 2026Q1, T−1 = 2025Q4; "
         f"lags {args.lags}, horizons {H}.",
         f"- Posterior draws {len(draws)}, accepted {len(pairs)} "
         f"({100 * len(pairs) / len(draws):.1f}%), importance-weight ESS "
         f"{ess(w):.1f}.",
         "",
-        "## P(sign) of the identified shocks at T = 2024Q2 (weighted)",
+        "## P(sign) of the identified shocks at T = 2026Q1 (weighted)",
         "",
         "| Shock | P(>0) | P(<0) |",
         "|---|---|---|",
@@ -295,9 +295,9 @@ def main() -> None:
         "## Composite impulse response (median, YoY)",
         "",
         f"- YoY CPI inflation: peak effect {med_joint_cpi[pk_c]:+.2f} pp at "
-        f"h = {pk_c} quarters after 2024Q2.",
+        f"h = {pk_c} quarters after 2026Q1.",
         f"- YoY GDP growth: peak effect {med_joint_gdp[pk_g]:+.2f} pp at "
-        f"h = {pk_g} quarters after 2024Q2.",
+        f"h = {pk_g} quarters after 2026Q1.",
         "",
         "## Adding-up check (Figure 9 identity)",
         "",

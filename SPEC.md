@@ -8,8 +8,9 @@ IRFs, FEVDs, estimated shocks, historical decompositions. Compare qualitatively
 to Figures 2–6 of the paper.
 
 ## Model
-- 8 quarterly variables (Table 1), sample for estimation: **1992Q1–2023Q2**
-  (data through 2024Q2 kept for later exercises).
+- 8 quarterly variables (Table 1), sample for estimation: **1992Q1–2025Q1**
+  (data through 2026Q1 kept for later exercises; the paper's original
+  sample was 1992Q1–2023Q2 with data through 2024Q2).
 - VAR(p) in (mostly) 100·log levels with constant + 6 Covid dummies
   (one per quarter 2020Q1–2021Q2). Use p = 4 lags (paper doesn't state; 4 is
   standard for quarterly; make it a parameter).
