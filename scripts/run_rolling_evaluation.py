@@ -18,9 +18,20 @@ def main() -> None:
     parser.add_argument("--horizons", type=int, default=8)
     parser.add_argument("--first-origin", type=int, default=80)
     parser.add_argument("--output", default="results/rolling_evaluation.json")
+    parser.add_argument("--start", default=None,
+                        help="first quarter to use (e.g. 1992Q1); default: "
+                             "full packaged dataset")
+    parser.add_argument("--end", default=None,
+                        help="last quarter to use; default: the data edge")
     args = parser.parse_args()
 
+    import pandas as pd
+
     df = load_data()
+    if args.start is not None:
+        df = df.loc[df.index >= pd.Period(args.start, "Q")]
+    if args.end is not None:
+        df = df.loc[df.index <= pd.Period(args.end, "Q")]
     report = rolling_origin_evaluation(
         df.to_numpy(),
         lags=args.lags,

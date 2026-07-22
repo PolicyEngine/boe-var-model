@@ -237,3 +237,47 @@ def test_optimize_hyperparameters_refine_does_not_worsen():
                                        mu_grid=grid, theta_grid=grid,
                                        refine=True)
     assert refined["log_ml"] >= coarse["log_ml"] - 1e-9
+
+
+def test_scalar_marginal_likelihood_sequential_predictive_identity():
+    """log p(Y) must equal the sum of one-step Student-t predictive log
+    densities under a FIXED dummy-observation prior (k=1 conjugate NIG).
+
+    This is an exact identity of the closed-form marginal likelihood: with
+    prior dummies (Yd, Xd) held fixed, p(Y_1..T | prior) factorizes into
+    sequential predictives y_t | y_<t ~ t_nu(x_t' bhat,
+    s2 (1 + x_t' (Xa'Xa)^{-1} x_t)) with nu = n_a - m, s2 = SSR_a / nu,
+    computed from the prior dummies plus previous observations. Verifies the
+    normalizing constants (multigammaln, determinant, pi powers) exactly.
+    Runs in milliseconds.
+    """
+    from scipy.stats import t as student_t
+
+    rng = np.random.default_rng(5)
+    T = 40
+    y = np.zeros((T, 1))
+    for i in range(1, T):
+        y[i] = 0.7 * y[i - 1] + 0.3 + 0.5 * rng.standard_normal()
+
+    model = BVAR(y, lags=2, lam=0.4, mu=1.5, theta=2.0)
+    lml = model.log_marginal_likelihood()
+
+    Yd, Xd = model._prior_dummies(model.scales)
+    Ya, Xa = Yd.copy(), Xd.copy()
+    total = 0.0
+    for i in range(model.Y.shape[0]):
+        x_t = model.X[i]
+        XtX = Xa.T @ Xa
+        bhat = np.linalg.solve(XtX, Xa.T @ Ya)
+        resid = Ya - Xa @ bhat
+        ssr = (resid.T @ resid).item()
+        nu = Xa.shape[0] - model.m
+        assert nu > 0
+        scale2 = (ssr / nu) * (1.0 + (x_t @ np.linalg.solve(XtX, x_t)).item())
+        total += student_t.logpdf(
+            model.Y[i].item(), df=nu, loc=(x_t @ bhat).item(),
+            scale=np.sqrt(scale2))
+        Ya = np.vstack([Ya, model.Y[i][None, :]])
+        Xa = np.vstack([Xa, x_t[None, :]])
+
+    assert lml == pytest.approx(total, abs=1e-8)

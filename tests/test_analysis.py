@@ -336,3 +336,41 @@ def test_plot_hist_decomp_eight_shock_grouping(tmp_path):
         contrib, np.zeros((T, 8)), [5, 7],
         str(tmp_path / "hd8.png"), covid=covid)
     assert os.path.getsize(p) > 0
+
+
+def test_weighted_quantile_vectorized_matches_reference_loop():
+    """The vectorized implementation must be bit-identical to the original
+    per-column reference (same argsort, cumulative-midpoint positions and
+    np.interp), including zero weights, tied values and n = 1."""
+
+    def reference(values, q, weights):
+        values = np.asarray(values, dtype=float)
+        weights = np.asarray(weights, dtype=float)
+        n = values.shape[0]
+        flat = values.reshape(n, -1)
+        out = np.empty(flat.shape[1])
+        for c in range(flat.shape[1]):
+            v = flat[:, c]
+            order = np.argsort(v)
+            vs, ws = v[order], weights[order]
+            if n == 1:
+                out[c] = vs[0]
+                continue
+            cmid = np.cumsum(ws) - 0.5 * ws
+            p = (cmid - cmid[0]) / (cmid[-1] - cmid[0])
+            out[c] = np.interp(q, p, vs)
+        return out.reshape(values.shape[1:])
+
+    rng = np.random.default_rng(0)
+    for _ in range(300):
+        n = int(rng.integers(1, 12))
+        shape = (n, int(rng.integers(1, 4)), int(rng.integers(1, 3)))
+        v = np.round(rng.standard_normal(shape), 1)  # force ties
+        w = rng.choice([0.0, 0.5, 1.0, 2.0], size=n)
+        if not w.any():
+            w[0] = 1.0
+        q = float(rng.choice([0.0, 0.05, 0.16, 0.5, 0.84, 1.0,
+                              rng.random()]))
+        a = reference(v, q, w)
+        b = analysis.weighted_quantile(v, q, w)
+        assert np.array_equal(a, b), (n, q)
