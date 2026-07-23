@@ -166,20 +166,22 @@ def weighted_quantile(values, q, weights) -> np.ndarray:
         raise ValueError("weights must not all be zero")
     n = values.shape[0]
     flat = values.reshape(n, -1)
+    if n == 1:
+        return flat[0].reshape(values.shape[1:]).copy()
+    # Vectorized sort / cumulative weights across all columns at once; the
+    # final 1-D interpolation stays np.interp per column so the output is
+    # bit-identical to the reference per-column implementation.
+    order = np.argsort(flat, axis=0)
+    vs_all = np.take_along_axis(flat, order, axis=0)
+    ws_all = weights[order]
+    # Cumulative weights at midpoints, rescaled to [0, 1] so that with
+    # uniform weights positions are i/(n-1), matching np.percentile's
+    # linear interpolation.
+    cmid = np.cumsum(ws_all, axis=0) - 0.5 * ws_all
+    p_all = (cmid - cmid[0]) / (cmid[-1] - cmid[0])
     out = np.empty(flat.shape[1])
     for c in range(flat.shape[1]):
-        v = flat[:, c]
-        order = np.argsort(v)
-        vs, ws = v[order], weights[order]
-        if n == 1:
-            out[c] = vs[0]
-            continue
-        # Cumulative weights at midpoints, rescaled to [0, 1] so that with
-        # uniform weights positions are i/(n-1), matching np.percentile's
-        # linear interpolation.
-        cmid = np.cumsum(ws) - 0.5 * ws
-        p = (cmid - cmid[0]) / (cmid[-1] - cmid[0])
-        out[c] = np.interp(q, p, vs)
+        out[c] = np.interp(q, p_all[:, c], vs_all[:, c])
     return out.reshape(values.shape[1:])
 
 

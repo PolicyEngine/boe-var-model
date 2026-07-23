@@ -441,6 +441,51 @@ def ess(weights) -> float:
     return float(s * s / (w * w).sum()) if w.size else 0.0
 
 
+# Below these thresholds, weighted quantile bands are typically noisy and
+# asymmetric; results should carry an explicit warning.
+MIN_RELIABLE_ACCEPTED = 100
+MIN_RELIABLE_ESS = 100.0
+
+
+def weak_inference_warnings(n_accepted: int, ess_value: float,
+                            n_draws: int | None = None) -> list[str]:
+    """Human-readable warnings when identification output is too thin.
+
+    Returns a (possibly empty) list of warning strings. Emitted when fewer
+    than ``MIN_RELIABLE_ACCEPTED`` draws survive the sign-restriction
+    accept/reject or the importance-weight ESS falls below
+    ``MIN_RELIABLE_ESS``. Includes a concrete draw-count recommendation
+    scaled from the observed acceptance/ESS yield when ``n_draws`` is given.
+    """
+    warnings: list[str] = []
+    rec = None
+    if n_draws and n_draws > 0:
+        # Draws needed so that the scarcer of (accepted, ESS) reaches its
+        # threshold at the observed yield, with 50% headroom.
+        yields = []
+        if n_accepted > 0:
+            yields.append(MIN_RELIABLE_ACCEPTED / (n_accepted / n_draws))
+            if ess_value > 0:
+                yields.append(MIN_RELIABLE_ESS / (ess_value / n_draws))
+        if yields:
+            rec = int(np.ceil(1.5 * max(yields) / 100.0) * 100)
+    suffix = (f" Re-run with draws >= {max(rec, n_draws or 0)}."
+              if rec is not None else " Re-run with a higher draw count.")
+    if n_accepted < MIN_RELIABLE_ACCEPTED:
+        warnings.append(
+            f"Weak identification sample: only {n_accepted} accepted draws "
+            f"(< {MIN_RELIABLE_ACCEPTED}); posterior bands may be noisy and "
+            f"asymmetric." + suffix
+        )
+    if ess_value < MIN_RELIABLE_ESS:
+        warnings.append(
+            f"Low importance-weight effective sample size (ESS = "
+            f"{ess_value:.1f} < {MIN_RELIABLE_ESS:.0f}); weighted quantiles "
+            f"are dominated by few draws and may be unreliable." + suffix
+        )
+    return warnings
+
+
 def identify(
     posterior_draws,
     rng: np.random.Generator | None = None,
@@ -493,14 +538,31 @@ def identify(
         len(accepted), attempted, 100 * rate,
     )
     if not accepted:
+        identify.last_diagnostics = {
+            "attempted": attempted, "accepted": 0, "acceptance_rate": rate,
+            "ess": 0.0,
+            "warnings": weak_inference_warnings(0, 0.0, attempted),
+        }
         return []
     lw = np.asarray(log_ws)
     w = np.exp(lw - lw.max())
     w *= len(w) / w.sum()  # normalize to mean 1
+    ess_value = ess(w)
+    identify.last_diagnostics = {
+        "attempted": attempted,
+        "accepted": len(accepted),
+        "acceptance_rate": rate,
+        "ess": ess_value,
+        "warnings": weak_inference_warnings(len(accepted), ess_value,
+                                            attempted),
+    }
+    for msg in identify.last_diagnostics["warnings"]:
+        logging.getLogger(__name__).warning("identify: %s", msg)
     return [(draw, B, float(wi)) for (draw, B), wi in zip(accepted, w)]
 
 
 identify.last_acceptance_rate = None
+identify.last_diagnostics = None
 
 
 def structural_shocks(B: np.ndarray, residuals: np.ndarray) -> np.ndarray:

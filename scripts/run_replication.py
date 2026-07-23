@@ -72,6 +72,10 @@ def main() -> None:
     ap.add_argument("--accepted", type=int, default=200)
     ap.add_argument("--lags", type=int, default=4)
     ap.add_argument("--horizons", type=int, default=21)
+    ap.add_argument("--est-start", default="1992Q1",
+                    help="first quarter of the estimation sample")
+    ap.add_argument("--est-end", default="2025Q1",
+                    help="last quarter of the estimation sample")
     ap.add_argument("--optimize-hyper", action="store_true",
                     help="select (lam, mu, theta) by maximizing the "
                          "closed-form log marginal likelihood")
@@ -81,10 +85,14 @@ def main() -> None:
 
     os.makedirs(RESULTS, exist_ok=True)
 
-    # 1. Data (estimation sample 1992Q1-2025Q1)
+    # 1. Data (estimation sample --est-start..--est-end)
     df = load_data()
-    df = df.loc[(df.index >= pd.Period("1992Q1", "Q"))
-                & (df.index <= pd.Period("2025Q1", "Q"))]
+    df = df.loc[(df.index >= pd.Period(args.est_start, "Q"))
+                & (df.index <= pd.Period(args.est_end, "Q"))]
+    if df.empty:
+        raise SystemExit(
+            f"no data in {args.est_start}..{args.est_end}; check --est-start/"
+            "--est-end against the loaded data range")
     y = df.to_numpy(dtype=float)
     dummies = covid_dummies(df.index)
     k = y.shape[1]
@@ -130,6 +138,14 @@ def main() -> None:
     accept_rate = len(pairs) / len(draws) if len(draws) else float("nan")
     print(f"Accepted {len(pairs)} of {len(draws)} posterior draws "
           f"({100 * accept_rate:.1f}%); importance-weight ESS = {ess:.1f}.")
+    try:
+        from boe_var.identification import weak_inference_warnings
+        inference_warnings = weak_inference_warnings(len(pairs), ess,
+                                                     len(draws))
+    except ImportError:
+        inference_warnings = []
+    for msg in inference_warnings:
+        print(f"WARNING: {msg}")
 
     resid_cache = {}
 
@@ -200,6 +216,7 @@ def main() -> None:
         + (" — WARNING: ESS is below 10% of accepted draws; "
            "weighted results may be unreliable."
            if ess < 0.1 * len(pairs) else "."),
+        *[f"- **WARNING**: {msg}" for msg in inference_warnings],
         f"- Sample: {df.index[0]}–{df.index[-1]} ({len(df)} quarters).",
         f"- Hyperparameters: lam = {hyper['lam']:.4f}, mu = {hyper['mu']:.4f}, "
         f"theta = {hyper['theta']:.4f}.",

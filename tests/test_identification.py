@@ -265,3 +265,40 @@ def test_structural_shocks_roundtrip(rng):
     eps = rng.standard_normal((30, K))
     u = eps @ B.T
     assert np.allclose(structural_shocks(B, u), eps, atol=1e-8)
+
+
+def test_identify_diagnostics_and_weak_inference_warnings(rng):
+    from boe_var.bvar import PosteriorDraw
+    from boe_var.identification import (
+        ess, identify, weak_inference_warnings)
+
+    # Diagnostics attached after a run (tiny run -> warnings expected).
+    k = len(ident.VARIABLES)
+    draws = []
+    rng2 = np.random.default_rng(0)
+    for _ in range(30):
+        A = rng2.standard_normal((k, k + 4))
+        Sigma = A @ A.T / (k + 4)
+        draws.append(PosteriorDraw(Pi=np.zeros((k, k + 1)), Sigma=Sigma,
+                                   lags=1, k=k))
+    triples = identify(draws, rng=rng, compute_weights=False)
+    diag = identify.last_diagnostics
+    assert diag["attempted"] == 30
+    assert diag["accepted"] == len(triples)
+    if triples:
+        w = np.array([t[2] for t in triples])
+        assert diag["ess"] == pytest.approx(ess(w))
+    assert isinstance(diag["warnings"], list)
+    # 30 attempts can never satisfy the >=100 thresholds.
+    assert diag["warnings"]
+
+    # Threshold behavior of the helper itself.
+    assert weak_inference_warnings(500, 500.0, 1000) == []
+    msgs = weak_inference_warnings(24, 7.4, 300)
+    assert len(msgs) == 2
+    assert any("24 accepted" in m for m in msgs)
+    assert any("ESS = 7.4" in m for m in msgs)
+    assert all("draws >=" in m for m in msgs)
+    # ESS-only warning.
+    msgs = weak_inference_warnings(150, 40.0, 1000)
+    assert len(msgs) == 1 and "ESS" in msgs[0]
