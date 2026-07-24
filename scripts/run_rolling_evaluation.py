@@ -48,15 +48,50 @@ def main() -> None:
         row["random_walk_rmse_by_variable"] = dict(
             zip(COLUMNS, row.pop("random_walk_rmse"))
         )
+        for key in ("drift_rmse", "ar1_rmse", "relative_rmse_vs_drift",
+                    "relative_rmse_vs_ar1", "dm_stat_vs_drift",
+                    "dm_pvalue_vs_drift", "dm_stat_vs_ar1", "dm_pvalue_vs_ar1"):
+            row[f"{key}_by_variable"] = dict(zip(COLUMNS, row.pop(key)))
+        row["worst_origin_mse_share"] = {
+            bench: dict(zip(COLUMNS, vals))
+            for bench, vals in row["worst_origin_mse_share"].items()
+        }
         row["dm_stat_by_variable"] = dict(zip(COLUMNS, row.pop("dm_stat")))
         row["dm_pvalue_by_variable"] = dict(zip(COLUMNS, row.pop("dm_pvalue")))
         # Per-origin errors keyed by variable, so downstream consumers do not
         # have to know the column order.
-        for key in ("bvar_errors_by_origin", "random_walk_errors_by_origin"):
+        for key in ("bvar_errors_by_origin", "random_walk_errors_by_origin",
+                    "drift_errors_by_origin", "ar1_errors_by_origin",
+                    "actuals_by_origin", "bvar_point_by_origin"):
             rows_by_origin = row.pop(key)
             row[key] = {
                 col: [r[j] for r in rows_by_origin] for j, col in enumerate(COLUMNS)
             }
+    # Episode split. Under squared loss a single -22 log-point observation
+    # (2020Q2) can dominate a 49-origin average, so report the ratios with the
+    # Covid target quarters excluded alongside the headline. This is a
+    # decomposition, not a preferred number: both are published.
+    covid_lo, covid_hi = pd.Period("2020Q1", "Q"), pd.Period("2021Q2", "Q")
+    report["episode_split"] = {
+        "excluded_range": "2020Q1-2021Q2",
+        "note": "Ratios recomputed with target quarters in the excluded range "
+                "dropped. Reported alongside, never instead of, the full sample.",
+    }
+    for h_idx, row in enumerate(report["horizons"], start=1):
+        targets = [df.index[o + h_idx] for o in report["origin_index"]]
+        keep = np.array([not (covid_lo <= t <= covid_hi) for t in targets])
+        row["n_origins_ex_covid"] = int(keep.sum())
+        for label, bench_key in (("", "random_walk_errors_by_origin"),
+                                 ("_vs_drift", "drift_errors_by_origin"),
+                                 ("_vs_ar1", "ar1_errors_by_origin")):
+            out = {}
+            for col in COLUMNS:
+                m = np.asarray(row["bvar_errors_by_origin"][col])[keep]
+                b = np.asarray(row[bench_key][col])[keep]
+                br = np.sqrt(np.mean(b ** 2))
+                out[col] = float(np.sqrt(np.mean(m ** 2)) / br) if br > 0 else None
+            row[f"relative_rmse{label}_ex_covid_by_variable"] = out
+
     report["finite"] = bool(all(
         np.isfinite(list(row["relative_rmse_by_variable"].values())).all()
         for row in report["horizons"]
