@@ -53,7 +53,7 @@ def _diebold_mariano(
     stat = stat * adj
     stat = np.where(np.isfinite(stat), stat, np.nan)
 
-    from math import lgamma, log, pi, sqrt
+    from math import exp, lgamma, log
 
     def _t_sf(t: float, df: int) -> float:
         """Two-sided t tail probability via the regularized incomplete beta."""
@@ -104,8 +104,6 @@ def _diebold_mariano(
         return float(min(max(ib, 0.0), 1.0))
 
     def exp_safe(v):
-        from math import exp
-
         return exp(v) if v > -700 else 0.0
 
     df = max(n - 1, 1)
