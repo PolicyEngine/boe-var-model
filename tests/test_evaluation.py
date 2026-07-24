@@ -71,3 +71,51 @@ def test_diebold_mariano_does_not_reject_when_accuracy_is_equal():
         if p[0] < 0.05:
             rejects += 1
     assert rejects <= 6, f"rejected {rejects}/40 under the null; test is miscalibrated"
+
+
+def test_ar1_cannot_diverge_from_the_drift_path():
+    """The AR(1) benchmark must nest drift, not explode.
+
+    Fitted with an intercept, the long-run per-step increment is c/(1-phi),
+    which detonates as phi approaches 1 -- on the real data that produced a
+    single -203 log-point path and made the model look 4x better than the
+    benchmark. Mean-deviation form pins the long-run increment to the sample
+    mean change, so the two paths must stay close even after a large shock.
+    """
+    import numpy as np
+    from boe_var.evaluation import _ar1_forecast, _drift_forecast
+
+    rng = np.random.default_rng(0)
+    y = np.cumsum(rng.normal(0.1, 1.0, 80))[:, None]
+    y[60] -= 25.0  # a Covid-sized collapse in the training tail
+
+    gap = np.abs(_ar1_forecast(y, 8) - _drift_forecast(y, 8)).max()
+    assert gap < 5.0, f"AR(1) ran {gap:.1f} away from the drift path"
+
+
+def test_benchmarks_reproduce_a_pure_linear_trend():
+    """Both naive benchmarks must be exact on a deterministic trend; if they
+    are not, any ratio computed against them is measuring the benchmark."""
+    import numpy as np
+    from boe_var.evaluation import _ar1_forecast, _drift_forecast
+
+    train = np.arange(40, dtype=float)[:, None] * 0.5 + 3.0
+    target = np.arange(40, 44, dtype=float)[:, None] * 0.5 + 3.0
+    for fn in (_drift_forecast, _ar1_forecast):
+        np.testing.assert_allclose(fn(train, 4), target, atol=1e-9)
+
+
+def test_worst_origin_mse_share_detects_a_single_dominating_origin():
+    """The guard against publishing a ratio that is one observation."""
+    import numpy as np
+    from boe_var.evaluation import rolling_origin_evaluation
+
+    rng = np.random.default_rng(3)
+    y = np.cumsum(rng.normal(0, 1, (90, 2)), axis=0)
+    rep = rolling_origin_evaluation(y, lags=2, horizons=2, first_origin=60)
+    shares = rep["horizons"][0]["worst_origin_mse_share"]
+    assert set(shares) == {"bvar", "random_walk", "drift", "ar1"}
+    for vals in shares.values():
+        assert all(0.0 <= v <= 1.0 for v in vals)
+    # On well-behaved noise no single origin should dominate.
+    assert max(shares["random_walk"]) < 0.5

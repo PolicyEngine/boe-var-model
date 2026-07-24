@@ -111,6 +111,53 @@ def _diebold_mariano(
     return stat, pval
 
 
+def _drift_forecast(train: np.ndarray, horizons: int) -> np.ndarray:
+    """Random walk WITH DRIFT: y_T + h * mean historical change.
+
+    For a trending series (a log price level, log real GDP) the driftless
+    random walk forfeits the whole trend as forecast error at long horizons,
+    so beating it is close to uninformative. This is the textbook naive for
+    an I(1)-with-drift series and is the harder, fairer benchmark.
+    """
+    n = train.shape[0]
+    drift = (train[-1] - train[0]) / max(n - 1, 1)
+    steps = np.arange(1, horizons + 1)[:, None]
+    return train[-1][None, :] + drift[None, :] * steps
+
+
+def _ar1_forecast(train: np.ndarray, horizons: int) -> np.ndarray:
+    """Per-variable AR(1) in first differences, cumulated back to levels.
+
+    Fitted equation by equation with an intercept; the intercept means this
+    nests the drift benchmark, so it is a strictly stronger naive. Falls back
+    to the drift path for any series with too little history or a degenerate
+    regressor.
+    """
+    d = np.diff(train, axis=0)
+    if d.shape[0] < 3:
+        return _drift_forecast(train, horizons)
+    out = np.empty((horizons, train.shape[1]))
+    for j in range(train.shape[1]):
+        dj = d[:, j]
+        mu = float(dj.mean())
+        # Mean-deviation form: (dy_t - mu) = phi (dy_{t-1} - mu). Fitting an
+        # intercept instead makes the long-run per-step increment c/(1-phi),
+        # which explodes as phi approaches 1 -- on this data that produced a
+        # single -203 log-point 8-step path and a benchmark the model "beat"
+        # 4:1 purely because the benchmark had detonated. Here the long-run
+        # increment is mu by construction, so AR(1) nests the drift benchmark
+        # and cannot diverge from it.
+        xc, yc = dj[:-1] - mu, dj[1:] - mu
+        denom = float(xc @ xc)
+        phi = float(np.clip(xc @ yc / denom, -0.95, 0.95)) if denom > 0 else 0.0
+        dev, level = float(dj[-1]) - mu, float(train[-1, j])
+        for h in range(horizons):
+            dev *= phi
+            level += mu + dev
+            out[h, j] = level
+    return out
+
+
 def rolling_origin_evaluation(
     y: np.ndarray,
     *,
@@ -148,6 +195,10 @@ def rolling_origin_evaluation(
     kwargs = dict(bvar_kwargs or {})
     model_errors = [[] for _ in range(horizons)]
     rw_errors = [[] for _ in range(horizons)]
+    drift_errors = [[] for _ in range(horizons)]
+    ar1_errors = [[] for _ in range(horizons)]
+    actuals = [[] for _ in range(horizons)]
+    points = [[] for _ in range(horizons)]
     origins = list(range(first_origin, last_origin + 1))
     for origin in origins:
         train = y[: origin + 1]
@@ -160,9 +211,15 @@ def rolling_origin_evaluation(
         forecast = unconditional_forecast(draw, train, horizons=horizons)
         actual = y[origin + 1 : origin + horizons + 1]
         random_walk = np.repeat(train[-1][None, :], horizons, axis=0)
+        drift = _drift_forecast(train, horizons)
+        ar1 = _ar1_forecast(train, horizons)
         for h in range(horizons):
             model_errors[h].append(forecast[h] - actual[h])
             rw_errors[h].append(random_walk[h] - actual[h])
+            drift_errors[h].append(drift[h] - actual[h])
+            ar1_errors[h].append(ar1[h] - actual[h])
+            actuals[h].append(actual[h])
+            points[h].append(forecast[h])
 
     rows = []
     for h in range(horizons):
@@ -176,7 +233,32 @@ def rolling_origin_evaluation(
         )
         me = np.asarray(model_errors[h])
         re_ = np.asarray(rw_errors[h])
+        de = np.asarray(drift_errors[h])
+        ae = np.asarray(ar1_errors[h])
         dm_stat, dm_p = _diebold_mariano(me, re_, h + 1)
+        dm_stat_drift, dm_p_drift = _diebold_mariano(me, de, h + 1)
+        dm_stat_ar1, dm_p_ar1 = _diebold_mariano(me, ae, h + 1)
+        drift_rmse = _rmse(de)
+        ar1_rmse = _rmse(ae)
+
+        def _mse_share(err):
+            """Fraction of a benchmark's MSE contributed by its single worst
+            origin. An AR(1) extrapolating the 2020Q2 collapse puts ~95% of
+            its 8-step MSE in one origin, which makes the resulting ratio
+            arithmetically correct and evidentially worthless. Emitted so no
+            consumer can plot such a ratio without seeing that."""
+            sq = np.square(err)
+            tot = sq.sum(axis=0)
+            return np.divide(
+                sq.max(axis=0), tot,
+                out=np.full(err.shape[1], np.nan), where=tot > 0,
+            )
+
+        def _ratio(bench):
+            return np.divide(
+                model_rmse, bench,
+                out=np.full_like(model_rmse, np.nan), where=bench > 0,
+            )
         rows.append({
             "horizon": h + 1,
             "bvar_rmse": model_rmse.tolist(),
@@ -194,6 +276,30 @@ def rolling_origin_evaluation(
             # re-running the whole evaluation.
             "bvar_errors_by_origin": me.tolist(),
             "random_walk_errors_by_origin": re_.tolist(),
+            # Harder naive benchmarks. A driftless random walk on a trending
+            # log level forfeits the trend by construction, so a low ratio
+            # against it is close to uninformative for price and output
+            # levels; the drift and AR(1) paths are the fair comparison.
+            "drift_rmse": drift_rmse.tolist(),
+            "ar1_rmse": ar1_rmse.tolist(),
+            "relative_rmse_vs_drift": _ratio(drift_rmse).tolist(),
+            "relative_rmse_vs_ar1": _ratio(ar1_rmse).tolist(),
+            "dm_stat_vs_drift": [None if not np.isfinite(v) else float(v) for v in dm_stat_drift],
+            "dm_pvalue_vs_drift": [None if not np.isfinite(v) else float(v) for v in dm_p_drift],
+            "dm_stat_vs_ar1": [None if not np.isfinite(v) else float(v) for v in dm_stat_ar1],
+            "dm_pvalue_vs_ar1": [None if not np.isfinite(v) else float(v) for v in dm_p_ar1],
+            "worst_origin_mse_share": {
+                "bvar": _mse_share(me).tolist(),
+                "random_walk": _mse_share(re_).tolist(),
+                "drift": _mse_share(de).tolist(),
+                "ar1": _mse_share(ae).tolist(),
+            },
+            "drift_errors_by_origin": de.tolist(),
+            "ar1_errors_by_origin": ae.tolist(),
+            # Actuals and point forecasts, so Mincer-Zarnowitz regressions,
+            # MASE and episode splits are computable from this file alone.
+            "actuals_by_origin": np.asarray(actuals[h]).tolist(),
+            "bvar_point_by_origin": np.asarray(points[h]).tolist(),
         })
 
     return {
