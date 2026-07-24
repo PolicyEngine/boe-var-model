@@ -34,3 +34,40 @@ def test_rolling_evaluation_validates_dummy_alignment():
     y = _stationary_ar(T=60)
     with pytest.raises(ValueError, match="same rows"):
         rolling_origin_evaluation(y, lags=1, dummies=np.zeros((59, 2)))
+
+
+def test_diebold_mariano_signs_and_symmetry():
+    """Negative statistic must favour the model, and swapping the two error
+    series must flip the sign while leaving the p-value unchanged."""
+    import numpy as np
+    from boe_var.evaluation import _diebold_mariano
+
+    rng = np.random.default_rng(0)
+    good = rng.normal(scale=0.2, size=(49, 3))
+    bad = rng.normal(scale=1.0, size=(49, 3))
+
+    stat_a, p_a = _diebold_mariano(good, bad, 1)
+    stat_b, p_b = _diebold_mariano(bad, good, 1)
+
+    assert (stat_a < 0).all(), "model with smaller errors must give a negative stat"
+    assert (stat_b > 0).all()
+    np.testing.assert_allclose(stat_a, -stat_b, rtol=1e-12)
+    np.testing.assert_allclose(p_a, p_b, rtol=1e-12)
+    assert (p_a < 0.01).all(), "a 5x accuracy gap over 49 origins must register"
+
+
+def test_diebold_mariano_does_not_reject_when_accuracy_is_equal():
+    """Two independent draws from the same distribution must not look
+    significantly different -- the guard against a test that always fires."""
+    import numpy as np
+    from boe_var.evaluation import _diebold_mariano
+
+    rng = np.random.default_rng(7)
+    rejects = 0
+    for _ in range(40):
+        a = rng.normal(size=(49, 1))
+        b = rng.normal(size=(49, 1))
+        _, p = _diebold_mariano(a, b, 1)
+        if p[0] < 0.05:
+            rejects += 1
+    assert rejects <= 6, f"rejected {rejects}/40 under the null; test is miscalibrated"

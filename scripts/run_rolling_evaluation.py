@@ -48,6 +48,15 @@ def main() -> None:
         row["random_walk_rmse_by_variable"] = dict(
             zip(COLUMNS, row.pop("random_walk_rmse"))
         )
+        row["dm_stat_by_variable"] = dict(zip(COLUMNS, row.pop("dm_stat")))
+        row["dm_pvalue_by_variable"] = dict(zip(COLUMNS, row.pop("dm_pvalue")))
+        # Per-origin errors keyed by variable, so downstream consumers do not
+        # have to know the column order.
+        for key in ("bvar_errors_by_origin", "random_walk_errors_by_origin"):
+            rows_by_origin = row.pop(key)
+            row[key] = {
+                col: [r[j] for r in rows_by_origin] for j, col in enumerate(COLUMNS)
+            }
     report["finite"] = bool(all(
         np.isfinite(list(row["relative_rmse_by_variable"].values())).all()
         for row in report["horizons"]
