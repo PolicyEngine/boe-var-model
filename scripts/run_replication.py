@@ -25,7 +25,7 @@ from boe_var.analysis import (
 from boe_var.bvar import BVAR
 from boe_var.data import load_data
 from boe_var.identification import (
-    SIGN_RESTRICTIONS, ZERO_RESTRICTIONS, identify,
+    identify,
 )
 
 RESULTS = os.path.join(os.path.dirname(__file__), "..", "results")
@@ -95,7 +95,6 @@ def main() -> None:
             "--est-end against the loaded data range")
     y = df.to_numpy(dtype=float)
     dummies = covid_dummies(df.index)
-    k = y.shape[1]
 
     # 2. Estimate and 3. identify
     hyper = {"lam": 0.2, "mu": 1.0, "theta": 1.0}
