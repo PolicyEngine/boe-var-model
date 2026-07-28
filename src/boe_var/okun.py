@@ -40,6 +40,16 @@ _MGSX_PATH = Path(__file__).parent / "_data" / "uk_unemployment_mgsx.csv"
 
 DEFAULT_SAMPLE = ("1992Q1", "2025Q1")
 
+# Furlough decoupled GDP from unemployment: 2020 saw ~-20% y/y GDP prints
+# with the unemployment rate nearly flat. Including these quarters
+# attenuates the Okun coefficient by ~3x (beta -0.047 -> -0.016 on the
+# default sample), so they are dummied out of the fit by default. This is
+# real-time feasible: at any origin from 2020Q1 on, the pandemic quarters
+# already observed are known to be pandemic quarters.
+COVID_QUARTERS = frozenset(
+    {"2020Q1", "2020Q2", "2020Q3", "2020Q4", "2021Q1", "2021Q2"}
+)
+
 
 def load_unemployment(path: Path = _MGSX_PATH) -> tuple[list[str], np.ndarray]:
     """Return (quarters, rates) for the packaged ONS MGSX series."""
@@ -100,12 +110,17 @@ def fit_okun(g: np.ndarray, du: np.ndarray, du_lag: np.ndarray,
 
 def align_okun_inputs(u_quarters: list[str], u: np.ndarray,
                       g_quarters: list[str], g: np.ndarray,
-                      start: str, end: str):
-    """Align du_t, g_t, du_{t-1} over [start, end] (inclusive, quarters)."""
+                      start: str, end: str,
+                      exclude: frozenset[str] = COVID_QUARTERS):
+    """Align du_t, g_t, du_{t-1} over [start, end] (inclusive, quarters).
+
+    Quarters in ``exclude`` are dropped from the fit sample (see
+    COVID_QUARTERS). Pass ``frozenset()`` to keep everything.
+    """
     u_index = {q: i for i, q in enumerate(u_quarters)}
     rows = []
     for j, q in enumerate(g_quarters):
-        if not (start <= q <= end):
+        if not (start <= q <= end) or q in exclude:
             continue
         i = u_index.get(q)
         if i is None or i < 2:
@@ -119,10 +134,12 @@ def align_okun_inputs(u_quarters: list[str], u: np.ndarray,
 
 def fit_default(g_quarters: list[str], g_yoy: np.ndarray,
                 start: str = DEFAULT_SAMPLE[0],
-                end: str = DEFAULT_SAMPLE[1]) -> OkunFit:
+                end: str = DEFAULT_SAMPLE[1],
+                exclude: frozenset[str] = COVID_QUARTERS) -> OkunFit:
     """Fit on the packaged MGSX series against a supplied GDP growth series."""
     uq, u = load_unemployment()
-    g_a, du, du_lag = align_okun_inputs(uq, u, g_quarters, g_yoy, start, end)
+    g_a, du, du_lag = align_okun_inputs(uq, u, g_quarters, g_yoy, start, end,
+                                        exclude=exclude)
     return fit_okun(g_a, du, du_lag, sample_label=(start, end))
 
 
@@ -136,8 +153,8 @@ def unemployment_bands(fit: OkunFit, gdp_bands: dict,
     """
     if fit.beta >= 0:
         raise ValueError("mapping assumes a negative Okun coefficient")
-    f = lambda path: fit.forecast(np.asarray(path, dtype=float),
-                                  u_last, du_last)
+    def f(path):
+        return fit.forecast(np.asarray(path, dtype=float), u_last, du_last)
     return {
         "median": f(gdp_bands["median"]),
         "lo68": f(gdp_bands["hi68"]),

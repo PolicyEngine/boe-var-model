@@ -180,13 +180,15 @@ def main() -> None:
         ax.set_xlabel(f"quarters after {T_q}")
 
         ax = axes[1][col]
-        pos = np.zeros(Hc); neg = np.zeros(Hc)
+        pos = np.zeros(Hc)
+        neg = np.zeros(Hc)
         for j in range(len(SHOCK_NAMES)):
             s = decomp_med[:, col, j]
             base = np.where(s >= 0, pos, neg)
             ax.bar(x, s, bottom=base, width=0.8, color=cmap(j),
                    label=SHOCK_NAMES[j] if col == 0 else None)
-            pos += np.clip(s, 0, None); neg += np.clip(s, None, 0)
+            pos += np.clip(s, 0, None)
+            neg += np.clip(s, None, 0)
         ax.plot(x, decomp_med[:, col, :].sum(axis=1), color="k", lw=1.2,
                 label="Total (median decomp.)" if col == 0 else None)
         ax.axhline(0, color="k", lw=0.6)
@@ -231,7 +233,6 @@ def main() -> None:
 
     hist_n = 24
     yoy_hist = forecast.yoy(y_full)[-hist_n:]                      # through T
-    idx_hist = df_full.index[-hist_n:]
     t_hist = np.arange(-hist_n + 1, 1)                             # 0 = T
     t_fc = np.arange(1, H + 1)
     t_m1 = np.arange(0, H + 1)
