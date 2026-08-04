@@ -2,12 +2,40 @@
 
 from __future__ import annotations
 
+import hashlib
+from pathlib import Path
+
 import numpy as np
 
 from .bvar import BVAR, PosteriorDraw
 from .forecast import unconditional_forecast
 
-__all__ = ["rolling_origin_evaluation"]
+__all__ = ["evaluation_code_version", "rolling_origin_evaluation"]
+
+# Source files whose behaviour the committed evaluation artifacts depend on.
+# ``evaluation_code_version`` hashes these (plus any caller-supplied extras,
+# e.g. the runner script) so a change to evaluation code without regenerating
+# the committed JSONs is caught by the staleness test.
+_CODE_VERSION_FILES = ("bvar.py", "data.py", "evaluation.py", "forecast.py")
+
+
+def evaluation_code_version(extra_paths: tuple | list = ()) -> str:
+    """SHA-256 over the evaluation-relevant sources, stable across machines.
+
+    ``extra_paths`` lets a runner script include itself in the hash. Files
+    are read as bytes in a fixed order, each prefixed with its basename, so
+    renames and reorderings change the digest too.
+    """
+    here = Path(__file__).resolve().parent
+    paths = [here / name for name in _CODE_VERSION_FILES]
+    paths += [Path(p).resolve() for p in extra_paths]
+    digest = hashlib.sha256()
+    for path in paths:
+        digest.update(path.name.encode())
+        digest.update(b"\0")
+        digest.update(path.read_bytes())
+        digest.update(b"\0")
+    return digest.hexdigest()
 
 
 def _rmse(errors: np.ndarray) -> np.ndarray:

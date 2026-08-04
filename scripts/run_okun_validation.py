@@ -42,6 +42,7 @@ from boe_var.evaluation import (  # noqa: E402
     _diebold_mariano,
     _drift_forecast,
     _rmse,
+    evaluation_code_version,
 )
 from boe_var.forecast import unconditional_forecast, yoy  # noqa: E402
 
@@ -153,6 +154,12 @@ def main() -> None:
         },
         "all_targets": score(mask_covid=False),
         "ex_covid_targets": score(mask_covid=True),
+        # Staleness guard: hash of the evaluation-relevant sources plus the
+        # Okun module and this script. tests/test_committed_artifacts.py
+        # fails if the code changes without this artifact being regenerated.
+        "code_version": evaluation_code_version(
+            extra_paths=[okun.__file__, __file__]
+        ),
     }
 
     out = results_path("okun_validation.json")

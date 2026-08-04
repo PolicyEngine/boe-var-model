@@ -41,6 +41,13 @@ jobs:
       # Excludes only `slow` (the weighted high-draw *magnitude* benchmark,
       # re-run nightly in slow-validation) and `calibration` (Monte-Carlo
       # magnitudes that are genuinely uncertain -- report-only, nightly only).
+      # Also gates the committed real-data evaluation artifacts
+      # (tests/test_committed_artifacts.py): headline numbers the site quotes,
+      # a reduced-scale regeneration smoke on the packaged data, and a
+      # code-hash staleness check that reds the build if evaluation code
+      # changes without regenerating results/*.json (each runner takes
+      # seconds -- re-run it and commit). Cheap enough (~3 s) to sit in this
+      # per-PR hard gate rather than the nightly job.
       - name: Fast structural + stress tests
         run: uv run pytest -q -m "not calibration and not slow"
 
