@@ -21426,5 +21426,6 @@
     "excluded_range": "2020Q1-2021Q2",
     "note": "Ratios recomputed with target quarters in the excluded range dropped. Reported alongside, never instead of, the full sample."
   },
+  "code_version": "bd319cb15beab23729a4c1037a90eda1b68bb11c34713c41b4b406e7582f3a3d",
   "finite": true
 }

@@ -9,7 +9,7 @@ from pathlib import Path
 import numpy as np
 
 from boe_var.data import COLUMNS, load_data
-from boe_var.evaluation import rolling_origin_evaluation
+from boe_var.evaluation import evaluation_code_version, rolling_origin_evaluation
 
 
 def main() -> None:
@@ -91,6 +91,11 @@ def main() -> None:
                 br = np.sqrt(np.mean(b ** 2))
                 out[col] = float(np.sqrt(np.mean(m ** 2)) / br) if br > 0 else None
             row[f"relative_rmse{label}_ex_covid_by_variable"] = out
+
+    # Staleness guard: hash of the evaluation-relevant sources (plus this
+    # script). tests/test_committed_artifacts.py fails if the code changes
+    # without this artifact being regenerated.
+    report["code_version"] = evaluation_code_version(extra_paths=[__file__])
 
     report["finite"] = bool(all(
         np.isfinite(list(row["relative_rmse_by_variable"].values())).all()
