@@ -1,15 +1,17 @@
 #!/usr/bin/env python3
-"""Rolling-origin pseudo-out-of-sample validation of the Okun satellite.
+"""Rolling-origin pseudo-out-of-sample validation of the unemployment satellite.
 
 Design:
 
 * Expanding-window origins over 2005Q1-2023Q1 (8-quarter final horizon,
-  73 origins). At each origin the Okun equation is re-fit on data from
+  73 origins). At each origin the satellite equation (an
+  estimated GDP-growth-to-unemployment mapping: du on growth and lagged
+  du, OLS, furlough quarters dummied out) is re-fit on data from
   1992Q1 through the origin only (COVID quarters dummied out per
-  okun.COVID_QUARTERS) -- no future information enters the fit.
+  satellite.COVID_QUARTERS) -- no future information enters the fit.
 * Three GDP inputs:
     - ``realised``: actual future GDP growth. Conditional upper bound --
-      "if the GDP forecast were perfect, does Okun add information?"
+      "if the GDP forecast were perfect, does the satellite add information?"
     - ``frozen``: GDP growth held at its origin value. Naive input floor.
     - ``svar``: the BVAR re-fit through the origin (posterior-mean,
       unconditional forecast), GDP levels converted to y/y growth. The
@@ -17,12 +19,12 @@ Design:
 * Scoring both over all target quarters and excluding COVID targets
   (2020Q1-2021Q2): furlough decoupled unemployment from GDP, so no
   GDP-based mapping can be expected to fit those quarters, and including
-  them rewards an attenuated (wrong) Okun coefficient.
+  them rewards an attenuated (wrong) growth coefficient.
 * Baselines forecast the unemployment rate directly: random walk, drift,
   and the mean-deviation AR(1) from evaluation.py. Diebold-Mariano tests
   vs the random walk (HLN-corrected).
 
-Writes ``okun_validation.json`` to the results directory.
+Writes ``unemployment_satellite_validation.json`` to the results directory.
 """
 from __future__ import annotations
 
@@ -34,7 +36,7 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from boe_var import okun  # noqa: E402
+from boe_var import unemployment_satellite as satellite  # noqa: E402
 from boe_var.bvar import BVAR, PosteriorDraw  # noqa: E402
 from boe_var.data import load_data, results_path  # noqa: E402
 from boe_var.evaluation import (  # noqa: E402
@@ -71,7 +73,7 @@ def main() -> None:
     g_quarters = quarters[4:]
     gq_index = {q: j for j, q in enumerate(g_quarters)}
 
-    uq, u = okun.load_unemployment()
+    uq, u = satellite.load_unemployment()
     u_index = {q: i for i, q in enumerate(uq)}
 
     keys = MODELS + BASELINES
@@ -88,7 +90,7 @@ def main() -> None:
         if i0 is None or i0 + HORIZONS >= len(u) or t0 + HORIZONS >= len(Y):
             continue
 
-        fit = okun.fit_default(g_quarters[: j0 + 1], g[: j0 + 1],
+        fit = satellite.fit_default(g_quarters[: j0 + 1], g[: j0 + 1],
                                start="1992Q1", end=origin)
         u_last, du_last = u[i0], u[i0] - u[i0 - 1]
 
@@ -120,7 +122,7 @@ def main() -> None:
             for kk in BASELINES:
                 err[kk][h].append(base[kk][h] - actual[h])
             target_is_covid[h].append(
-                _qadd(origin, h + 1) in okun.COVID_QUARTERS)
+                _qadd(origin, h + 1) in satellite.COVID_QUARTERS)
         used += 1
 
     def score(mask_covid: bool) -> list[dict]:
@@ -145,24 +147,24 @@ def main() -> None:
             "first_origin": FIRST_ORIGIN, "last_origin": LAST_ORIGIN,
             "origins_used": used, "horizons": HORIZONS,
             "fit_sample_start": "1992Q1",
-            "covid_quarters_dummied": sorted(okun.COVID_QUARTERS),
+            "covid_quarters_dummied": sorted(satellite.COVID_QUARTERS),
             "gdp_inputs": list(MODELS),
             "note": "svar = posterior-mean BVAR re-fit per origin "
                     "(end-to-end). Bands in production carry GDP "
-                    "uncertainty only; Okun residual uncertainty is not "
-                    "sampled.",
+                    "uncertainty only; satellite residual uncertainty is "
+                    "not sampled.",
         },
         "all_targets": score(mask_covid=False),
         "ex_covid_targets": score(mask_covid=True),
         # Staleness guard: hash of the evaluation-relevant sources plus the
-        # Okun module and this script. tests/test_committed_artifacts.py
+        # satellite module and this script. tests/test_committed_artifacts.py
         # fails if the code changes without this artifact being regenerated.
         "code_version": evaluation_code_version(
-            extra_paths=[okun.__file__, __file__]
+            extra_paths=[satellite.__file__, __file__]
         ),
     }
 
-    out = results_path("okun_validation.json")
+    out = results_path("unemployment_satellite_validation.json")
     out.write_text(json.dumps(results, indent=2))
     print(f"wrote {out} ({used} origins)")
     for label in ("all_targets", "ex_covid_targets"):
