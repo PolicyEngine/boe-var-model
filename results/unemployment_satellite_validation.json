@@ -18,7 +18,7 @@
       "frozen",
       "svar"
     ],
-    "note": "svar = posterior-mean BVAR re-fit per origin (end-to-end). Bands in production carry GDP uncertainty only; Okun residual uncertainty is not sampled."
+    "note": "svar = posterior-mean BVAR re-fit per origin (end-to-end). Bands in production carry GDP uncertainty only; satellite residual uncertainty is not sampled."
   },
   "all_targets": [
     {
@@ -520,5 +520,5 @@
       }
     }
   ],
-  "code_version": "9be70c3007f6182505305aef6f0c2dccee18c3aab64ae7967911e7ed633f0435"
+  "code_version": "6578b6ec2eb86399916708343de71b9b140145a788230313d649b48f9010bf89"
 }

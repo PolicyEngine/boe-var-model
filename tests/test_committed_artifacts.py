@@ -1,7 +1,7 @@
 """Gates on the committed real-data evaluation artifacts in ``results/``.
 
 The site quotes headline numbers from ``rolling_evaluation.json``,
-``coverage_evaluation.json`` and ``okun_validation.json``. Replication is
+``coverage_evaluation.json`` and ``unemployment_satellite_validation.json``. Replication is
 CI-gated elsewhere, but these artifacts are committed JSONs -- without the
 tests below, a regression in evaluation code on real data (or a silent edit
 to the artifacts) would ship without any red build.
@@ -149,24 +149,26 @@ class TestCoverageEvaluationArtifact:
         assert np.mean(means) == pytest.approx(0.772, abs=0.02)
 
 
-class TestOkunValidationArtifact:
-    """results/okun_validation.json -- the unemployment satellite's skill.
+class TestSatelliteValidationArtifact:
+    """results/unemployment_satellite_validation.json -- the unemployment
+    satellite's skill.
 
     The site's claim: fed by the VAR's own GDP forecasts (``svar``), the
-    Okun regression beats no-change at horizons 1-4 (relative RMSE
+    satellite regression (du on growth and lagged du, OLS 1992Q1-2025Q1,
+    furlough quarters dummied out) beats no-change at horizons 1-4 (relative RMSE
     0.82-0.99, excluding furlough targets) and is clearly worse beyond,
     which is why the published path is capped at four quarters.
     """
 
     def test_design_matches_the_published_run(self):
-        design = _load("okun_validation.json")["design"]
+        design = _load("unemployment_satellite_validation.json")["design"]
         assert design["origins_used"] == 73
         assert design["horizons"] == 8
         assert design["first_origin"] == "2005Q1"
         assert design["last_origin"] == "2023Q1"
 
     def test_svar_beats_no_change_at_h1_to_4_ex_covid(self):
-        rows = _load("okun_validation.json")["ex_covid_targets"]
+        rows = _load("unemployment_satellite_validation.json")["ex_covid_targets"]
         ratios = {row["horizon"]: row["ratio_vs_rw"]["svar"] for row in rows}
         for h in (1, 2, 3, 4):
             assert 0.80 <= ratios[h] < 1.0, (
@@ -175,13 +177,13 @@ class TestOkunValidationArtifact:
 
     def test_svar_is_clearly_worse_beyond_h4_ex_covid(self):
         """The four-quarter cap on the published path rests on this."""
-        rows = _load("okun_validation.json")["ex_covid_targets"]
+        rows = _load("unemployment_satellite_validation.json")["ex_covid_targets"]
         for row in rows:
             if row["horizon"] >= 5:
                 assert row["ratio_vs_rw"]["svar"] > 1.0
 
     def test_all_rmse_values_are_finite_and_positive(self):
-        report = _load("okun_validation.json")
+        report = _load("unemployment_satellite_validation.json")
         for label in ("all_targets", "ex_covid_targets"):
             for row in report[label]:
                 for value in row["rmse"].values():
@@ -267,7 +269,7 @@ class TestArtifactStaleness:
 
         uv run python scripts/run_rolling_evaluation.py
         uv run python scripts/run_coverage_evaluation.py
-        uv run python scripts/run_okun_validation.py
+        uv run python scripts/run_satellite_validation.py
     """
 
     def test_rolling_evaluation_is_not_stale(self):
@@ -290,14 +292,15 @@ class TestArtifactStaleness:
             "was generated; re-run scripts/run_coverage_evaluation.py"
         )
 
-    def test_okun_validation_is_not_stale(self):
-        from boe_var import okun
+    def test_satellite_validation_is_not_stale(self):
+        from boe_var import unemployment_satellite as satellite
 
-        recorded = _load("okun_validation.json")["code_version"]
+        recorded = _load("unemployment_satellite_validation.json")["code_version"]
         current = evaluation_code_version(
-            extra_paths=[okun.__file__, SCRIPTS / "run_okun_validation.py"]
+            extra_paths=[satellite.__file__, SCRIPTS / "run_satellite_validation.py"]
         )
         assert recorded == current, (
-            "evaluation code changed since results/okun_validation.json "
-            "was generated; re-run scripts/run_okun_validation.py"
+            "evaluation code changed since "
+            "results/unemployment_satellite_validation.json was generated; "
+            "re-run scripts/run_satellite_validation.py"
         )
