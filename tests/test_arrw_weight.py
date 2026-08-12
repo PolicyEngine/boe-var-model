@@ -82,8 +82,12 @@ def _independent_log_weight(B_coef: np.ndarray, Sigma: np.ndarray,
     U, _ = np.linalg.qr(Dpsi)                    # orthonormal tangent basis
     Dgf = _num_jacobian(lambda v: _g_fh(v, K, m), x)
     DN = Dgf @ U
-    _, ld = np.linalg.slogdet(DN.T @ DN)
-    _, ldA0 = np.linalg.slogdet(A0)
+    # slogdet computes the raw determinant internally for the sign, which
+    # under/overflows on this well-conditioned but large Gram matrix and
+    # emits spurious warnings; the log-determinant it returns is correct.
+    with np.errstate(divide="ignore", over="ignore", invalid="ignore"):
+        _, ld = np.linalg.slogdet(DN.T @ DN)
+        _, ldA0 = np.linalg.slogdet(A0)
     return float(-(2 * K + m + 1) * ldA0 - 0.5 * ld)
 
 

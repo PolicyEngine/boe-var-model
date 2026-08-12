@@ -171,6 +171,40 @@ def test_log_marginal_likelihood_finite_and_sensitive_to_lam():
     assert len(set(np.round(vals, 6))) == 3  # lam actually matters
 
 
+def test_marginal_likelihood_rejects_non_finite_instead_of_returning_nan():
+    """A degenerate hyperparameter cell must raise, not return NaN.
+
+    ``np.linalg.slogdet`` signals a singular or overflowing determinant by
+    returning 0 / +-inf / NaN with a RuntimeWarning rather than raising, and
+    the old guard used ``min(...) <= 0``, which every NaN comparison silently
+    passes. A NaN log-likelihood then flowed into the hyperparameter search.
+    """
+    import warnings
+
+    y, *_ = simulate_var1(T=60, seed=3)
+    model = BVAR(y, lags=1, lam=0.2, theta=1.0)
+    # A singular residual scale matrix makes log|S| non-finite.
+    model.S_post = np.zeros_like(model.S_post)
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")       # no warning may escape either
+        with pytest.raises(np.linalg.LinAlgError):
+            model.log_marginal_likelihood()
+
+
+def test_optimize_hyperparameters_skips_non_finite_cells():
+    """The search must ignore, not select, hyperparameters whose marginal
+    likelihood cannot be evaluated."""
+    from boe_var.bvar import optimize_hyperparameters
+
+    y = simulate_var1(T=120, seed=5)[0]
+    out = optimize_hyperparameters(
+        y, lags=1, lam_grid=np.array([0.1, 0.5]),
+        mu_grid=np.array([1.0]), theta_grid=np.array([1.0]), refine=False,
+    )
+    assert np.isfinite(out["log_ml"])
+    assert out["lam"] in (0.1, 0.5)
+
+
 def simulate_near_rw(T=250, seed=0):
     """Random-walk-like VAR(1): coefficients match the Minnesota prior mean."""
     rng = np.random.default_rng(seed)

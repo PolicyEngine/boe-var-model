@@ -27,7 +27,10 @@ from boe_var.identification import (  # noqa: E402
 
 I_CPI, I_GDP = 5, 7          # rows of UK CPISA and UK real GDP in Table 2
 UNIDENT_SHOCKS = [3, 7]      # unidentified global (U1) and unidentified UK (U2)
-H_1YR = 4                    # 1-year horizon = index 4 (quarters after impact)
+# The paper's "~40% / ~50%" is stated "one year after the shocks", i.e. the
+# 4-quarter-ahead forecast-error variance. Column h of analysis.fevd is the
+# (h+1)-step-ahead variance, so that is index 3, not 4.
+H_1YR = analysis.fevd_horizon_index(4)
 
 
 # ---------------------------------------------------------------------------
@@ -142,20 +145,98 @@ def test_fevd_global_share_of_uk_gdp_and_cpi_in_paper_neighbourhood(identified):
 
 def test_fevd_headline_aggregates_equal_component_sums(identified):
     """Internal consistency claimed by summary.md: the headline global /
-    domestic / unidentified aggregates are exactly the sums of their detailed
-    per-shock components, and global + domestic + unidentified = 100%."""
+    domestic / unidentified aggregates are exactly the sums of the detailed
+    per-shock cells printed in the same file, and the three groups partition
+    all eight shocks.
+
+    The previous version of this test compared each aggregate with a literal
+    re-evaluation of its own defining expression, so it asserted ``x == x``
+    and could not fail. It now rebuilds the detailed table the way
+    run_replication.py prints it and adds the cells back up.
+    """
     bands = analysis.fevd_bands(identified.pairs, horizons=21)
     med = bands["median"]
     med = med / med.sum(axis=1, keepdims=True)
+
+    # the three groups must partition the eight shock columns exactly once
+    assert sorted(WORLD_SHOCKS + UK_SHOCKS + UNIDENT_SHOCKS) == list(range(8))
+
     for i in (I_GDP, I_CPI):
+        # the detailed per-shock cells as summary.md prints them
+        detail = [med[i, j, H_1YR] for j in range(8)]
         g = med[i, WORLD_SHOCKS, H_1YR].sum()
         d = med[i, UK_SHOCKS, H_1YR].sum()
         u = med[i, UNIDENT_SHOCKS, H_1YR].sum()
-        # aggregates equal the explicit sum of their columns
-        assert np.isclose(g, med[i, WORLD_SHOCKS, H_1YR].sum())
-        assert np.isclose(d, med[i, UK_SHOCKS, H_1YR].sum())
-        # the three groups partition the eight shocks -> sum to 1
+        assert np.isclose(g, sum(detail[j] for j in WORLD_SHOCKS), atol=1e-12)
+        assert np.isclose(d, sum(detail[j] for j in UK_SHOCKS), atol=1e-12)
+        assert np.isclose(u, sum(detail[j] for j in UNIDENT_SHOCKS), atol=1e-12)
+        # renormalisation makes the whole row add to 100%
+        assert np.isclose(sum(detail), 1.0, atol=1e-9)
         assert np.isclose(g + d + u, 1.0, atol=1e-9)
+
+
+def test_fevd_horizon_index_is_the_four_quarter_variance():
+    """The 1-year FEVD claim must read the 4-quarter-ahead forecast-error
+    variance. ``analysis.fevd`` accumulates squared MA coefficients, so its
+    column h is the (h+1)-step-ahead variance and the 1-year figure is column
+    3. The published summary table used to read column 4 -- the 5-quarter
+    variance -- under a "1-year horizon" heading."""
+    assert analysis.fevd_horizon_index(1) == 0
+    assert analysis.fevd_horizon_index(4) == 3
+    with pytest.raises(ValueError):
+        analysis.fevd_horizon_index(0)
+
+    # and the index really does select the 4-quarter accumulation
+    class _Draw:
+        k, lags = 2, 1
+        Pi = np.array([[0.5, 0.0, 0.0], [0.0, 0.5, 0.0]])
+
+        def companion(self):
+            return np.array([[0.5, 0.0], [0.0, 0.5]])
+
+    B = np.eye(2)
+    shares = analysis.fevd(_Draw(), B, horizons=6)
+    psi = np.array([[0.5 ** h, 0.0] for h in range(6)])
+    four_quarter = np.sum(psi[:4, 0] ** 2)          # h = 0, 1, 2, 3
+    total = four_quarter                            # only shock 0 loads on var 0
+    assert np.isclose(shares[0, 0, analysis.fevd_horizon_index(4)],
+                      four_quarter / total)
+
+
+def test_group_share_is_not_the_sum_of_per_shock_medians(identified):
+    """The headline is a share of a SUM of shocks, so it must be formed on
+    each draw before quantiles are taken. Summing per-shock medians (what the
+    legacy table does) is a different, and on this data materially larger,
+    quantity; both are reported and neither may silently stand in for the
+    other."""
+    groups = {"global": WORLD_SHOCKS, "domestic": UK_SHOCKS,
+              "unidentified": UNIDENT_SHOCKS}
+    per_draw = analysis.fevd_group_shares(
+        identified.pairs, groups, quarters_ahead=4)
+
+    # every draw's shares partition the variance, so the group medians are
+    # each in [0, 1] and no renormalisation is needed or applied
+    for name in groups:
+        for key in ("lo90", "lo68", "median", "hi68", "hi90"):
+            v = per_draw[name][key]
+            assert v.shape == (8,)
+            assert np.all(v >= -1e-12) and np.all(v <= 1.0 + 1e-12)
+        # bands are ordered
+        assert np.all(per_draw[name]["lo90"] <= per_draw[name]["lo68"] + 1e-12)
+        assert np.all(per_draw[name]["hi68"] <= per_draw[name]["hi90"] + 1e-12)
+
+    # the paper reports MEANS of shares of total variance, so that statistic
+    # must be available and must itself be a partition of the variance
+    total = sum(per_draw[name]["mean"] for name in groups)
+    np.testing.assert_allclose(total, np.ones(8), atol=1e-10)
+
+    # the two routes really do disagree: the legacy sum-of-medians route needs
+    # renormalisation precisely because the per-shock medians do not add to 1
+    bands = analysis.fevd_bands(identified.pairs, horizons=21)
+    raw = bands["median"][:, :, H_1YR]
+    assert not np.allclose(raw.sum(axis=1), 1.0, atol=1e-6), (
+        "per-shock medians unexpectedly add to 1; the renormalisation step in "
+        "run_replication.py would then be a no-op and this test is stale")
 
 
 # ---------------------------------------------------------------------------

@@ -79,6 +79,12 @@ def main() -> None:
     ap.add_argument("--optimize-hyper", action="store_true",
                     help="select (lam, mu, theta) by maximizing the "
                          "closed-form log marginal likelihood")
+    ap.add_argument("--seed", type=int, default=20260812,
+                    help="seed for BOTH posterior sampling and the "
+                         "identification RNG; results/summary.md is a "
+                         "published artifact and must be reproducible, so "
+                         "this defaults to a fixed value rather than to "
+                         "fresh entropy")
     args = ap.parse_args()
 
     import pandas as pd
@@ -109,7 +115,7 @@ def main() -> None:
         print(opt_line[2:])
     model = BVAR(y, lags=args.lags, dummies=dummies, **hyper)
     n_draws = max(args.draws, args.accepted)
-    draws = model.sample_posterior(n_draws)
+    draws = model.sample_posterior(n_draws, seed=args.seed)
     # One Q per posterior draw: pass all draws and keep whatever is accepted.
     # Adapt to old identify() signatures defensively.
     import inspect
@@ -119,6 +125,8 @@ def main() -> None:
         id_kwargs["target_accepted"] = len(draws)
     if "max_tries_per_draw" in id_params:
         id_kwargs["max_tries_per_draw"] = 1
+    if "rng" in id_params:
+        id_kwargs["rng"] = np.random.default_rng(args.seed + 1)
     accepted = identify(draws, **id_kwargs)
     # Unpack (draw, B[, w]) tuples; default to unit weights for old-style pairs.
     pairs = [(t[0], t[1]) for t in accepted]
@@ -195,22 +203,35 @@ def main() -> None:
         title="Figure 6: historical decomposition "
               "(deviation from deterministic)")
 
-    # 8. Summary numbers: FEVD of UK GDP / CPI at 1 year (h = 4)
+    # 8. Summary numbers: FEVD of UK GDP / CPI at the 1-year horizon.
+    # `fevd` column h is the (h+1)-step-ahead forecast-error variance, so the
+    # 4-quarter (1-year) variance is index 3. Earlier versions of this script
+    # read index 4 -- the 5-quarter-ahead variance -- and labelled it "1 year".
     med = fevd_b["median"]
     med = med / med.sum(axis=1, keepdims=True)
-    h1 = min(4, med.shape[2] - 1)
+    h1 = min(analysis.fevd_horizon_index(4), med.shape[2] - 1)
     # Headline comparison uses the IDENTIFIED shocks only, matching the
     # paper's ~40%/~50% claims (world demand+supply+energy vs UK
     # demand+supply+monetary). Unidentified shocks reported separately.
     global_shocks = WORLD_SHOCKS
     domestic_shocks = UK_SHOCKS
     unident_shocks = [3, 7]
+    # Posterior distribution of the GROUP shares, formed per draw. The table
+    # below sums per-shock medians and renormalises; that is not the median
+    # of the group share, so the two differ. Both are reported.
+    group_bands = analysis.fevd_group_shares(
+        pairs,
+        {"global": global_shocks, "domestic": domestic_shocks,
+         "unidentified": unident_shocks},
+        quarters_ahead=4,
+        weights=weights,
+    )
     lines = [
         "# Replication summary",
         "",
         f"- Posterior draws: {len(draws)}; accepted identified draws: "
         f"{len(pairs)} (acceptance rate {100 * accept_rate:.1f}%); "
-        f"lags: {args.lags}.",
+        f"lags: {args.lags}; seed: {args.seed}.",
         f"- Importance-weight effective sample size (ESS): {ess:.1f}"
         + (" — WARNING: ESS is below 10% of accepted draws; "
            "weighted results may be unreliable."
@@ -221,7 +242,12 @@ def main() -> None:
         f"theta = {hyper['theta']:.4f}.",
         *([opt_line] if opt_line else []),
         "",
-        "## FEVD at 1-year horizon (median shares)",
+        "## FEVD at the 1-year horizon (4-quarter-ahead forecast error)",
+        "",
+        "Sum of the per-shock posterior medians, renormalised to 100%. This is "
+        "the historical presentation and is kept for continuity, but the "
+        "median of a sum is not the sum of medians -- see the posterior table "
+        "below for the group share formed on each draw.",
         "",
         "| Variable | Identified global | Identified domestic | Unidentified |",
         "|---|---|---|---|",
@@ -234,13 +260,46 @@ def main() -> None:
             f"| {name} | {100 * g:.1f}% | {100 * d:.1f}% | {100 * u:.1f}% |")
     lines += [
         "",
-        "Paper benchmark: identified global shocks explain roughly ~40% of "
-        "UK GDP and ~50% of UK CPI variation at business-cycle horizons.",
+        "### Posterior of the group share (formed per draw)",
         "",
-        "Known discrepancy: the paper reports UK monetary policy as the "
-        "largest domestic contributor to CPI variance; in this replication "
-        "it is not (see detailed table) — likely driven by the proxy world "
-        "aggregates and fewer accepted draws.",
+        "The same 4-quarter-ahead shares, but summed over each group **on "
+        "every accepted draw** before quantiles are taken. This is the "
+        "quantity the ~40% / ~50% claim is about and it comes with a band; "
+        "the point estimates differ from the table above because the median "
+        "of a sum is not the sum of medians.",
+        "",
+        "The **mean** column is the paper-comparable statistic: the paper's "
+        "Figure 4 plots the *mean* of the decompositions and its note states "
+        "the gap to 100% is the unidentified shocks, so its shares are of "
+        "TOTAL forecast-error variance and are not renormalised over the "
+        "identified shocks.",
+        "",
+        "| Variable | Group | Mean | Median | 68% band | 90% band |",
+        "|---|---|---|---|---|---|",
+    ]
+    for name, i in [("UK GDP", i_gdp), ("UK CPI", i_cpi)]:
+        for gname in ("global", "domestic", "unidentified"):
+            b = group_bands[gname]
+            lines.append(
+                f"| {name} | {gname} | {100 * b['mean'][i]:.1f}% | "
+                f"{100 * b['median'][i]:.1f}% | "
+                f"[{100 * b['lo68'][i]:.1f}%, {100 * b['hi68'][i]:.1f}%] | "
+                f"[{100 * b['lo90'][i]:.1f}%, {100 * b['hi90'][i]:.1f}%] |")
+    lines += [
+        "",
+        "Paper benchmark: identified global shocks explain roughly ~40% of "
+        "UK GDP and ~50% of UK CPI variation one year after the shocks. "
+        "Compare against the **mean** column above, not the renormalised "
+        "table: on the paper's own definition this replication matches on "
+        "UK GDP and falls materially short on UK CPI. The renormalised "
+        "table closes that gap arithmetically rather than economically.",
+        "",
+        "Note on the domestic ranking: the paper's prose says UK monetary "
+        "policy is the largest domestic contributor, but it publishes no "
+        "FEVD table and its Figure 4 does not obviously show that for CPI. "
+        "This replication finds UK demand and UK supply larger than monetary "
+        "policy for CPI. Treat as unresolved rather than as a known defect; "
+        "proxy world aggregates remain a candidate explanation.",
         "",
         "## Detailed 1-year FEVD (median, %)",
         "",

@@ -1,7 +1,37 @@
 import numpy as np
 import pytest
 
-from boe_var.evaluation import rolling_origin_evaluation
+from boe_var.evaluation import benjamini_hochberg, rolling_origin_evaluation
+
+
+def test_benjamini_hochberg_matches_the_textbook_step_up():
+    p = np.array([0.001, 0.008, 0.039, 0.041, 0.042, 0.06, 0.074, 0.205])
+    q = benjamini_hochberg(p)
+    m = p.size
+    expected = np.minimum.accumulate(
+        (p * m / np.arange(1, m + 1))[::-1])[::-1]
+    np.testing.assert_allclose(q, np.minimum(expected, 1.0))
+    assert np.all(np.diff(q) >= -1e-12), "q-values must be monotone in p"
+    assert np.all(q >= p - 1e-12), "BH can only make a p-value less impressive"
+
+
+def test_benjamini_hochberg_handles_missing_and_unsorted_input():
+    q = benjamini_hochberg([0.5, None, 0.01, float("nan"), 0.2])
+    assert np.isnan(q[1]) and np.isnan(q[3])
+    finite = q[[0, 2, 4]]
+    assert np.all(finite <= 1.0)
+    # smallest p keeps the smallest q regardless of input order
+    assert q[2] == finite.min()
+    assert np.isnan(benjamini_hochberg([None, None])).all()
+
+
+def test_benjamini_hochberg_is_not_fooled_by_the_smallest_of_many_nulls():
+    """The reason this exists: with 64 independent null tests the smallest
+    p-value is routinely near 0.01, and reporting it unadjusted reads as a
+    discovery. BH must return a q-value that does not."""
+    rng = np.random.default_rng(0)
+    q = benjamini_hochberg(rng.uniform(size=64))
+    assert q.min() > 0.10
 
 
 def _stationary_ar(T=100, phi=0.35, seed=4):
@@ -34,6 +64,55 @@ def test_rolling_evaluation_validates_dummy_alignment():
     y = _stationary_ar(T=60)
     with pytest.raises(ValueError, match="same rows"):
         rolling_origin_evaluation(y, lags=1, dummies=np.zeros((59, 2)))
+
+
+def test_rolling_evaluation_runs_with_dummies_and_stays_finite():
+    """The dummy path of the rolling evaluation is what the PUBLISHED model
+    uses (six Covid quarters as exogenous regressors), yet until now no test
+    exercised it and no committed artifact used it. Pin that it runs, keeps
+    the same origin count, and produces finite ratios."""
+    y = _stationary_ar(T=100)
+    D = np.zeros((100, 2))
+    D[70, 0] = 1.0
+    D[71, 1] = 1.0
+    plain = rolling_origin_evaluation(y, lags=1, horizons=3, first_origin=60)
+    with_d = rolling_origin_evaluation(
+        y, lags=1, horizons=3, first_origin=60, dummies=D
+    )
+    assert with_d["origins"] == plain["origins"]
+    for row in with_d["horizons"]:
+        assert np.isfinite(row["bvar_rmse"]).all()
+        assert np.isfinite(row["relative_rmse_vs_drift"]).all()
+    # The benchmarks ignore the dummies, so they must be untouched.
+    for a, b in zip(plain["horizons"], with_d["horizons"]):
+        np.testing.assert_allclose(a["drift_rmse"], b["drift_rmse"])
+        np.testing.assert_allclose(a["random_walk_rmse"], b["random_walk_rmse"])
+
+
+def test_dummy_columns_after_the_origin_do_not_change_the_forecast():
+    """Real-time safety of the Covid-dummy specification.
+
+    A dummy for a quarter LATER than the forecast origin is identically zero
+    over the training sample. It must therefore leave the point forecast
+    numerically unchanged -- otherwise adding the pandemic dummies to a
+    rolling evaluation would leak information about quarters the forecaster
+    has not seen. Compared here against a dummy matrix truncated to zero
+    after each origin, which is unambiguously real-time.
+    """
+    y = _stationary_ar(T=100)
+    late = np.zeros((100, 2))
+    # last origin is T - horizons - 1 = 96, so these two quarters are never in
+    # any training sample
+    late[97, 0] = 1.0
+    late[98, 1] = 1.0
+    none = rolling_origin_evaluation(y, lags=1, horizons=3, first_origin=60)
+    with_late = rolling_origin_evaluation(
+        y, lags=1, horizons=3, first_origin=60, dummies=late
+    )
+    for a, b in zip(none["horizons"], with_late["horizons"]):
+        np.testing.assert_allclose(
+            a["bvar_errors_by_origin"], b["bvar_errors_by_origin"], atol=1e-10,
+            err_msg="a not-yet-observed dummy column changed the forecast")
 
 
 def test_diebold_mariano_signs_and_symmetry():

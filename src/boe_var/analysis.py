@@ -59,6 +59,25 @@ def irf(draw, B, horizons: int = 21) -> np.ndarray:
     return np.transpose(Psi, (1, 2, 0))          # (k_var, k_shock, H)
 
 
+def fevd_horizon_index(quarters_ahead: int) -> int:
+    """Index on the FEVD horizon axis for the ``quarters_ahead``-step-ahead FEV.
+
+    :func:`fevd` accumulates squared MA coefficients, so column ``h`` of its
+    output is the variance of the **(h+1)-step-ahead** forecast error: index 0
+    is the impact (1-quarter-ahead) forecast error and the 1-year, i.e.
+    4-quarter-ahead, forecast-error variance is index **3**, not 4.
+
+    This helper exists because that off-by-one is easy to get wrong and was
+    wrong in the published 1-year summary table, which read index 4 (the
+    5-quarter-ahead variance). On this dataset the mislabelling moved the UK
+    CPI global share by about 1.7 percentage points and UK GDP by about 0.3.
+    """
+    q = int(quarters_ahead)
+    if q < 1:
+        raise ValueError("quarters_ahead must be >= 1")
+    return q - 1
+
+
 def fevd(draw, B, horizons: int = 21) -> np.ndarray:
     """Forecast-error variance shares, shape (k_var, k_shock, horizons).
 
@@ -214,6 +233,62 @@ def irf_bands(pairs, horizons: int = 21, weights=None) -> dict:
 
 def fevd_bands(pairs, horizons: int = 21, weights=None) -> dict:
     return aggregate([fevd(d, B, horizons) for d, B in pairs], weights=weights)
+
+
+def fevd_group_shares(pairs, groups: dict, quarters_ahead: int = 4,
+                      weights=None) -> dict:
+    """Posterior distribution of the FEVD share of GROUPS of shocks.
+
+    The headline replication claim ("global shocks explain ~40% of UK GDP
+    forecast-error variance") is about a share of a *sum* of shocks. Taking
+    the pointwise median of each individual shock's share and adding those
+    medians -- what a row sum over :func:`fevd_bands` does -- is not the
+    median of the group share: the median of a sum is not the sum of medians,
+    and the per-shock medians do not add to 1, which is why the summary
+    tables have to renormalise them afterwards. On this dataset the two
+    quantities differ by roughly 7 percentage points for UK GDP, and the
+    sum-of-medians route is much the noisier of the two at small accepted-draw
+    counts.
+
+    This function forms the group share **on each accepted draw** and then
+    takes weighted quantiles, so the reported number is a posterior median of
+    the quantity the claim is about and carries an honest posterior band.
+
+    Parameters
+    ----------
+    pairs : iterable of (draw, B).
+    groups : mapping name -> sequence of shock column indices.
+    quarters_ahead : forecast horizon in quarters (4 = the 1-year claim); see
+        :func:`fevd_horizon_index`.
+    weights : optional importance weights, one per pair.
+
+    Returns
+    -------
+    dict mapping group name -> dict with keys ``median, lo68, hi68, lo90,
+    hi90``, each a length-k_var array of shares in [0, 1].
+    """
+    h = fevd_horizon_index(quarters_ahead)
+    pairs = list(pairs)
+    if not pairs:
+        raise ValueError("no accepted (draw, B) pairs")
+    shares = np.stack([fevd(d, B, h + 1)[:, :, h] for d, B in pairs])
+    # (n_draws, k_var, k_shock); shares sum to 1 over the shock axis on every
+    # draw, so group shares need no renormalisation.
+    out = {}
+    for name, idx in groups.items():
+        idx = list(idx)
+        if not idx:
+            raise ValueError(f"group {name!r} is empty")
+        group = shares[:, :, idx].sum(axis=2)          # (n_draws, k_var)
+        band = aggregate(list(group), weights=weights)
+        # The paper's Figure 4 plots posterior MEANS ("mean of the sum"), so
+        # the mean is the statistic its ~40% / ~50% numbers should be compared
+        # against; the median is what this repo's tables report.
+        band["mean"] = np.average(
+            group, axis=0,
+            weights=None if weights is None else np.asarray(weights, float))
+        out[name] = band
+    return out
 
 
 def shock_bands(pairs, residuals_fn, weights=None) -> dict:
