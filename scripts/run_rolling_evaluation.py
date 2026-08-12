@@ -9,7 +9,128 @@ from pathlib import Path
 import numpy as np
 
 from boe_var.data import COLUMNS, load_data
-from boe_var.evaluation import evaluation_code_version, rolling_origin_evaluation
+from boe_var.evaluation import (
+    benjamini_hochberg,
+    evaluation_code_version,
+    rolling_origin_evaluation,
+)
+
+# The Diebold-Mariano grid is 8 variables x 8 horizons per benchmark. Reading
+# an unadjusted p = 0.02 out of 64 tries as evidence of skill is a
+# multiple-comparisons error, so every p-value block is accompanied by
+# Benjamini-Hochberg q-values computed over the whole grid.
+_PVALUE_BLOCKS = {
+    "dm_pvalue_by_variable": "random_walk",
+    "dm_pvalue_vs_drift_by_variable": "drift",
+    "dm_pvalue_vs_ar1_by_variable": "ar1",
+}
+
+
+def _add_fdr_qvalues(horizons: list[dict]) -> dict:
+    """Attach BH q-values across the whole (variable, horizon) grid.
+
+    Writes ``<key>_fdr_q`` next to each p-value block and returns a summary of
+    how many tests survive at conventional FDR levels.
+    """
+    summary = {}
+    for key, bench in _PVALUE_BLOCKS.items():
+        if key not in horizons[0]:
+            continue
+        flat, index = [], []
+        for h, row in enumerate(horizons):
+            for var in COLUMNS:
+                flat.append(row[key][var])
+                index.append((h, var))
+        q = benjamini_hochberg(flat)
+        for (h, var), qv in zip(index, q):
+            horizons[h].setdefault(key + "_fdr_q", {})[var] = (
+                None if not np.isfinite(qv) else float(qv))
+        finite = q[np.isfinite(q)]
+        summary[bench] = {
+            "tests": int(finite.size),
+            "min_q": None if finite.size == 0 else float(finite.min()),
+            "n_q_below_0.05": int((finite < 0.05).sum()),
+            "n_q_below_0.10": int((finite < 0.10).sum()),
+        }
+    return summary
+
+# Quarters the production model dummies out (scripts/run_replication.py,
+# tests/conftest.py and the hosted adapter all use exactly this window).
+COVID_START, COVID_END = "2020Q1", "2021Q2"
+
+
+def covid_dummies(index):
+    """One 0/1 column per Covid quarter, aligned with ``index``."""
+    import pandas as pd
+
+    quarters = pd.period_range(COVID_START, COVID_END, freq="Q")
+    return np.column_stack([(index == q).astype(float) for q in quarters])
+
+
+def _production_spec_block(df, lags: int, horizons: int, first_origin: int):
+    """Rolling evaluation of the specification that is actually published.
+
+    The headline block of this artifact evaluates a BVAR **without** the six
+    Covid dummies, while every published object -- the hero fan chart, the
+    replication summary, the hosted adapter -- estimates the model **with**
+    them. Skill measured on the first is not skill of the second: leaving
+    2020Q2 in the likelihood as an ordinary observation distorts the
+    coefficients used at every origin from 2020 onward.
+
+    The dummy columns are real-time safe by construction. A dummy for a
+    quarter later than the origin is identically zero over the training
+    sample, so it contributes nothing to the fit and leaves the point
+    forecast numerically unchanged; only quarters the forecaster has already
+    observed can matter. The remaining judgement -- that 2020Q1-2021Q2 is the
+    pandemic window -- is the same judgement the production model makes.
+    """
+    import pandas as pd
+
+    y = df.to_numpy()
+    report = rolling_origin_evaluation(
+        y, lags=lags, horizons=horizons, first_origin=first_origin,
+        dummies=covid_dummies(df.index),
+    )
+    covid_lo = pd.Period(COVID_START, "Q")
+    covid_hi = pd.Period(COVID_END, "Q")
+    out = {
+        "description": (
+            "expanding-window pseudo-out-of-sample evaluation of the PUBLISHED "
+            "specification: identical to the headline block except that the "
+            f"six Covid dummies ({COVID_START}-{COVID_END}) enter as exogenous "
+            "regressors, as they do in every published forecast"
+        ),
+        "covid_dummies": f"{COVID_START}-{COVID_END}",
+        "origins": report["origins"],
+        "horizons": [],
+    }
+    for h_idx, row in enumerate(report["horizons"], start=1):
+        targets = [df.index[o + h_idx] for o in report["origin_index"]]
+        keep = np.array([not (covid_lo <= t <= covid_hi) for t in targets])
+        entry = {"horizon": row["horizon"], "n_origins": row["n_origins"]}
+        for key in ("bvar_rmse", "random_walk_rmse", "drift_rmse", "ar1_rmse",
+                    "relative_rmse", "relative_rmse_vs_drift",
+                    "relative_rmse_vs_ar1", "dm_pvalue", "dm_pvalue_vs_drift",
+                    "dm_pvalue_vs_ar1"):
+            entry[f"{key}_by_variable"] = dict(zip(COLUMNS, row[key]))
+        m = np.asarray(row["bvar_errors_by_origin"])[keep]
+        ex = {}
+        for label, bench in (("", "random_walk_errors_by_origin"),
+                             ("_vs_drift", "drift_errors_by_origin"),
+                             ("_vs_ar1", "ar1_errors_by_origin")):
+            b = np.asarray(row[bench])[keep]
+            br = np.sqrt(np.mean(b ** 2, axis=0))
+            ratio = np.divide(np.sqrt(np.mean(m ** 2, axis=0)), br,
+                              out=np.full(br.shape, np.nan), where=br > 0)
+            ex[f"relative_rmse{label}_ex_covid_by_variable"] = dict(
+                zip(COLUMNS, [None if not np.isfinite(v) else float(v)
+                              for v in ratio]))
+        entry["n_origins_ex_covid"] = int(keep.sum())
+        entry.update(ex)
+        entry["bvar_rmse_ex_covid_by_variable"] = dict(
+            zip(COLUMNS, np.sqrt(np.mean(m ** 2, axis=0)).tolist()))
+        out["horizons"].append(entry)
+    return out
 
 
 def main() -> None:
@@ -91,6 +212,33 @@ def main() -> None:
                 br = np.sqrt(np.mean(b ** 2))
                 out[col] = float(np.sqrt(np.mean(m ** 2)) / br) if br > 0 else None
             row[f"relative_rmse{label}_ex_covid_by_variable"] = out
+
+    # The headline block above evaluates a BVAR with no Covid dummies, which
+    # is NOT the specification any published forecast uses. Record the
+    # published specification alongside it rather than silently swapping the
+    # headline, so both are visible and the difference is auditable.
+    report["limitations"].append(
+        "The headline block estimates WITHOUT the six Covid dummies that "
+        "every published forecast uses; see 'production_spec' for the "
+        "like-for-like evaluation of the published specification."
+    )
+    report["production_spec"] = _production_spec_block(
+        df, args.lags, args.horizons, args.first_origin
+    )
+
+    # Multiplicity control over the whole test grid, for both blocks.
+    report["multiplicity"] = {
+        "method": "Benjamini-Hochberg FDR over all variables x horizons, "
+                  "computed separately for each benchmark",
+        "note": "A p-value block without its q-values invites reading the "
+                "smallest of 64 tests as a discovery.",
+        "headline": _add_fdr_qvalues(report["horizons"]),
+        "production_spec": _add_fdr_qvalues(report["production_spec"]["horizons"]),
+    }
+    report["limitations"].append(
+        "No accuracy difference against the drifting random walk survives "
+        "Benjamini-Hochberg control over the 8x8 test grid; see 'multiplicity'."
+    )
 
     # Staleness guard: hash of the evaluation-relevant sources (plus this
     # script). tests/test_committed_artifacts.py fails if the code changes

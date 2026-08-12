@@ -25,6 +25,7 @@ import sys
 from pathlib import Path
 
 import numpy as np
+import pandas as pd
 import pytest
 
 from boe_var.data import load_data
@@ -111,6 +112,86 @@ class TestRollingEvaluationArtifact:
                 vals = np.array(list(row[key].values()))
                 assert np.isfinite(vals).all()
                 assert ((vals > 0.1) & (vals < 10)).all()
+
+
+class TestProductionSpecEvaluationArtifact:
+    """The like-for-like evaluation of the specification actually published.
+
+    The headline block above estimates without the six Covid dummies; every
+    published forecast estimates with them. These are the numbers a reader
+    should quote when asking how the *published* forecaster performs, so they
+    are pinned separately.
+    """
+
+    RTOL = 1e-3
+    # UK GDP / CPI / Bank Rate against the random walk WITH DRIFT, the
+    # benchmark the model has to beat to be worth running.
+    H1_VS_DRIFT = {"uk_gdp": 0.9873, "cpisa": 0.8232, "bank_rate": 0.7809}
+    H8_VS_DRIFT = {"uk_gdp": 0.9469, "cpisa": 1.0117, "bank_rate": 0.8298}
+
+    def test_block_is_present_and_shares_the_headline_design(self):
+        report = _load("rolling_evaluation.json")
+        block = report["production_spec"]
+        assert block["covid_dummies"] == "2020Q1-2021Q2"
+        assert block["origins"] == report["origins"]
+        assert [row["horizon"] for row in block["horizons"]] == list(range(1, 9))
+
+    @pytest.mark.parametrize("h_index, expected", [(0, H1_VS_DRIFT),
+                                                   (7, H8_VS_DRIFT)])
+    def test_relative_rmse_vs_drift_matches_recorded_values(self, h_index,
+                                                            expected):
+        row = _load("rolling_evaluation.json")["production_spec"]["horizons"][h_index]
+        for var, value in expected.items():
+            assert row["relative_rmse_vs_drift_by_variable"][var] == pytest.approx(
+                value, rel=self.RTOL)
+
+    def test_covid_dummies_help_uk_gdp_and_barely_move_cpi(self):
+        """The substantive finding this block exists to record: dummying out
+        the pandemic quarters is what separates a UK GDP forecast that is
+        worse than a drifting random walk from one that is not. CPI is
+        essentially unaffected, so the CPI weakness is a property of the
+        model, not of the Covid treatment."""
+        report = _load("rolling_evaluation.json")
+        for h in (0, 3, 7):
+            base = report["horizons"][h]["relative_rmse_vs_drift_by_variable"]
+            prod = (report["production_spec"]["horizons"][h]
+                    ["relative_rmse_vs_drift_by_variable"])
+            assert prod["uk_gdp"] < base["uk_gdp"] - 0.05, (
+                "Covid dummies no longer materially improve the UK GDP ratio")
+            assert abs(prod["cpisa"] - base["cpisa"]) < 0.05, (
+                "Covid dummies now move CPI materially; the recorded reading "
+                "that CPI weakness is Covid-independent is stale")
+
+    def test_no_result_survives_multiplicity_control_against_drift(self):
+        """The bluntest number in the artifact.
+
+        The evaluation runs 64 Diebold-Mariano tests per benchmark. Against
+        the random walk WITH DRIFT -- the only benchmark that is not trivially
+        weak on trending log levels -- not one of them survives
+        Benjamini-Hochberg control at any conventional level, in either the
+        headline or the published specification. Individual unadjusted
+        p-values around 0.02 therefore do not support a forecasting claim.
+        """
+        mult = _load("rolling_evaluation.json")["multiplicity"]
+        for block in ("headline", "production_spec"):
+            drift = mult[block]["drift"]
+            assert drift["tests"] == 64
+            assert drift["n_q_below_0.10"] == 0, (
+                f"{block}: something now beats drift at FDR 10% (min q = "
+                f"{drift['min_q']}); the 'no distinguishable skill' reading "
+                "is stale and every consumer of it needs revisiting")
+
+    def test_uk_gdp_is_still_not_significantly_better_than_drift(self):
+        """Improved is not the same as skilful. Even under the published
+        specification the UK GDP accuracy difference against a drifting random
+        walk is not distinguishable from zero, and that must not be quietly
+        lost when the ratios drop below 1."""
+        block = _load("rolling_evaluation.json")["production_spec"]
+        for h in (0, 3, 7):
+            p = block["horizons"][h]["dm_pvalue_vs_drift_by_variable"]["uk_gdp"]
+            assert p is None or p > 0.10, (
+                f"UK GDP now beats drift at h={h + 1} with p={p}; the "
+                "published 'no distinguishable GDP skill' reading is stale")
 
 
 class TestCoverageEvaluationArtifact:
@@ -253,6 +334,119 @@ class TestRegenerationSmoke:
         # Bands built from posterior draws must not be degenerate: across
         # the whole grid the 90% band has to catch a decent share.
         assert hits[90].sum() / (n.sum() * k) > 0.3
+
+    def test_coverage_evaluation_accepts_covid_dummies(self):
+        """The published forecast is estimated WITH the six Covid dummies, so
+        the coverage that calibrates its bands has to be measurable under that
+        specification too. Pins that the dummy path runs and gives coverage in
+        [0, 1] on the real data."""
+        sys.path.insert(0, str(SCRIPTS))
+        try:
+            from run_coverage_evaluation import run_coverage
+        finally:
+            sys.path.pop(0)
+        df = load_data()
+        y = df.to_numpy(float)
+        T, k = y.shape
+        horizons = 3
+        quarters = pd.period_range("2020Q1", "2021Q2", freq="Q")
+        covid = np.column_stack(
+            [(df.index == q).astype(float) for q in quarters]
+        )
+        hits, n = run_coverage(
+            y, lags=4, horizons=horizons, first_origin=T - horizons - 6,
+            n_draws=20, n_paths=2, seed=0, dummies=covid,
+        )
+        assert (n == 6).all()
+        for lv in (68, 90):
+            assert ((hits[lv] >= 0) & (hits[lv] <= n[:, None])).all()
+        assert (hits[90] >= hits[68]).all()
+
+
+class TestBandScaleFactorDerivation:
+    """The published fan charts are rescaled by factors derived from the
+    coverage artifact. The derivation must be reproducible from the numbers
+    in that same artifact, not taken on trust."""
+
+    def _factors(self):
+        sys.path.insert(0, str(SCRIPTS))
+        try:
+            from run_coverage_evaluation import band_scale_factors
+        finally:
+            sys.path.pop(0)
+        return band_scale_factors
+
+    def test_factor_is_the_gaussian_half_width_ratio(self):
+        band_scale_factors = self._factors()
+        # Coverage exactly at the nominal level needs no correction.
+        exact = {"68": {"h1": {"uk_gdp": 0.68}}, "90": {"h1": {"uk_gdp": 0.90}}}
+        out = band_scale_factors(exact)
+        assert abs(out["68"]["h1"]["uk_gdp"] - 1.0) < 1e-3
+        assert abs(out["90"]["h1"]["uk_gdp"] - 1.0) < 1e-3
+        # Under-covering widens (k > 1), over-covering narrows (k < 1).
+        under = {"68": {"h1": {"v": 0.40}}, "90": {"h1": {"v": 0.70}}}
+        over = {"68": {"h1": {"v": 0.90}}, "90": {"h1": {"v": 0.98}}}
+        assert band_scale_factors(under)["68"]["h1"]["v"] > 1.0
+        assert band_scale_factors(over)["68"]["h1"]["v"] < 1.0
+        # Degenerate coverage yields no factor rather than an invented one.
+        degenerate = {"68": {"h1": {"v": 0.0}}, "90": {"h1": {"v": 1.0}}}
+        assert band_scale_factors(degenerate)["68"]["h1"]["v"] is None
+        assert band_scale_factors(degenerate)["90"]["h1"]["v"] is None
+
+    def test_committed_factors_match_the_committed_coverage(self):
+        band_scale_factors = self._factors()
+        art = _load("coverage_evaluation.json")
+        if "band_scale_factors" not in art:
+            pytest.skip("artifact predates the published factor block")
+        for block in ("headline", "production_spec"):
+            source = (art["coverage"] if block == "headline"
+                      else art["production_spec"]["coverage"])
+            expected = band_scale_factors(source)
+            assert art["band_scale_factors"][block] == expected, (
+                f"{block} factors are not the ones implied by the coverage "
+                "recorded in the same file")
+
+    def test_published_spec_needs_wider_gdp_bands_than_the_headline_spec(self):
+        """The finding this block exists to record.
+
+        Calibration factors applied to the site's fan charts were derived from
+        the headline (no-Covid-dummy) coverage. Dummying out the pandemic
+        shrinks Sigma, so the published GDP bands are narrower and cover less
+        than the ones that were measured: the correct factor is LARGER at
+        every horizon. Using the headline factor therefore over-narrows the
+        published GDP fan.
+        """
+        art = _load("coverage_evaluation.json")
+        if "band_scale_factors" not in art:
+            pytest.skip("artifact predates the published factor block")
+        head = art["band_scale_factors"]["headline"]["68"]
+        prod = art["band_scale_factors"]["production_spec"]["68"]
+        bigger = sum(prod[f"h{h}"]["uk_gdp"] > head[f"h{h}"]["uk_gdp"]
+                     for h in range(1, 9))
+        assert bigger >= 6, (
+            "the published specification no longer needs wider UK GDP bands "
+            "than the headline specification; the recorded reading is stale")
+
+    def test_factor_precision_is_not_mistaken_for_accuracy(self):
+        """Coverage is measured on 49 OVERLAPPING origins, so a per-(variable,
+        horizon) coverage carries at least the binomial standard error the
+        artifact records -- about 6.7pp at the 68% level. Factors quoted to
+        four decimals are far more precise than the measurement behind them,
+        so the standard error has to travel with them."""
+        art = _load("coverage_evaluation.json")
+        se = art["coverage_standard_error"]
+        assert se["68"] > 0.05 and se["90"] > 0.03
+        emp = art["coverage"]["68"]["h1"]["uk_gdp"]
+        # the plausible range of the factor implied by +-1 SE on coverage
+        band_scale_factors = self._factors()
+        lo = band_scale_factors(
+            {"68": {"h": {"v": emp - se["68"]}}}, levels=(68,))["68"]["h"]["v"]
+        hi = band_scale_factors(
+            {"68": {"h": {"v": emp + se["68"]}}}, levels=(68,))["68"]["h"]["v"]
+        assert hi < lo                      # more coverage -> smaller factor
+        assert lo - hi > 0.05, (
+            "a one-standard-error move in coverage should shift the factor "
+            "far more than its quoted fourth decimal")
 
 
 # --------------------------------------------------------------------------

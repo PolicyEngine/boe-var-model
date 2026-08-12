@@ -10,7 +10,8 @@ import numpy as np
 from .bvar import BVAR, PosteriorDraw
 from .forecast import unconditional_forecast
 
-__all__ = ["evaluation_code_version", "rolling_origin_evaluation"]
+__all__ = ["benjamini_hochberg", "evaluation_code_version",
+           "rolling_origin_evaluation"]
 
 # Source files whose behaviour the committed evaluation artifacts depend on.
 # ``evaluation_code_version`` hashes these (plus any caller-supplied extras,
@@ -36,6 +37,37 @@ def evaluation_code_version(extra_paths: tuple | list = ()) -> str:
         digest.update(path.read_bytes())
         digest.update(b"\0")
     return digest.hexdigest()
+
+
+def benjamini_hochberg(pvalues) -> np.ndarray:
+    """Benjamini-Hochberg q-values (step-up FDR adjustment) for a set of tests.
+
+    This evaluation runs 8 variables x 8 horizons = 64 Diebold-Mariano tests
+    against each benchmark. Reading an unadjusted p = 0.02 out of 64 tries as
+    evidence of forecast skill is a multiple-comparisons error, and the
+    artifact has always warned that the grid needs an adjustment without ever
+    supplying one. This is that adjustment.
+
+    ``pvalues`` may contain ``None`` / NaN for tests that could not be
+    computed; those positions come back as NaN and are excluded from the
+    ranking. Returns q-values in the input order, each clipped to 1.
+    """
+    p = np.asarray([np.nan if v is None else float(v) for v in pvalues],
+                   dtype=float)
+    out = np.full(p.shape, np.nan)
+    finite = np.flatnonzero(np.isfinite(p))
+    if finite.size == 0:
+        return out
+    vals = p[finite]
+    order = np.argsort(vals, kind="stable")
+    m = vals.size
+    ranked = vals[order] * m / np.arange(1, m + 1)
+    # step-up: enforce monotonicity from the largest p downwards
+    ranked = np.minimum.accumulate(ranked[::-1])[::-1]
+    q = np.empty(m)
+    q[order] = np.minimum(ranked, 1.0)
+    out[finite] = q
+    return out
 
 
 def _rmse(errors: np.ndarray) -> np.ndarray:

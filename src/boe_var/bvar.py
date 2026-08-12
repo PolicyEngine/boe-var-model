@@ -266,19 +266,34 @@ class BVAR:
         E0 = Yd - Xd @ B0
         S0 = E0.T @ E0
 
-        sign0, ld_XdtXd = np.linalg.slogdet(XdtXd)
-        sign1, ld_XtX = np.linalg.slogdet(self._Xs.T @ self._Xs)
-        signS0, ld_S0 = np.linalg.slogdet(S0)
-        signS1, ld_S1 = np.linalg.slogdet(self.S_post)
-        if min(sign0, sign1, signS0, signS1) <= 0:
+        # A singular or overflowing determinant makes slogdet emit a warning
+        # and return 0/inf/nan rather than raising. Those cells are simply
+        # infeasible hyperparameter values, so silence the warning here and
+        # reject them explicitly below.
+        with np.errstate(divide="ignore", over="ignore", invalid="ignore"):
+            sign0, ld_XdtXd = np.linalg.slogdet(XdtXd)
+            sign1, ld_XtX = np.linalg.slogdet(self._Xs.T @ self._Xs)
+            signS0, ld_S0 = np.linalg.slogdet(S0)
+            signS1, ld_S1 = np.linalg.slogdet(self.S_post)
+        signs = np.array([sign0, sign1, signS0, signS1], dtype=float)
+        logdets = np.array([ld_XdtXd, ld_XtX, ld_S0, ld_S1], dtype=float)
+        # `min(...) <= 0` silently passes NaN through (every NaN comparison is
+        # False), which used to let a NaN log-likelihood escape and poison the
+        # hyperparameter search.
+        if not np.all(np.isfinite(signs)) or np.any(signs <= 0) \
+                or not np.all(np.isfinite(logdets)):
             raise np.linalg.LinAlgError("non-PD matrix in marginal likelihood")
 
-        return (
+        value = (
             -0.5 * T * k * np.log(np.pi)
             + multigammaln(0.5 * d1, k) - multigammaln(0.5 * d0, k)
             + 0.5 * k * (ld_XdtXd - ld_XtX)
             + 0.5 * d0 * ld_S0 - 0.5 * d1 * ld_S1
         )
+        if not np.isfinite(value):
+            raise np.linalg.LinAlgError(
+                "non-finite marginal likelihood")
+        return float(value)
 
     # ------------------------------------------------------------------
     def sample_posterior(self, n_draws: int, seed: int | None = None) -> list[PosteriorDraw]:

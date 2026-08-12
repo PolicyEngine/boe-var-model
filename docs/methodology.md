@@ -152,7 +152,16 @@ by default (configurable).
   68%/90% credible bands across accepted (posterior draw, Q) pairs.
 - **Forecast-error variance decompositions (Fig. 4):** share of the
   h-step-ahead forecast-error variance of each variable attributable to
-  each shock.
+  each shock. `analysis.fevd` returns the **(h+1)**-step-ahead variance in
+  column `h`, so the paper's "one year after the shocks" is column 3; use
+  `analysis.fevd_horizon_index(4)` rather than writing the index by hand.
+  The paper's Figure 4 reports posterior **means** of shares of *total*
+  forecast-error variance and does not renormalise over the identified
+  shocks, so the paper-comparable statistic is the `mean` column of
+  `analysis.fevd_group_shares`. The renormalised sum-of-per-shock-medians
+  table in `results/summary.md` is a different quantity — the per-shock
+  medians do not add to 1, and rescaling them to 100% inflates the
+  identified shares by roughly a third.
 - **Estimated structural shocks (Fig. 5):** `ε_t = B⁻¹ u_t` evaluated at
   each accepted draw; the posterior median series shows when demand/supply/
   policy shocks hit.

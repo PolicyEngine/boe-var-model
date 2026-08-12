@@ -48,6 +48,59 @@ def rng():
     return np.random.default_rng(12345)
 
 
+def test_zero_restriction_pattern_satisfies_the_arrw_rank_condition():
+    """Arias, Rubio-Ramirez & Waggoner (2018) require that, with columns
+    ordered by decreasing number of zero restrictions z_1 >= ... >= z_n, every
+    z_j <= n - j. Otherwise the recursive null-space construction runs out of
+    dimensions and the model is not exactly identified by the pattern.
+
+    Table 2 gives z = (3, 3, 3, 3, 1, 0, 0, 0) against n - j = (7, ..., 0), so
+    the condition holds with room to spare. This is a property of the
+    RESTRICTIONS, not of any draw, so it is checked once and directly rather
+    than being inferred from draw_Q happening not to raise.
+    """
+    order = ident._shock_order(ZERO_RESTRICTIONS)
+    z = [len(ZERO_RESTRICTIONS[SHOCKS[j]]) for j in order]
+    assert z == sorted(z, reverse=True), "columns are not ordered most-zeros-first"
+    for j, zj in enumerate(z, start=1):
+        assert zj <= K - j, (
+            f"column {j} carries {zj} zero restrictions but only {K - j} "
+            "free dimensions remain; the pattern is not ARRW-admissible")
+    # and the total count matches what the weight's dimension check assumes
+    assert sum(z) == ident._n_zero_restrictions() == 13
+
+
+def test_restrictions_are_imposed_on_impact_only(rng):
+    """The paper restricts only the impact matrix B: no restriction is placed
+    on any later horizon of the impulse response. Guard against a future
+    change that quietly starts constraining horizon 1+, which would be a
+    different identification scheme.
+    """
+    from boe_var import analysis
+
+    Sigma = restriction_consistent_sigma(rng)
+    B = None
+    while B is None:
+        B = draw_B(Sigma, rng)
+    draw = SimpleNamespace(
+        k=K, lags=1, Pi=np.hstack([0.5 * np.eye(K), np.zeros((K, 1))]),
+        Sigma=Sigma, companion=lambda: 0.5 * np.eye(K),
+    )
+    resp = analysis.irf(draw, B, horizons=5)
+    for j, shock in enumerate(SHOCKS):
+        for v, s in SIGN_RESTRICTIONS[shock]:
+            assert s * resp[v, j, 0] > 0        # impact is restricted
+        for v in ZERO_RESTRICTIONS[shock]:
+            assert abs(resp[v, j, 0]) < 1e-9
+    # With a diagonal, positive companion the later horizons are just scaled
+    # impacts, so the only way to show "unrestricted" is that the machinery
+    # never inspects them: check_signs must accept a B whose later horizons
+    # are arbitrary, which it does because it is a function of B alone.
+    import inspect
+    src = inspect.getsource(ident.check_signs)
+    assert "horizon" not in src and "Psi" not in src
+
+
 def test_B_factorizes_sigma_and_Q_orthogonal(rng):
     Sigma = random_spd(rng)
     Q = draw_Q(Sigma, rng)
@@ -200,7 +253,10 @@ def test_weight_positive_finite_and_ve_f_term(rng):
     Dz = ident._num_jacobian(lambda v: ident._zero_fn(v, n, m), x)
     Dgf = ident._num_jacobian(lambda v: ident._g_fh(v, n, m), x)
     DN = Dgf @ ident._null_qr(Dz, d)
-    log_ve_gf = 0.5 * np.linalg.slogdet(DN.T @ DN)[1]
+    # slogdet forms the raw determinant internally for the sign, which
+    # under/overflows on this large Gram matrix; the log-determinant is fine.
+    with np.errstate(divide="ignore", over="ignore", invalid="ignore"):
+        log_ve_gf = 0.5 * np.linalg.slogdet(DN.T @ DN)[1]
     assert np.isclose(log_w, log_ve_f - log_ve_gf, rtol=1e-8, atol=1e-8)
 
 
