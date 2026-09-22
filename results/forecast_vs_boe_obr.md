@@ -46,10 +46,8 @@ BoE scenarios for context (CPI): milder 2.7/2.4/1.7/1.7; adverse 3.1/4.1/2.8/2.4
 - Mechanism, checked: the SVAR's median Bank Rate path barely moves - 3.74% in 2026Q2 rising to
   3.91% by 2029Q3, i.e. roughly the current 3.75% held flat - against BoE's conditioning curve of
   3.8% then 4.2% from 2027. So the SVAR delivers ~30-40bp LESS tightening than the market curve
-  BoE conditions on, and has no target-anchoring mechanism beyond its estimated rate rule. Note
-  the ~2.95% CPI plateau is NOT the sample mean (1993Q1-2025Q1 mean YoY CPI is 2.38%, GDP 1.93%);
-  it is the estimated unconditional mean of the full-sample VAR, raised by the 2021-23 episode
-  sitting in the data the constant is fitted to (the Covid dummies stop at 2021Q2).
+  BoE conditions on, and has no target-anchoring mechanism at all. On where the ~2.95% plateau
+  comes from, see 2.3(c) - it is not a sample average and not a steady state.
 - Bands: the 68% CPI band is ~2.6pp wide by 2027 and spans BoE's central, milder and adverse
   paths - at this horizon the SVAR does not discriminate between them.
 
@@ -149,19 +147,44 @@ growth together - is whatever its estimation window says.** With 1992-2019 that
 equilibrium is 2% inflation at ~1.8% Bank Rate; with 2021-23 added it is ~3% inflation at
 ~3.9% Bank Rate. Neither is anchored to anything; both are sample artefacts.
 
-Note the ~2.95% plateau is also not the historical sample mean (mean YoY CPI 1993Q1-2025Q1
-is 2.38%, GDP 1.93%). It is the estimated unconditional mean of the full-sample VAR, which
-the 2021-23 episode raises through the estimated constant - the Covid dummies cover only
-2020Q1-2021Q2, so the 2021-23 inflation run is left in the data the constant is fitted to.
+**(c) Why the plateau sits where it does: the VAR has a unit root, so it extrapolates
+the local drift rather than reverting to anything.**
+
+The maximum companion eigenvalue is above 1 on every accepted draw - 16th/50th/84th
+percentiles 1.001 / 1.004 / 1.009 on the production sample, and 1.002 / 1.004 / 1.009
+pre-Covid. `I - sum(A_l)` is therefore singular and **there is no finite unconditional
+mean**: this model does not mean-revert, so the plateau is not a steady state and not a
+sample average. It is the drift at the edge of the estimation data, projected forward.
+
+That is exactly what the numbers show:
+
+| Estimation sample | Realised annualised CPI inflation at the sample edge | Model plateau |
+|---|---|---|
+| 1992Q1-2025Q1 | 2.89% (2023Q4-2026Q1) | 2.93-2.97% |
+| 1992Q1-2019Q4 | 2.02% (1992Q1-2019Q4) | 1.97-2.00% |
+
+For contrast, realised annualised inflation was 6.73% across 2021Q1-2023Q4 and 4.18%
+over 2019Q4-2026Q1, and the whole-sample average is 2.39%. The forecast tracks none of
+those; it tracks the most recent drift.
+
+So the model is not forecasting an inflation overshoot on any economic reasoning. It is
+saying: UK inflation has run at about 2.9% since the spike ended, and nothing in this
+specification pulls it back to 2%.
+
+Note the replication imposes no stationarity restriction on the posterior draws (there is
+none in `bvar.py` and none required by `SPEC.md`), which is standard for a Minnesota-prior
+levels VAR but means mildly explosive draws are kept.
 
 ## 2.4 The one-line answer
 
 The gap is not a monetary-policy-path disagreement and not a data-vintage artefact. It
 is that BoE and OBR both impose a 2% anchor - OBR literally, as an exogenous CPI path
 that converges to 2.000 because the model's CPI equation is commented out; BoE through
-MPC judgement - while the SVAR has no anchor at all. Estimated on 1992-2025Q1 it settles
-at ~2.95% (with Bank Rate ~3.9%); estimated on 1992-2019Q4 it settles at 2.0% (with Bank
-Rate ~1.8%). The model is reporting its estimation window, not an inflation forecast.
+MPC judgement - while the SVAR has no anchor at all and, having a unit root, no mechanism
+that could supply one. It extrapolates the drift at the edge of its data: 2.89% realised
+since the spike ended gives a ~2.95% forecast; re-estimated pre-Covid, 2.02% realised gives
+a 2.0% forecast. Put plainly, the SVAR is not forecasting an overshoot - it is forecasting
+that recent inflation continues, and the disagreement with BoE and OBR *is* the 2% anchor.
 
 GDP is a different story: all three agree (SVAR 1.4-1.5%, OBR 1.5-1.6%, BoE 1.1-1.7%),
 because trend growth is far less sensitive to which sample you estimate on.

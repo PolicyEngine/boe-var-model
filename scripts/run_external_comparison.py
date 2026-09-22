@@ -15,7 +15,11 @@ publish):
    the estimation window (not the conditioning rate path) as the source of the
    medium-term inflation gap;
 3. the identified UK monetary-policy shock's IRF, used to size how much of the
-   gap the rate-path difference can account for.
+   gap the rate-path difference can account for;
+4. the maximum companion eigenvalue and the realised drift at the sample edge,
+   which are what actually set the level of the medium-term forecast: the VAR
+   has a unit root, so it extrapolates recent drift rather than reverting to a
+   mean.
 
 Usage:
     conda run -n python313 python scripts/run_external_comparison.py \
@@ -158,11 +162,34 @@ def main() -> None:
         print(f"Scaled to a {bp * 100:.0f}bp rate-path shortfall: "
               f"{scaled.min():+.2f} to {scaled.max():+.2f}pp on YoY CPI")
 
-    hist = forecast.yoy(df.loc[df.index <= pd.Period(args.est_end, "Q")]
-                        .to_numpy(dtype=float))
-    print(f"\nHistorical mean YoY over the estimation sample: "
-          f"CPI {hist[:, I_CPI].mean():.2f}%, GDP {hist[:, I_GDP].mean():.2f}% "
-          "(for contrast with the forecast plateau -- they are not the same thing).")
+    # Why the medium-term forecast sits where it does. If the largest companion
+    # eigenvalue exceeds 1, I - sum(A_l) is singular, there is no finite
+    # unconditional mean, and the forecast extrapolates the drift at the edge of
+    # the estimation data instead of reverting to a sample average.
+    eigs = np.array([np.max(np.abs(np.linalg.eigvals(d.companion())))
+                     for d, _B in pairs])
+    lo, mid, hi = np.percentile(eigs, [16, 50, 84])
+    print(f"\n--- Persistence: max companion eigenvalue {mid:.3f} "
+          f"[{lo:.3f}, {hi:.3f}] (16/50/84)")
+    if mid >= 1.0:
+        print("    >= 1: no finite unconditional mean; the forecast extrapolates "
+              "local drift.")
+
+    levels_hist = df.to_numpy(dtype=float)[:, I_CPI]
+    print("\n--- Realised annualised CPI inflation, by window "
+          "(100*log levels, so a difference IS the growth rate)")
+    for start, stop in [(args.est_start, args.est_end), (args.est_start, args.precovid_end),
+                        ("2021Q1", "2023Q4"), ("2023Q4", str(origin))]:
+        try:
+            i0 = df.index.get_loc(pd.Period(start, "Q"))
+            i1 = df.index.get_loc(pd.Period(stop, "Q"))
+        except KeyError:
+            continue
+        years = (i1 - i0) / 4
+        if years > 0:
+            print(f"    {start} -> {stop}: "
+                  f"{(levels_hist[i1] - levels_hist[i0]) / years:.2f}%")
+    print("    Compare the last window against the forecast plateau above.")
 
 
 if __name__ == "__main__":
