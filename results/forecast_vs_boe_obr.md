@@ -188,3 +188,87 @@ that recent inflation continues, and the disagreement with BoE and OBR *is* the 
 
 GDP is a different story: all three agree (SVAR 1.4-1.5%, OBR 1.5-1.6%, BoE 1.1-1.7%),
 because trend growth is far less sensitive to which sample you estimate on.
+
+## Part 3: beyond CPI and GDP
+
+Both comparators publish more than the two headline series, and this model (with
+its unemployment satellite) produces more than two. Three further comparisons,
+on the same four quarters.
+
+Sources: BoE July 2026 MPR Table 3.B (central projection); OBR March 2026 EFO
+Table 1.6 (ILO unemployment rate, 16+) and Table 1.9 (market-derived
+assumptions). The energy CPI weight is OBR Table 1.19b: utilities 30 + fuels 30
+per 1000, constant at 60/1000 across the forecast years.
+
+### 3.1 Unemployment rate, %
+
+Ours comes from the Okun satellite (`unemployment_satellite.py`), which maps the
+GDP growth path into unemployment. Its bands carry GDP-path uncertainty only --
+no satellite residual uncertainty -- so they are a lower bound. Fit: beta -0.047,
+R2 0.37, last actual 5.0% at 2026Q1.
+
+| Quarter | Satellite median | 68% | BoE Jul-26 | OBR Mar-26 |
+|---|---|---|---|---|
+| 2026Q3 | 4.96 | 4.89-5.03 | 5.0 | 5.33 |
+| 2027Q3 | 4.92 | 4.58-5.24 | 5.3 | 4.83 |
+| 2028Q3 | 4.88 | 4.25-5.52 | 5.2 | 4.36 |
+| 2029Q3 | 4.84 | 3.91-5.80 | 5.0 | 4.17 |
+
+The three disagree on direction, which the headline GDP agreement hides. BoE has
+unemployment RISING to 5.3% in 2027 and staying above 5%; the OBR has it FALLING
+to 4.2%; the satellite has it drifting down gently to 4.8%. All three sit inside
+the satellite's 68% band from 2027 onward, so this model does not discriminate
+between a labour market that loosens and one that tightens. Note also that the
+satellite inherits the flat ~1.45% GDP path, so its gentle decline is really a
+statement about trend growth, not about the labour market.
+
+### 3.2 Energy contribution to CPI inflation, pp
+
+The model carries `cpi_energy` as one of its eight variables, so its energy-price
+path times the CPI energy weight is directly comparable to the MPR's row (g).
+
+| Quarter | Model | BoE Jul-26 | BoE milder | BoE adverse |
+|---|---|---|---|---|
+| 2026Q3 | 0.24 | 0.6 | 0.3 | 0.7 |
+| 2027Q3 | 0.08 | -0.1 | -0.1 | 0.4 |
+| 2028Q3 | 0.06 | -0.2 | -0.1 | -0.3 |
+| 2029Q3 | 0.06 | 0.1 | 0.1 | -0.1 |
+
+Near term the model is well below the Bank (0.24 against 0.6) and below even the
+milder scenario. That is the 2026Q1 vintage showing: Brent was $78 in 2026Q1 and
+$97 in 2026Q2, and the later quarter is not in these estimates. Further out the
+model has energy contributing a small positive where the Bank has a small
+negative -- the Bank's path embeds the energy price falling back, the model's
+does not, for the same unit-root reason as Part 2.3(c).
+
+This is the row most likely to change on the 2026Q2 refresh, and it feeds
+straight back into the headline CPI comparison.
+
+### 3.3 Bank Rate, %
+
+| Quarter | Model median | BoE conditioning curve | OBR Mar-26 |
+|---|---|---|---|
+| 2026Q3 | 3.76 | 3.8 | 3.34 |
+| 2027Q3 | 3.81 | 4.2 | 3.43 |
+| 2028Q3 | 3.87 | 4.2 | 3.61 |
+| 2029Q3 | 3.91 | 4.2 | 3.76 |
+
+Not three forecasts of the same object: the BoE and OBR figures are market curves
+they condition on (OBR Table 1.9 is explicitly "market-derived assumptions"), and
+the two were struck four months apart on different curves. Only the model's is a
+forecast. Read it as a spread rather than a disagreement -- but note ours sits
+between the two, roughly 35bp below the curve the MPR conditions on and 30-45bp
+above the curve the OBR assumed in March.
+
+### 3.4 Worth doing, not done here
+
+- **Oil and sterling.** The OBR's March assumptions were $62.9-65.2 a barrel
+  across 2026-29 (Table 1.9). Brent printed $97 in 2026Q2. That is a large miss on
+  a conditioning assumption, and it propagates into the whole EFO inflation path.
+  Our own `oil_price` variable is real and sterling-denominated (GBP deflated by
+  CPI, see `scripts/download_data.py`), so it is not directly comparable to a
+  dollar price without a conversion, which is why it is left out here.
+- **Forecast accuracy, not forecast levels.** The comparison that would actually
+  settle anything is this model's `results/rolling_evaluation.json` against the
+  Bank's own Forecast Evaluation Report (January 2026): scored errors at matched
+  horizons, rather than one path against another. That is a separate exercise.

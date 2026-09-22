@@ -37,12 +37,18 @@ import pandas as pd
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
-from boe_var import analysis, forecast
+from boe_var import analysis, forecast, unemployment_satellite
 from boe_var.bvar import BVAR
 from boe_var.data import load_data
 from boe_var.identification import ess, identify
 
-I_BANK_RATE, I_CPI, I_GDP = 3, 5, 7
+I_BANK_RATE, I_CPI, I_CPI_ENERGY, I_GDP = 3, 5, 6, 7
+
+# CPI weight of energy: utilities (30) + fuels (30) per 1000, OBR March 2026
+# EFO Table 1.19b (constant at 60/1000 across the forecast years). Used to turn
+# the model's energy-price path into a contribution to headline CPI inflation,
+# which is the form the BoE publishes (MPR Table 3.B row (g)).
+ENERGY_CPI_WEIGHT = 0.060
 I_MP_SHOCK = 6  # 'UK mon. pol.' in analysis.SHOCK_NAMES
 
 # The quarters the BoE MPR and the OBR EFO both publish on.
@@ -139,10 +145,38 @@ def main() -> None:
                   f"{agg['lo68'][h, I_GDP]:>7.2f}-{agg['hi68'][h, I_GDP]:<8.2f} "
                   f"{levels['median'][h, I_BANK_RATE]:>10.2f}")
         print()
-        return pairs, w
+        return pairs, w, agg, levels
 
-    pairs, w = report(args.est_end, "Production sample")
+    pairs, w, agg, levels_prod = report(args.est_end, "Production sample")
     report(args.precovid_end, "Pre-Covid sample")
+
+    # ---- variables beyond CPI and GDP that the BoE MPR and the OBR EFO also
+    # publish, so the comparison is not limited to the two headline series.
+    print("--- Other comparable variables (production sample)")
+    print(f"{'Quarter':<8} {'Unemp %':>9} {'Unemp 68%':>16} "
+          f"{'Energy pp':>10} {'Bank Rate':>10}")
+    # forecast.yoy drops the first four rows, so the quarter labels shift by 4
+    # and only the UK GDP column is the satellite's input.
+    gdp_yoy_hist = forecast.yoy(y_full)[:, I_GDP]
+    okun = unemployment_satellite.fit_default(
+        [str(q) for q in df.index[4:]], gdp_yoy_hist, end=args.est_end)
+    uq, u = unemployment_satellite.load_unemployment()
+    u_bands = unemployment_satellite.unemployment_bands(
+        okun, {k_: agg[k_][:, I_GDP] for k_ in
+              ("median", "lo68", "hi68", "lo90", "hi90")},
+        u_last=u[-1], du_last=u[-1] - u[-2])
+    print(f"  (Okun satellite: beta {okun.beta:+.3f}, R2 {okun.r2:.2f}, "
+          f"u_last {u[-1]:.1f}% at {uq[-1]}; bands carry GDP-path uncertainty "
+          "only -- a lower bound)")
+    for q in wanted:
+        h = at[q]
+        energy_pp = agg["median"][h, I_CPI_ENERGY] * ENERGY_CPI_WEIGHT
+        print(f"{q:<8} {u_bands['median'][h]:>9.2f} "
+              f"{u_bands['lo68'][h]:>7.2f}-{u_bands['hi68'][h]:<8.2f} "
+              f"{energy_pp:>10.2f} {levels_prod['median'][h, I_BANK_RATE]:>10.2f}")
+    print("  Energy pp = model YoY energy-price inflation x "
+          f"{ENERGY_CPI_WEIGHT:.3f} CPI weight, comparable to MPR Table 3.B row (g).")
+    print()
 
     # How much of the CPI gap can the rate-path difference explain? Scale the
     # identified MP-shock IRF to the gap between our Bank Rate path and the
