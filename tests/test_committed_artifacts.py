@@ -498,3 +498,33 @@ class TestArtifactStaleness:
             "results/unemployment_satellite_validation.json was generated; "
             "re-run scripts/run_satellite_validation.py"
         )
+
+
+class TestArtifactDataVintage:
+    """Fail when the packaged data changes length without regenerating.
+
+    ``code_version`` hashes the evaluation SOURCES only, not
+    ``boe_var_data.csv``. A data refresh that adds a quarter leaves every
+    hash intact, so the staleness guard above stays green while the
+    committed coverage and rolling numbers describe an older sample. These
+    checks pin each artifact's recorded sample and origin count to the data
+    the package loads today. They do not catch a same-length revision of
+    past values; only a data hash in the artifact would.
+    """
+
+    @pytest.mark.parametrize("name", ["coverage_evaluation.json",
+                                      "rolling_evaluation.json"])
+    def test_artifact_sample_matches_packaged_data(self, name):
+        art = _load(name)
+        df = load_data()
+        assert art["sample"] == {"start": str(df.index[0]),
+                                 "end": str(df.index[-1])}, (
+            f"results/{name} was generated on a different sample than the "
+            "packaged data; re-run its script")
+
+    def test_coverage_origin_count_matches_packaged_data(self):
+        art = _load("coverage_evaluation.json")
+        T = len(load_data())
+        assert art["origins"] == T - art["horizons"] - art["first_origin"], (
+            "coverage origin count no longer follows from the packaged data "
+            "length; re-run scripts/run_coverage_evaluation.py")
