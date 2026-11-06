@@ -190,3 +190,21 @@ def test_committed_artifact_is_not_stale(name, extra):
     current = evaluation_code_version(
         extra_paths=[sv.__file__] + [SCRIPTS / e for e in extra])
     assert recorded == current, f"re-run the script that writes {name}"
+
+
+def test_sv_draws_plug_into_the_structural_identification():
+    """Sigma_t = lambda_t Sigma: the zero restrictions found on the draw's
+    Sigma hold on chol(lambda Sigma) @ Q for any lambda (scale invariance)."""
+    from boe_var import identification as ident
+
+    y = load_data().to_numpy(float)
+    draw = sv.CommonSVBVAR(y, lags=4).sample(1, seed=5, **FAST)[0]
+    rng = np.random.default_rng(0)
+    Q = ident.draw_Q(draw.Sigma, rng)
+    for lam in (1.0, 0.3, 17.0):
+        B = np.linalg.cholesky(lam * draw.Sigma) @ Q
+        np.testing.assert_allclose(B, np.sqrt(lam) * np.linalg.cholesky(
+            draw.Sigma) @ Q, rtol=1e-10, atol=1e-12)
+        for shock, rows in ident.ZERO_RESTRICTIONS.items():
+            j = ident.SHOCKS.index(shock)
+            assert np.allclose(B[rows, j], 0.0, atol=1e-8)
