@@ -149,6 +149,20 @@ def test_sampler_finds_a_break_in_one_variable_only():
     assert abs(gap[0]) < 0.6 and abs(gap[2]) < 0.6
 
 
+# Bands from two runs on the same training data agree to the last few bits,
+# not bit for bit, on some x86 CPUs: OpenBLAS's Sapphire Rapids kernels
+# round differently with buffer alignment, which depends on what ran earlier
+# in the process (measured on GitHub Actions: max |diff| 1e-7 on bands of
+# order 1e3, about 1e-10 relative; bit-exact with OPENBLAS_CORETYPE=Haswell).
+# A leak of the +50 / +5 perturbations would move the bands by far more than
+# this tolerance.
+BAND_RTOL = 1e-9
+
+
+def assert_same_bands(a, b):
+    np.testing.assert_allclose(a, b, rtol=BAND_RTOL, atol=0.0)
+
+
 def _vsv_run(y, o, H):
     rec = {}
     run_coverage_vsv(y, lags=4, horizons=H, first_origin=o, n_draws=6,
@@ -166,7 +180,7 @@ def test_vsv_coverage_run_uses_nothing_after_the_origin():
     yb[o + 1 + H] += 50.0
     ra, rb = _vsv_run(ya, o, H), _vsv_run(yb, o, H)
     assert ra["volatility"] == rb["volatility"]
-    assert np.array_equal(ra["quantiles"], rb["quantiles"])
+    assert_same_bands(ra["quantiles"], rb["quantiles"])
     assert not np.array_equal(ra["actual"][1], rb["actual"][1])
 
 
@@ -180,7 +194,7 @@ def test_vsv_training_change_moves_later_origins_only():
     yb[o + 1] += 5.0             # in origin o + 1's training sample only
     ra, rb = _vsv_run(ya, o, H), _vsv_run(yb, o, H)
     assert ra["volatility"][0] == rb["volatility"][0]
-    assert np.array_equal(ra["quantiles"][0], rb["quantiles"][0])
+    assert_same_bands(ra["quantiles"][0], rb["quantiles"][0])
     assert ra["volatility"][1] != rb["volatility"][1]
 
 
