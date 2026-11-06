@@ -27,6 +27,8 @@ __all__ = [
     "sample_forecast",
     "forecast_bands",
     "yoy",
+    "yoy_pct",
+    "log_to_simple_pct",
     "reduced_form_residuals",
     "shock_distribution_T",
     "composite_irf",
@@ -138,15 +140,43 @@ def forecast_bands(pairs_or_draws, y_hist, dummies_hist=None,
 
 
 def yoy(series_levels: np.ndarray) -> np.ndarray:
-    """YoY growth from 100*log levels: x_t - x_{t-4} along axis 0.
+    """YoY log growth from 100*log levels: x_t - x_{t-4} along axis 0.
 
-    Since the data are 100*log levels, the 4-quarter log difference is
-    directly YoY growth in percent. Output loses the first 4 rows.
+    This is the four-quarter LOG difference (log points), which understates
+    the simple percentage rate that ONS, the BoE and the OBR publish by about
+    x^2 / 200. Use ``yoy_pct`` when comparing with a published rate. Output
+    loses the first 4 rows.
     """
     x = np.asarray(series_levels, dtype=float)
     if x.shape[0] <= 4:
         raise ValueError("need more than 4 observations for YoY")
     return x[4:] - x[:-4]
+
+
+def log_to_simple_pct(log_rate) -> np.ndarray:
+    """Convert a 100*log-difference rate to a simple percentage rate.
+
+    ``100 * (exp(x / 100) - 1)``. ONS, the BoE MPR and the OBR EFO all
+    publish simple four-quarter rates, 100 * (P_t / P_{t-4} - 1); the model's
+    ``yoy`` is the log difference, which sits below the simple rate by about
+    x^2 / 200 (0.04pp at 2.8%, 0.5pp at 10%). Apply this wherever a model
+    rate is set against a published one. The map is monotone, so it commutes
+    with quantiles: converting a band's edges equals the band of converted
+    paths.
+    """
+    return 100.0 * np.expm1(np.asarray(log_rate, dtype=float) / 100.0)
+
+
+def yoy_pct(series_levels: np.ndarray) -> np.ndarray:
+    """Simple four-quarter growth in percent, from 100*log levels.
+
+    ``100 * (P_t / P_{t-4} - 1)``: the basis ONS, the BoE and the OBR
+    publish. Use this, not ``yoy``, for any number compared with an outturn
+    or another forecaster's projection. ``yoy`` stays the log difference,
+    which is what the model's own linear objects (IRF transforms, the Okun
+    satellite) are defined on. Output loses the first 4 rows.
+    """
+    return log_to_simple_pct(yoy(series_levels))
 
 
 # ---------------------------------------------------------------------------

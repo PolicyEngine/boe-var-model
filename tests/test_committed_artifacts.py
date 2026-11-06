@@ -491,7 +491,8 @@ class TestArtifactStaleness:
 
         recorded = _load("unemployment_satellite_validation.json")["code_version"]
         current = evaluation_code_version(
-            extra_paths=[satellite.__file__, SCRIPTS / "run_satellite_validation.py"]
+            extra_paths=[satellite.__file__, satellite._MGSX_PATH,
+                         SCRIPTS / "run_satellite_validation.py"]
         )
         assert recorded == current, (
             "evaluation code changed since "

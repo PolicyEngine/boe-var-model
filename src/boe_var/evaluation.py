@@ -20,15 +20,31 @@ __all__ = ["benjamini_hochberg", "evaluation_code_version",
 _CODE_VERSION_FILES = ("bvar.py", "data.py", "evaluation.py", "forecast.py")
 
 
-def evaluation_code_version(extra_paths: tuple | list = ()) -> str:
-    """SHA-256 over the evaluation-relevant sources, stable across machines.
+def _data_files() -> list[Path]:
+    """Data files every evaluation artifact is computed from.
 
-    ``extra_paths`` lets a runner script include itself in the hash. Files
+    The resolved path ``load_data()`` reads by default (the repo-root copy in
+    a checkout, else the packaged snapshot). Hashing it means a data refresh
+    -- a new quarter or a revision of past values -- makes the committed
+    artifacts stale, not just a code change.
+    """
+    from .data import _DATA_PATH
+
+    return [Path(_DATA_PATH).resolve()]
+
+
+def evaluation_code_version(extra_paths: tuple | list = ()) -> str:
+    """SHA-256 over the evaluation-relevant sources and data, stable across machines.
+
+    Covers the four core modules, the packaged dataset ``load_data()`` reads
+    (see ``_data_files``), and ``extra_paths``, which lets a runner script
+    include itself (and any extra data it reads) in the hash. Files
     are read as bytes in a fixed order, each prefixed with its basename, so
     renames and reorderings change the digest too.
     """
     here = Path(__file__).resolve().parent
     paths = [here / name for name in _CODE_VERSION_FILES]
+    paths += _data_files()
     paths += [Path(p).resolve() for p in extra_paths]
     digest = hashlib.sha256()
     for path in paths:
