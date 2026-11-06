@@ -6,7 +6,7 @@ final dataset is `data/boe_var_data.csv`: one row per quarter (`quarter` column,
 e.g. `1992Q1`), variables already transformed — **100·log of the level for every
 column except `bank_rate`, which is the level in percent**.
 
-Coverage: 1992Q1–2026Q1, 137 quarters, no NaNs (the estimation window
+Coverage: 1992Q1–2026Q2, 138 quarters, no NaNs (the estimation window
 1992Q1–2025Q1 is complete). The binding start is FRED's Brent series
 `POILBREUSDQ`, which begins 1992Q1.
 
@@ -53,7 +53,7 @@ Coverage: 1992Q1–2026Q1, 137 quarters, no NaNs (the estimation window
   |---|---|---|---|---|
   | 1992Q1–1999Q4 | 0.50 | 0.17 | 0.04 | 0.01 |
   | 2000Q1–2009Q4 | 0.48 | 0.16 | 0.03 | 0.05 |
-  | 2010Q1–2026Q1 | 0.45 | 0.16 | 0.02 | 0.07 |
+  | 2010Q1–2026Q2 | 0.45 | 0.16 | 0.02 | 0.07 |
 
   These are raw shares of total UK trade, informed by ONS Pink Book /
   UK trade statistics and the IMF Direction of Trade Statistics literature
@@ -99,6 +99,38 @@ Coverage: 1992Q1–2026Q1, 137 quarters, no NaNs (the estimation window
   growth ≈0.998/0.989 for GDP/CPI) but the new world GDP grows visibly faster
   over 2000–2010 (China) and the new world CPI slightly slower (Japanese
   deflation, low Chinese inflation).
-- Sample restricted to 1990Q1–2026Q1 then rows with any NaN dropped; the
+- Sample restricted to 1990Q1–2026Q2 then rows with any NaN dropped; the
   binding start is 1992Q1 (start of FRED `POILBREUSDQ`). The script asserts the
   1992Q1–2025Q1 estimation window is complete.
+
+## Vintage of the current build (2026Q2 data edge, built 6 Nov 2026)
+
+Downloaded 2026-11-06 by `scripts/download_data.py`. Release dates are those
+printed in each ONS CSV header; BoE and FRED give no release stamp, so the
+download date and last observation are recorded instead.
+
+| Source | Series | Release / vintage | Last observation |
+|---|---|---|---|
+| ONS UKEA (Quarterly national accounts) | ABMI | 30-09-2026 (next 22 Dec 2026) | 2026Q2 |
+| ONS MM23 (CPI, September 2026) | D7BT, D7CH, D7EC | 21-10-2026 (next 18 Nov 2026) | 2026 Sep |
+| ONS LMS | MGSX (satellite, `src/boe_var/_data/uk_unemployment_mgsx.csv`) | 20-10-2026 | 2026Q2 |
+| BoE IADB | IUQABEDR, XUQABK67, XUQAUSS | downloaded 2026-11-06 | 2026Q3 |
+| FRED | POILBREUSDQ | downloaded 2026-11-06 | 2026Q3 |
+| FRED | GDPC1 | downloaded 2026-11-06 | 2026Q3 |
+| FRED | CLVMNACSCAB1GQEA19, CLVMNACSCAB1GQDE, JPNRGDPEXP | downloaded 2026-11-06 | 2026Q2 |
+| FRED | CP0000EZ19M086NEST, CPIAUCSL | downloaded 2026-11-06 | 2026 Sep |
+| FRED | RGDPNACNA666NRUG (China GDP, PWT) | downloaded 2026-11-06 | 2023 |
+| FRED | CHNCPIALLMINMEI | downloaded 2026-11-06 | 2025 Apr |
+| FRED | CPALTT01JPQ661S / FPCPITOTLZGJPN | downloaded 2026-11-06 | 2021Q2 / 2025 |
+
+The binding edge is 2026Q2: euro-area and Japanese GDP end there (UK GDP
+2026Q2 is the ONS quarterly national accounts of 30 Sep 2026). The build caps
+the sample at 2026Q2 even though some series reach 2026Q3.
+
+Revisions against the 2026Q1 build: ONS Blue Book 2026 (in the 30 Sep QNA)
+revised `uk_gdp` (largest change to a quarterly growth rate 0.18 log points;
+level 2.8 to 4.3 log points higher over 1992Q1-2026Q1) and `world_gdp`
+moved through FRED revisions (largest growth change 0.14 log points). All
+other columns move by at most 0.003 log points in growth. As before, Japan
+drops out of world CPI after 2025Q4 (annual WB inflation ends in 2025) and
+China drops out of world CPI after 2025Q2; weights are renormalised.
