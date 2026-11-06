@@ -183,7 +183,7 @@
    }
   }
  },
- "code_version": "6fb45d3747fbc6fb71a6ab78f1e17a79b209e8ea741009e239cfdf76e4785c1b",
+ "code_version": "98cdcf62c4da0afb751851d2ca706d93b3b0b94f02e9c43b84c235caf7c094d8",
  "coverage_standard_error": {
   "note": "Binomial standard error sqrt(p(1-p)/n) at the NOMINAL level with n = 49 origins, quoted so a measured coverage is not read as exact. Origins overlap, so the number of independent observations is well below n and this understates the true sampling error.",
   "68": 0.0666,
