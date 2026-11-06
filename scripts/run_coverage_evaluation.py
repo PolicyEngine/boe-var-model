@@ -39,6 +39,27 @@ N_PATHS = 5                # stochastic paths per draw
 SEED = 20260729
 
 
+def _z(p: float) -> float:
+    """Inverse standard-normal CDF by bisection on erf (no scipy import)."""
+    from math import erf, sqrt
+
+    lo, hi = -12.0, 12.0
+    for _ in range(200):
+        mid = 0.5 * (lo + hi)
+        if 0.5 * (1.0 + erf(mid / sqrt(2.0))) < p:
+            lo = mid
+        else:
+            hi = mid
+    return 0.5 * (lo + hi)
+
+
+def _scale_factor(nominal: int, empirical: float) -> float | None:
+    """k = z(nominal) / z(empirical); None when empirical is 0 or 1."""
+    if not 0.0 < empirical < 1.0:
+        return None
+    return _z((1.0 + nominal / 100.0) / 2.0) / _z((1.0 + empirical) / 2.0)
+
+
 def band_scale_factors(coverage: dict, levels=(68, 90)) -> dict:
     """Gaussian half-width correction implied by measured coverage.
 
@@ -58,20 +79,6 @@ def band_scale_factors(coverage: dict, levels=(68, 90)) -> dict:
     so a consumer applying these factors is not re-deriving them from a
     number whose provenance it cannot check.
     """
-    from math import erf, sqrt
-
-    def _z(p: float) -> float:
-        # Inverse standard-normal CDF by bisection on erf; ample precision
-        # here and avoids a scipy import in the artifact path.
-        lo, hi = -12.0, 12.0
-        for _ in range(200):
-            mid = 0.5 * (lo + hi)
-            if 0.5 * (1.0 + erf(mid / sqrt(2.0))) < p:
-                lo = mid
-            else:
-                hi = mid
-        return 0.5 * (lo + hi)
-
     out = {}
     for lv in levels:
         z_nom = _z((1.0 + lv / 100.0) / 2.0)
@@ -96,8 +103,17 @@ def run_coverage(
     n_paths: int = N_PATHS,
     seed: int = SEED,
     dummies: np.ndarray | None = None,
+    record: dict | None = None,
 ) -> tuple[dict, np.ndarray]:
     """Empirical band coverage. Returns (hits-per-level, origin count per h).
+
+    ``record``: if a dict is passed, it is filled with the per-origin band
+    geometry the held-out calibration needs -- ``stretch[level]`` of shape
+    (origins, horizons, k), the factor by which that origin's band
+    half-width (on the side the outturn fell) would have to be scaled for
+    the outturn to sit on the band edge. The outturn is inside the band
+    scaled by k exactly when stretch <= k, so stretch <= 1 reproduces
+    ``hits``.
 
     ``dummies`` optionally supplies exogenous 0/1 columns aligned with ``y``
     (the six Covid quarters in the published specification). They are
@@ -120,6 +136,7 @@ def run_coverage(
     # hits[level][h][var] counts outturns inside the level band
     hits = {lv: np.zeros((horizons, k)) for lv in (68, 90)}
     n = np.zeros(horizons)
+    stretch = {lv: [] for lv in (68, 90)}
 
     for origin in origins:
         train = y[: origin + 1]
@@ -135,12 +152,105 @@ def run_coverage(
                 )
                 i += 1
         actual = y[origin + 1: origin + horizons + 1]
+        med = np.percentile(paths, 50.0, axis=0)
         for lv, (a, b) in {68: (16.0, 84.0), 90: (5.0, 95.0)}.items():
             lo = np.percentile(paths, a, axis=0)
             hi = np.percentile(paths, b, axis=0)
             hits[lv] += (lo <= actual) & (actual <= hi)
+            if record is not None:
+                stretch[lv].append(band_stretch(med, lo, hi, actual))
         n += 1
+    if record is not None:
+        record["stretch"] = {lv: np.asarray(v) for lv, v in stretch.items()}
     return hits, n
+
+
+def band_stretch(med, lo, hi, actual) -> np.ndarray:
+    """Half-width multiple at which ``actual`` sits on the band edge.
+
+    Uses the upper half-width when the outturn is above the median and the
+    lower one otherwise, the same around-the-median rescaling the published
+    fans apply. A zero half-width gives inf (0 if the outturn is the median).
+    """
+    med, lo, hi, actual = (np.asarray(x, dtype=float)
+                           for x in (med, lo, hi, actual))
+    up = actual >= med
+    dist = np.where(up, actual - med, med - actual)
+    half = np.where(up, hi - med, med - lo)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        out = np.where(half > 0, dist / np.where(half > 0, half, 1.0),
+                       np.where(dist > 0, np.inf, 0.0))
+    return out
+
+
+def holdout_calibration(stretch: dict, min_train: int = 12) -> dict:
+    """Coverage of the k-calibrated bands, scored on origins k was NOT fitted on.
+
+    ``stretch``: {level: (origins, horizons, k)} from ``run_coverage(record=)``.
+    For each level, horizon and variable, k = z(nominal) / z(empirical) as in
+    ``band_scale_factors``, then a band rescaled by k covers an outturn iff
+    stretch <= k. Three schemes:
+
+    - ``in_sample``: k fitted on all origins and judged on the same origins,
+      which is what the committed factors amount to;
+    - ``leave_one_out``: k refitted without the origin being scored;
+    - ``rolling_origin``: k fitted only on origins whose h-step outturn was
+      already observed at the scored origin (origin j with j + h <= i), the
+      only scheme a forecaster could have run in real time. The first
+      ``min_train`` usable origins per horizon are not scored.
+
+    Where the training coverage is 0 or 1 there is no finite k and the band
+    is left unscaled (k = 1). Returns means across variables per horizon,
+    per variable across horizons, and overall, plus the raw (k = 1) coverage
+    on the same scored origins for comparison.
+    """
+    out = {}
+    for lv, S in stretch.items():
+        S = np.asarray(S, dtype=float)
+        n_o, H, k = S.shape
+        inside = S <= 1.0
+        res = {name: np.full((n_o, H, k), np.nan)
+               for name in ("in_sample", "leave_one_out", "rolling_origin",
+                            "raw")}
+        res["raw"][:] = inside
+        for h in range(H):
+            for j in range(k):
+                col_in = inside[:, h, j]
+                k_all = _scale_factor(lv, float(col_in.mean()))
+                res["in_sample"][:, h, j] = S[:, h, j] <= (k_all or 1.0)
+                total = col_in.sum()
+                for i in range(n_o):
+                    emp = (total - col_in[i]) / (n_o - 1)
+                    kf = _scale_factor(lv, float(emp)) or 1.0
+                    res["leave_one_out"][i, h, j] = S[i, h, j] <= kf
+                    n_train = i - (h + 1) + 1   # origins 0..i-h-1
+                    if n_train >= min_train:
+                        emp_r = float(col_in[:n_train].mean())
+                        kr = _scale_factor(lv, emp_r) or 1.0
+                        res["rolling_origin"][i, h, j] = S[i, h, j] <= kr
+        rolled = ~np.isnan(res["rolling_origin"])
+        raw_rolled = np.where(rolled, res["raw"], np.nan)
+
+        def summ(a):
+            return {
+                "mean": round(float(np.nanmean(a)), 4),
+                "by_horizon": {f"h{h + 1}": round(float(np.nanmean(a[:, h])), 4)
+                               for h in range(H)},
+                "by_variable": {var: round(float(np.nanmean(a[:, :, j])), 4)
+                                for j, var in enumerate(COLUMNS[:k])},
+            }
+
+        out[str(lv)] = {
+            "nominal": lv / 100.0,
+            "raw": summ(res["raw"]),
+            "in_sample_calibrated": summ(res["in_sample"]),
+            "leave_one_out_calibrated": summ(res["leave_one_out"]),
+            "rolling_origin_calibrated": summ(res["rolling_origin"]),
+            "rolling_origin_raw_same_origins": summ(raw_rolled),
+            "rolling_origin_scored_origins_by_horizon": {
+                f"h{h + 1}": int(rolled[:, h, 0].sum()) for h in range(H)},
+        }
+    return out
 
 
 def main() -> None:
@@ -161,6 +271,7 @@ def main() -> None:
     T, k = y.shape
     n_origins = T - args.horizons - args.first_origin
 
+    rec_head, rec_prod = {}, {}
     hits, n = run_coverage(
         y,
         lags=args.lags,
@@ -169,6 +280,7 @@ def main() -> None:
         n_draws=args.draws,
         n_paths=args.paths,
         seed=args.seed,
+        record=rec_head,
     )
 
     # The block above matches rolling_evaluation.json's headline: no Covid
@@ -188,6 +300,7 @@ def main() -> None:
         n_paths=args.paths,
         seed=args.seed,
         dummies=covid,
+        record=rec_prod,
     )
 
     report = {
@@ -205,6 +318,14 @@ def main() -> None:
         "paths_per_draw": args.paths,
         "seed": args.seed,
         "sample": {"start": str(df.index[0]), "end": str(df.index[-1])},
+        # The data sample above is not the evaluation window: coverage is
+        # scored only on these origins (and their outturns), which the Covid
+        # and 2022 inflation quarters dominate.
+        "evaluated_origins": {
+            "first": str(df.index[args.first_origin]),
+            "last": str(df.index[T - args.horizons - 1]),
+            "last_outturn": str(df.index[-1]),
+        },
         "limitations": [
             "Estimation uses final revised data (pseudo-, not real-time).",
             "Coverage is on series levels in transformed model units.",
@@ -277,6 +398,27 @@ def main() -> None:
         ),
         "headline": band_scale_factors(report["coverage"]),
         "production_spec": band_scale_factors(report["production_spec"]["coverage"]),
+    }
+    # The factors above are fitted on the same origins their coverage is
+    # judged on, so "calibrated coverage = nominal" holds by construction.
+    # Score them on origins they were not fitted on.
+    report["calibration_holdout"] = {
+        "method": (
+            "per level/horizon/variable k = z(nominal)/z(empirical) refitted "
+            "without the scored origin (leave_one_out) or on origins whose "
+            "outturn was already observed (rolling_origin, the real-time "
+            "scheme; first 12 usable origins per horizon not scored); the "
+            "band half-width is scaled by k around the median and the "
+            "outturn scored against it"
+        ),
+        "caveat": (
+            "Consecutive origins share outturn quarters, so leave-one-out "
+            "still leaks neighbouring information and is optimistic; "
+            "rolling_origin is the honest number. Measured on series levels "
+            "in model units, like the factors themselves."
+        ),
+        "headline": holdout_calibration(rec_head["stretch"]),
+        "production_spec": holdout_calibration(rec_prod["stretch"]),
     }
     output = Path(args.output)
     output.parent.mkdir(parents=True, exist_ok=True)

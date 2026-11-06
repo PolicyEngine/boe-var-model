@@ -11,6 +11,11 @@
   "start": "1992Q1",
   "end": "2026Q1"
  },
+ "evaluated_origins": {
+  "first": "2012Q1",
+  "last": "2024Q1",
+  "last_outturn": "2026Q1"
+ },
  "limitations": [
   "Estimation uses final revised data (pseudo-, not real-time).",
   "Coverage is on series levels in transformed model units.",
@@ -183,7 +188,7 @@
    }
   }
  },
- "code_version": "98cdcf62c4da0afb751851d2ca706d93b3b0b94f02e9c43b84c235caf7c094d8",
+ "code_version": "06e5b11551cc999f1bbe0089c41e5c391fd4959287b1cc037e2b1141dd51ffa2",
  "coverage_standard_error": {
   "note": "Binomial standard error sqrt(p(1-p)/n) at the NOMINAL level with n = 49 origins, quoted so a measured coverage is not read as exact. Origins overlap, so the number of independent observations is well below n and this understates the true sampling error.",
   "68": 0.0666,
@@ -691,6 +696,526 @@
      "cpisa": 1.9046,
      "cpi_energy": 2.2736,
      "uk_gdp": 1.5407
+    }
+   }
+  }
+ },
+ "calibration_holdout": {
+  "method": "per level/horizon/variable k = z(nominal)/z(empirical) refitted without the scored origin (leave_one_out) or on origins whose outturn was already observed (rolling_origin, the real-time scheme; first 12 usable origins per horizon not scored); the band half-width is scaled by k around the median and the outturn scored against it",
+  "caveat": "Consecutive origins share outturn quarters, so leave-one-out still leaks neighbouring information and is optimistic; rolling_origin is the honest number. Measured on series levels in model units, like the factors themselves.",
+  "headline": {
+   "68": {
+    "nominal": 0.68,
+    "raw": {
+     "mean": 0.6215,
+     "by_horizon": {
+      "h1": 0.7117,
+      "h2": 0.6786,
+      "h3": 0.6352,
+      "h4": 0.5995,
+      "h5": 0.5995,
+      "h6": 0.602,
+      "h7": 0.5791,
+      "h8": 0.5663
+     },
+     "by_variable": {
+      "world_gdp": 0.7832,
+      "world_cpi": 0.5714,
+      "oil_price": 0.6403,
+      "bank_rate": 0.8342,
+      "eri": 0.6633,
+      "cpisa": 0.4362,
+      "cpi_energy": 0.3622,
+      "uk_gdp": 0.6811
+     }
+    },
+    "in_sample_calibrated": {
+     "mean": 0.6862,
+     "by_horizon": {
+      "h1": 0.7041,
+      "h2": 0.6964,
+      "h3": 0.6913,
+      "h4": 0.7143,
+      "h5": 0.6888,
+      "h6": 0.6684,
+      "h7": 0.6735,
+      "h8": 0.6531
+     },
+     "by_variable": {
+      "world_gdp": 0.7066,
+      "world_cpi": 0.6633,
+      "oil_price": 0.6658,
+      "bank_rate": 0.7755,
+      "eri": 0.6684,
+      "cpisa": 0.6429,
+      "cpi_energy": 0.6811,
+      "uk_gdp": 0.6862
+     }
+    },
+    "leave_one_out_calibrated": {
+     "mean": 0.6811,
+     "by_horizon": {
+      "h1": 0.7092,
+      "h2": 0.6888,
+      "h3": 0.6888,
+      "h4": 0.699,
+      "h5": 0.6862,
+      "h6": 0.6658,
+      "h7": 0.6633,
+      "h8": 0.648
+     },
+     "by_variable": {
+      "world_gdp": 0.7092,
+      "world_cpi": 0.6582,
+      "oil_price": 0.6556,
+      "bank_rate": 0.7781,
+      "eri": 0.6531,
+      "cpisa": 0.6352,
+      "cpi_energy": 0.676,
+      "uk_gdp": 0.6837
+     }
+    },
+    "rolling_origin_calibrated": {
+     "mean": 0.6959,
+     "by_horizon": {
+      "h1": 0.6892,
+      "h2": 0.691,
+      "h3": 0.6929,
+      "h4": 0.7022,
+      "h5": 0.697,
+      "h6": 0.6914,
+      "h7": 0.7056,
+      "h8": 0.7
+     },
+     "by_variable": {
+      "world_gdp": 0.6381,
+      "world_cpi": 0.694,
+      "oil_price": 0.75,
+      "bank_rate": 0.7052,
+      "eri": 0.7425,
+      "cpisa": 0.7201,
+      "cpi_energy": 0.6231,
+      "uk_gdp": 0.694
+     }
+    },
+    "rolling_origin_raw_same_origins": {
+     "mean": 0.6539,
+     "by_horizon": {
+      "h1": 0.7128,
+      "h2": 0.691,
+      "h3": 0.6643,
+      "h4": 0.6287,
+      "h5": 0.6288,
+      "h6": 0.6445,
+      "h7": 0.625,
+      "h8": 0.6208
+     },
+     "by_variable": {
+      "world_gdp": 0.7388,
+      "world_cpi": 0.6455,
+      "oil_price": 0.7052,
+      "bank_rate": 0.7575,
+      "eri": 0.75,
+      "cpisa": 0.5261,
+      "cpi_energy": 0.4142,
+      "uk_gdp": 0.694
+     }
+    },
+    "rolling_origin_scored_origins_by_horizon": {
+     "h1": 37,
+     "h2": 36,
+     "h3": 35,
+     "h4": 34,
+     "h5": 33,
+     "h6": 32,
+     "h7": 31,
+     "h8": 30
+    }
+   },
+   "90": {
+    "nominal": 0.9,
+    "raw": {
+     "mean": 0.7704,
+     "by_horizon": {
+      "h1": 0.8622,
+      "h2": 0.8138,
+      "h3": 0.8061,
+      "h4": 0.7577,
+      "h5": 0.7551,
+      "h6": 0.727,
+      "h7": 0.7219,
+      "h8": 0.7194
+     },
+     "by_variable": {
+      "world_gdp": 0.8852,
+      "world_cpi": 0.75,
+      "oil_price": 0.801,
+      "bank_rate": 0.8776,
+      "eri": 0.8189,
+      "cpisa": 0.6301,
+      "cpi_energy": 0.5842,
+      "uk_gdp": 0.8163
+     }
+    },
+    "in_sample_calibrated": {
+     "mean": 0.8699,
+     "by_horizon": {
+      "h1": 0.8878,
+      "h2": 0.898,
+      "h3": 0.8724,
+      "h4": 0.8827,
+      "h5": 0.8724,
+      "h6": 0.8546,
+      "h7": 0.8546,
+      "h8": 0.8367
+     },
+     "by_variable": {
+      "world_gdp": 0.8878,
+      "world_cpi": 0.8393,
+      "oil_price": 0.8852,
+      "bank_rate": 0.8776,
+      "eri": 0.898,
+      "cpisa": 0.8087,
+      "cpi_energy": 0.8929,
+      "uk_gdp": 0.8699
+     }
+    },
+    "leave_one_out_calibrated": {
+     "mean": 0.8635,
+     "by_horizon": {
+      "h1": 0.8827,
+      "h2": 0.8903,
+      "h3": 0.8648,
+      "h4": 0.8776,
+      "h5": 0.8673,
+      "h6": 0.8495,
+      "h7": 0.8418,
+      "h8": 0.8342
+     },
+     "by_variable": {
+      "world_gdp": 0.8878,
+      "world_cpi": 0.8367,
+      "oil_price": 0.8724,
+      "bank_rate": 0.875,
+      "eri": 0.8929,
+      "cpisa": 0.7959,
+      "cpi_energy": 0.8852,
+      "uk_gdp": 0.8622
+     }
+    },
+    "rolling_origin_calibrated": {
+     "mean": 0.8396,
+     "by_horizon": {
+      "h1": 0.8716,
+      "h2": 0.8681,
+      "h3": 0.85,
+      "h4": 0.8382,
+      "h5": 0.8258,
+      "h6": 0.832,
+      "h7": 0.8145,
+      "h8": 0.8042
+     },
+     "by_variable": {
+      "world_gdp": 0.8246,
+      "world_cpi": 0.7724,
+      "oil_price": 0.9701,
+      "bank_rate": 0.8097,
+      "eri": 0.9328,
+      "cpisa": 0.8022,
+      "cpi_energy": 0.7985,
+      "uk_gdp": 0.806
+     }
+    },
+    "rolling_origin_raw_same_origins": {
+     "mean": 0.7771,
+     "by_horizon": {
+      "h1": 0.8547,
+      "h2": 0.8021,
+      "h3": 0.8036,
+      "h4": 0.7684,
+      "h5": 0.7576,
+      "h6": 0.7344,
+      "h7": 0.7339,
+      "h8": 0.7417
+     },
+     "by_variable": {
+      "world_gdp": 0.8321,
+      "world_cpi": 0.7575,
+      "oil_price": 0.8619,
+      "bank_rate": 0.8209,
+      "eri": 0.8843,
+      "cpisa": 0.6978,
+      "cpi_energy": 0.5821,
+      "uk_gdp": 0.7799
+     }
+    },
+    "rolling_origin_scored_origins_by_horizon": {
+     "h1": 37,
+     "h2": 36,
+     "h3": 35,
+     "h4": 34,
+     "h5": 33,
+     "h6": 32,
+     "h7": 31,
+     "h8": 30
+    }
+   }
+  },
+  "production_spec": {
+   "68": {
+    "nominal": 0.68,
+    "raw": {
+     "mean": 0.6113,
+     "by_horizon": {
+      "h1": 0.6913,
+      "h2": 0.6633,
+      "h3": 0.6122,
+      "h4": 0.6097,
+      "h5": 0.5842,
+      "h6": 0.5867,
+      "h7": 0.5791,
+      "h8": 0.5638
+     },
+     "by_variable": {
+      "world_gdp": 0.7755,
+      "world_cpi": 0.5612,
+      "oil_price": 0.6224,
+      "bank_rate": 0.8367,
+      "eri": 0.676,
+      "cpisa": 0.4413,
+      "cpi_energy": 0.3673,
+      "uk_gdp": 0.6097
+     }
+    },
+    "in_sample_calibrated": {
+     "mean": 0.6869,
+     "by_horizon": {
+      "h1": 0.7143,
+      "h2": 0.6862,
+      "h3": 0.7041,
+      "h4": 0.6913,
+      "h5": 0.699,
+      "h6": 0.6684,
+      "h7": 0.6684,
+      "h8": 0.6633
+     },
+     "by_variable": {
+      "world_gdp": 0.7117,
+      "world_cpi": 0.6684,
+      "oil_price": 0.6531,
+      "bank_rate": 0.7806,
+      "eri": 0.6658,
+      "cpisa": 0.6556,
+      "cpi_energy": 0.6888,
+      "uk_gdp": 0.6709
+     }
+    },
+    "leave_one_out_calibrated": {
+     "mean": 0.684,
+     "by_horizon": {
+      "h1": 0.7143,
+      "h2": 0.6888,
+      "h3": 0.7015,
+      "h4": 0.6862,
+      "h5": 0.6913,
+      "h6": 0.6658,
+      "h7": 0.6658,
+      "h8": 0.6582
+     },
+     "by_variable": {
+      "world_gdp": 0.7168,
+      "world_cpi": 0.6658,
+      "oil_price": 0.648,
+      "bank_rate": 0.7832,
+      "eri": 0.6658,
+      "cpisa": 0.648,
+      "cpi_energy": 0.6735,
+      "uk_gdp": 0.6709
+     }
+    },
+    "rolling_origin_calibrated": {
+     "mean": 0.6856,
+     "by_horizon": {
+      "h1": 0.6926,
+      "h2": 0.6528,
+      "h3": 0.6893,
+      "h4": 0.6949,
+      "h5": 0.7045,
+      "h6": 0.6719,
+      "h7": 0.6895,
+      "h8": 0.6917
+     },
+     "by_variable": {
+      "world_gdp": 0.6231,
+      "world_cpi": 0.6978,
+      "oil_price": 0.7425,
+      "bank_rate": 0.6978,
+      "eri": 0.7649,
+      "cpisa": 0.7351,
+      "cpi_energy": 0.6007,
+      "uk_gdp": 0.6231
+     }
+    },
+    "rolling_origin_raw_same_origins": {
+     "mean": 0.6348,
+     "by_horizon": {
+      "h1": 0.6824,
+      "h2": 0.6597,
+      "h3": 0.6393,
+      "h4": 0.6397,
+      "h5": 0.6136,
+      "h6": 0.6211,
+      "h7": 0.6129,
+      "h8": 0.5958
+     },
+     "by_variable": {
+      "world_gdp": 0.7127,
+      "world_cpi": 0.6306,
+      "oil_price": 0.6828,
+      "bank_rate": 0.7612,
+      "eri": 0.7724,
+      "cpisa": 0.5261,
+      "cpi_energy": 0.4067,
+      "uk_gdp": 0.5858
+     }
+    },
+    "rolling_origin_scored_origins_by_horizon": {
+     "h1": 37,
+     "h2": 36,
+     "h3": 35,
+     "h4": 34,
+     "h5": 33,
+     "h6": 32,
+     "h7": 31,
+     "h8": 30
+    }
+   },
+   "90": {
+    "nominal": 0.9,
+    "raw": {
+     "mean": 0.764,
+     "by_horizon": {
+      "h1": 0.8571,
+      "h2": 0.8087,
+      "h3": 0.7908,
+      "h4": 0.7679,
+      "h5": 0.7449,
+      "h6": 0.727,
+      "h7": 0.7092,
+      "h8": 0.7066
+     },
+     "by_variable": {
+      "world_gdp": 0.8393,
+      "world_cpi": 0.7551,
+      "oil_price": 0.8036,
+      "bank_rate": 0.8776,
+      "eri": 0.8163,
+      "cpisa": 0.6505,
+      "cpi_energy": 0.5842,
+      "uk_gdp": 0.7857
+     }
+    },
+    "in_sample_calibrated": {
+     "mean": 0.8587,
+     "by_horizon": {
+      "h1": 0.8852,
+      "h2": 0.8852,
+      "h3": 0.8648,
+      "h4": 0.8546,
+      "h5": 0.852,
+      "h6": 0.8495,
+      "h7": 0.8367,
+      "h8": 0.8418
+     },
+     "by_variable": {
+      "world_gdp": 0.8622,
+      "world_cpi": 0.8418,
+      "oil_price": 0.8827,
+      "bank_rate": 0.8776,
+      "eri": 0.9005,
+      "cpisa": 0.7985,
+      "cpi_energy": 0.8827,
+      "uk_gdp": 0.824
+     }
+    },
+    "leave_one_out_calibrated": {
+     "mean": 0.8527,
+     "by_horizon": {
+      "h1": 0.8776,
+      "h2": 0.8776,
+      "h3": 0.8648,
+      "h4": 0.8495,
+      "h5": 0.8495,
+      "h6": 0.8393,
+      "h7": 0.8291,
+      "h8": 0.8342
+     },
+     "by_variable": {
+      "world_gdp": 0.8546,
+      "world_cpi": 0.8316,
+      "oil_price": 0.875,
+      "bank_rate": 0.8776,
+      "eri": 0.9005,
+      "cpisa": 0.7883,
+      "cpi_energy": 0.8724,
+      "uk_gdp": 0.8214
+     }
+    },
+    "rolling_origin_calibrated": {
+     "mean": 0.8223,
+     "by_horizon": {
+      "h1": 0.8547,
+      "h2": 0.8438,
+      "h3": 0.8321,
+      "h4": 0.8162,
+      "h5": 0.8258,
+      "h6": 0.8164,
+      "h7": 0.7944,
+      "h8": 0.7833
+     },
+     "by_variable": {
+      "world_gdp": 0.7649,
+      "world_cpi": 0.7799,
+      "oil_price": 0.9664,
+      "bank_rate": 0.8134,
+      "eri": 0.9403,
+      "cpisa": 0.7985,
+      "cpi_energy": 0.7873,
+      "uk_gdp": 0.7276
+     }
+    },
+    "rolling_origin_raw_same_origins": {
+     "mean": 0.7677,
+     "by_horizon": {
+      "h1": 0.8446,
+      "h2": 0.7951,
+      "h3": 0.7857,
+      "h4": 0.761,
+      "h5": 0.7576,
+      "h6": 0.7305,
+      "h7": 0.7258,
+      "h8": 0.7208
+     },
+     "by_variable": {
+      "world_gdp": 0.7649,
+      "world_cpi": 0.7649,
+      "oil_price": 0.8731,
+      "bank_rate": 0.8209,
+      "eri": 0.8806,
+      "cpisa": 0.7201,
+      "cpi_energy": 0.5933,
+      "uk_gdp": 0.7239
+     }
+    },
+    "rolling_origin_scored_origins_by_horizon": {
+     "h1": 37,
+     "h2": 36,
+     "h3": 35,
+     "h4": 34,
+     "h5": 33,
+     "h6": 32,
+     "h7": 31,
+     "h8": 30
     }
    }
   }
