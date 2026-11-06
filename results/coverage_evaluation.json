@@ -188,7 +188,7 @@
    }
   }
  },
- "code_version": "805457b2988ec6fdb93abc9bdfa3154c262a1986ac017b14f167ce3c338a12d2",
+ "code_version": "f1501fbc43a991ab919685f9421e003d0ae3a8051288841f0ac5f887451e17ee",
  "coverage_standard_error": {
   "note": "Binomial standard error sqrt(p(1-p)/n) at the NOMINAL level with n = 49 origins, quoted so a measured coverage is not read as exact. Origins overlap, so the number of independent observations is well below n and this understates the true sampling error.",
   "68": 0.0666,
@@ -1222,7 +1222,7 @@
  },
  "conformal_calibration": {
   "method": "split-conformal: per level/horizon/variable the band half-width around the median is scaled by the ceil((n+1)*level)-th smallest of the n past band stretches (outturn distance from the median over the half-width on that side); rolling origin, so origin i uses only origins whose outturn was observed at i; first 12 usable origins per horizon not scored. The whole distribution is recalibrated the same way level by level for the PIT histogram and CRPS.",
-  "verdict": "not adopted: out of sample the conformal 90% band covers no more than the Gaussian-k band, at a wider average width and a worse CRPS. Forecast misses cluster in time (2019-22), which violates the exchangeability the method relies on; the fix is a model with time-varying volatility (issue #12 option 1).",
+  "verdict": "not adopted: out of sample the conformal 90% band covers within sampling error of the Gaussian-k band (0.824 vs 0.822, s.e. about 0.05), at a wider average width and a worse CRPS, and it narrows bands with a history of small errors (bank_rate 68% coverage 0.39). Forecast misses cluster in time (2019-22), which violates the exchangeability the method relies on; the fix is a model with time-varying volatility (issue #12 option 1).",
   "caveat": "With 12-48 past origins the 90% factor is a high order statistic (the 12th of 12 at the start), so one extreme outturn sets it until enough later origins arrive. Consecutive origins share outturn quarters. Levels in model units.",
   "headline": {
    "68": {

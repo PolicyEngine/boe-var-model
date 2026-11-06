@@ -744,9 +744,11 @@ def main() -> None:
             "level for the PIT histogram and CRPS."
         ),
         "verdict": (
-            "not adopted: out of sample the conformal 90% band covers no more "
-            "than the Gaussian-k band, at a wider average width and a worse "
-            "CRPS. Forecast misses cluster in time (2019-22), which "
+            "not adopted: out of sample the conformal 90% band covers within "
+            "sampling error of the Gaussian-k band (0.824 vs 0.822, s.e. about "
+            "0.05), at a wider average width and a worse CRPS, and it narrows "
+            "bands with a history of small errors (bank_rate 68% coverage "
+            "0.39). Forecast misses cluster in time (2019-22), which "
             "violates the exchangeability the method relies on; the fix is a "
             "model with time-varying volatility (issue #12 option 1)."
         ),
