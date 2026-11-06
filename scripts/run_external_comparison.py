@@ -7,8 +7,9 @@ and fiscal outlook. Those two comparators are published numbers, transcribed
 in the document with their source table. Everything on *our* side is produced
 here, so no number in that document is unreproducible.
 
-Prints, for UK CPI and UK GDP (four-quarter rates, the basis both comparators
-publish):
+Prints, for UK CPI and UK GDP (simple four-quarter rates, 100*(P_t/P_{t-4}-1),
+the basis both comparators publish; the model's own ``forecast.yoy`` is a log
+difference and is converted with ``forecast.log_to_simple_pct`` at print time):
 
 1. the weighted-median forecast path and 68% band from the production sample;
 2. the same path re-estimated on a pre-Covid sample, which is what identifies
@@ -50,6 +51,9 @@ I_BANK_RATE, I_CPI, I_CPI_ENERGY, I_GDP = 3, 5, 6, 7
 # which is the form the BoE publishes (MPR Table 3.B row (g)).
 ENERGY_CPI_WEIGHT = 0.060
 I_MP_SHOCK = 6  # 'UK mon. pol.' in analysis.SHOCK_NAMES
+
+# Model rates are 100*log differences; every comparator publishes simple rates.
+SIMPLE = forecast.log_to_simple_pct
 
 # The quarters the BoE MPR and the OBR EFO both publish on.
 COMPARISON_QUARTERS = ("2026Q3", "2027Q3", "2028Q3", "2029Q3")
@@ -137,13 +141,21 @@ def main() -> None:
         print(f"{'Quarter':<8} {'CPI med':>8} {'CPI 68%':>16} "
               f"{'GDP med':>8} {'GDP 68%':>16} {'Bank Rate':>10}")
         print(f"{'':8} {'YoY %':>8} {'':>16} {'YoY %':>8} {'':>16} {'level, %':>10}")
+        # Quantiles are of the log-difference paths; the simple-rate map is
+        # monotone, so converting the quantiles equals the quantiles of the
+        # converted paths.
+        pct = {key: SIMPLE(agg[key]) for key in ("median", "lo68", "hi68")}
         for q in wanted:
             h = at[q]
-            print(f"{q:<8} {agg['median'][h, I_CPI]:>8.2f} "
-                  f"{agg['lo68'][h, I_CPI]:>7.2f}-{agg['hi68'][h, I_CPI]:<8.2f} "
-                  f"{agg['median'][h, I_GDP]:>8.2f} "
-                  f"{agg['lo68'][h, I_GDP]:>7.2f}-{agg['hi68'][h, I_GDP]:<8.2f} "
+            print(f"{q:<8} {pct['median'][h, I_CPI]:>8.2f} "
+                  f"{pct['lo68'][h, I_CPI]:>7.2f}-{pct['hi68'][h, I_CPI]:<8.2f} "
+                  f"{pct['median'][h, I_GDP]:>8.2f} "
+                  f"{pct['lo68'][h, I_GDP]:>7.2f}-{pct['hi68'][h, I_GDP]:<8.2f} "
                   f"{levels['median'][h, I_BANK_RATE]:>10.2f}")
+        print("  (audit, log-difference basis medians CPI / GDP: "
+              + "; ".join(f"{q} {agg['median'][at[q], I_CPI]:.2f} / "
+                          f"{agg['median'][at[q], I_GDP]:.2f}" for q in wanted)
+              + ")")
         print()
         return pairs, w, agg, levels
 
@@ -170,11 +182,11 @@ def main() -> None:
           "only -- a lower bound)")
     for q in wanted:
         h = at[q]
-        energy_pp = agg["median"][h, I_CPI_ENERGY] * ENERGY_CPI_WEIGHT
+        energy_pp = SIMPLE(agg["median"][h, I_CPI_ENERGY]) * ENERGY_CPI_WEIGHT
         print(f"{q:<8} {u_bands['median'][h]:>9.2f} "
               f"{u_bands['lo68'][h]:>7.2f}-{u_bands['hi68'][h]:<8.2f} "
               f"{energy_pp:>10.2f} {levels_prod['median'][h, I_BANK_RATE]:>10.2f}")
-    print("  Energy pp = model YoY energy-price inflation x "
+    print("  Energy pp = model simple YoY energy-price inflation x "
           f"{ENERGY_CPI_WEIGHT:.3f} CPI weight, comparable to MPR Table 3.B row (g).")
     print()
 
@@ -189,7 +201,8 @@ def main() -> None:
     yoy_effect[4:] = level[4:] - level[:-4]
     print("--- Identified UK monetary-policy shock (median IRF)")
     print(f"Bank Rate on impact: {impact:+.3f}pp")
-    print(f"YoY CPI effect at h=8..13: "
+    print(f"YoY CPI effect at h=8..13 (log points; a rate gap, so the "
+          f"simple-rate conversion is second order): "
           f"{np.round(yoy_effect[8:14], 3)}")
     for bp in (0.35,):
         scaled = yoy_effect[8:14] * bp / abs(impact)
@@ -211,7 +224,7 @@ def main() -> None:
 
     levels_hist = df.to_numpy(dtype=float)[:, I_CPI]
     print("\n--- Realised annualised CPI inflation, by window "
-          "(100*log levels, so a difference IS the growth rate)")
+          "(simple annualised rate, the same basis as the forecast tables)")
     for start, stop in [(args.est_start, args.est_end), (args.est_start, args.precovid_end),
                         ("2021Q1", "2023Q4"), ("2023Q4", str(origin))]:
         try:
@@ -222,7 +235,7 @@ def main() -> None:
         years = (i1 - i0) / 4
         if years > 0:
             print(f"    {start} -> {stop}: "
-                  f"{(levels_hist[i1] - levels_hist[i0]) / years:.2f}%")
+                  f"{float(SIMPLE((levels_hist[i1] - levels_hist[i0]) / years)):.2f}%")
     print("    Compare the last window against the forecast plateau above.")
 
 

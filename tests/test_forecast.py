@@ -8,11 +8,13 @@ from boe_var.forecast import (
     composite_irf,
     forecast_bands,
     forecast_revision,
+    log_to_simple_pct,
     reduced_form_residuals,
     sample_forecast,
     shock_distribution_T,
     unconditional_forecast,
     yoy,
+    yoy_pct,
     yoy_transform_irf,
 )
 
@@ -79,6 +81,38 @@ def test_yoy():
     np.testing.assert_allclose(out[:, 1], X[4:, 1] - X[:-4, 1])
     with pytest.raises(ValueError):
         yoy(np.arange(4.0))
+
+
+def test_yoy_pct_is_the_simple_rate_ons_publishes():
+    """ONS/BoE/OBR publish 100*(P_t/P_{t-4} - 1); the model stores 100*log P.
+
+    A 10% price rise is 9.53 log points: comparing the log rate with a
+    published 10% would score a 0.47pp forecast error that is pure units.
+    """
+    prices = np.array([100.0, 101.0, 102.0, 103.0, 110.0, 103.0, 104.0, 108.0])
+    levels = 100.0 * np.log(prices)
+    expected = 100.0 * (prices[4:] / prices[:-4] - 1.0)
+    np.testing.assert_allclose(yoy_pct(levels), expected, atol=1e-12)
+    assert yoy_pct(levels)[0] == pytest.approx(10.0)
+    assert yoy(levels)[0] == pytest.approx(9.531, abs=1e-3)
+    # 2-d input converts per column, and the gap is about x^2 / 200
+    X = np.column_stack([levels, levels])
+    np.testing.assert_allclose(yoy_pct(X)[:, 1], expected, atol=1e-12)
+    gap = yoy_pct(levels) - yoy(levels)
+    np.testing.assert_allclose(gap, yoy(levels) ** 2 / 200.0, rtol=0.05,
+                               atol=1e-4)
+
+
+def test_log_to_simple_pct_commutes_with_band_quantiles():
+    """Converting band edges equals the band of converted paths (monotone map),
+    so the published tables may convert the aggregate rather than every path."""
+    paths = RNG.normal(3.0, 2.0, size=4001)
+    for q in (5, 16, 50, 84, 95):
+        np.testing.assert_allclose(
+            log_to_simple_pct(np.percentile(paths, q, method="lower")),
+            np.percentile(log_to_simple_pct(paths), q, method="lower"))
+    assert log_to_simple_pct(0.0) == 0.0
+    assert -5.0 < log_to_simple_pct(-5.0) < -4.8  # falls are smaller in simple terms
 
 
 def test_sample_forecast_reduces_to_deterministic_when_sigma_zero():

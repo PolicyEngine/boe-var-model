@@ -8,6 +8,15 @@ the monetary-policy IRF scaling). The BoE and OBR columns are published numbers,
 transcribed with their source table below. Monte Carlo noise: the production run
 here accepted 449 draws at ESS 211, the pre-Covid run 296 at ESS 167.
 
+**Basis note (6 Nov 2026).** All SVAR rates in this document are now simple
+four-quarter rates, 100*(P_t/P_{t-4}-1), the basis the BoE and the OBR publish.
+The 22 September version compared the model's four-quarter LOG difference with
+those simple rates, which understated every SVAR CPI/GDP figure by about
+x^2/200 (0.03-0.05pp on CPI near 3%). The regenerated run reproduces the
+September log-basis medians exactly (449 accepted, ESS 210.9), so every change
+below is the units correction, not Monte Carlo noise. Unemployment, Bank Rate,
+the energy contribution (to two decimals) and the MP-shock scaling are unchanged.
+
 ## Part 1: vs the BoE July 2026 MPR central projection
 
 Our forecast: unconditional SVAR, estimated 1992Q1-2025Q1, forecast origin T = 2026Q1
@@ -18,35 +27,35 @@ BoE: July 2026 MPR Table 3.B central projection, conditioned on the market Bank 
 ### CPI inflation, four-quarter, %
 | Quarter | SVAR median | SVAR 68% | BoE central | Gap (SVAR-BoE) |
 |---|---|---|---|---|
-| 2026Q3 | 2.61 | 1.89-3.31 | 2.9 | -0.29 |
-| 2027Q3 | 2.96 | 1.66-4.23 | 2.6 | +0.36 |
-| 2028Q3 | 2.93 | 1.65-4.41 | 1.8 | +1.13 |
-| 2029Q3 | 2.97 | 1.59-4.39 | 1.9 | +1.07 |
+| 2026Q3 | 2.64 | 1.90-3.37 | 2.9 | -0.26 |
+| 2027Q3 | 3.00 | 1.68-4.32 | 2.6 | +0.40 |
+| 2028Q3 | 2.98 | 1.67-4.51 | 1.8 | +1.18 |
+| 2029Q3 | 3.02 | 1.60-4.49 | 1.9 | +1.12 |
 
 ### GDP growth, four-quarter, %
 | Quarter | SVAR median | SVAR 68% | BoE central | Gap |
 |---|---|---|---|---|
-| 2026Q3 | 1.36 | 0.58-2.19 | 1.1 | +0.26 |
-| 2027Q3 | 1.46 | 0.19-2.64 | 1.1 | +0.36 |
-| 2028Q3 | 1.45 | 0.06-2.72 | 1.7 | -0.25 |
-| 2029Q3 | 1.51 | 0.10-2.76 | 1.6 | -0.09 |
+| 2026Q3 | 1.37 | 0.59-2.21 | 1.1 | +0.27 |
+| 2027Q3 | 1.47 | 0.19-2.68 | 1.1 | +0.37 |
+| 2028Q3 | 1.46 | 0.06-2.75 | 1.7 | -0.24 |
+| 2029Q3 | 1.53 | 0.10-2.80 | 1.6 | -0.07 |
 
 BoE scenarios for context (CPI): milder 2.7/2.4/1.7/1.7; adverse 3.1/4.1/2.8/2.4.
 
 ### Read
 - GDP: agreement throughout. Every BoE point sits inside the SVAR 68% band, gaps <= 0.4pp.
   The SVAR misses BoE's 2028 pickup (BoE has growth accelerating as the real-income drag fades;
-  the SVAR flattens at ~1.45%).
-- CPI near term: 2.61 vs 2.9 in 2026Q3. BoE has more data and forecasts higher: the July MPR puts
+  the SVAR flattens at ~1.46%).
+- CPI near term: 2.64 vs 2.9 in 2026Q3. BoE has more data and forecasts higher: the July MPR puts
   a +0.6pp direct energy contribution into 2026Q3 CPI and a real-income drag through 2027. Our
   origin is 2026Q1 data, so the SVAR largely predates that shock - which also explains why BoE
   GDP runs 0.3pp BELOW ours in 2026-27.
 - CPI medium term: the real divergence. BoE returns near target (1.8-1.9% by 2028-29); the SVAR
-  sits flat at ~2.95%, ~1.1pp above, landing on BoE's adverse scenario (2.8% in 2028Q3).
+  sits flat at ~3.0%, ~1.15pp above, landing on BoE's adverse scenario (2.8% in 2028Q3).
 - Mechanism, checked: the SVAR's median Bank Rate path barely moves - 3.74% in 2026Q2 rising to
   3.91% by 2029Q3, i.e. roughly the current 3.75% held flat - against BoE's conditioning curve of
   3.8% then 4.2% from 2027. So the SVAR delivers ~30-40bp LESS tightening than the market curve
-  BoE conditions on, and has no target-anchoring mechanism at all. On where the ~2.95% plateau
+  BoE conditions on, and has no target-anchoring mechanism at all. On where the ~3.0% plateau
   comes from, see 2.3(c) - it is not a sample average and not a steady state.
 - Bands: the 68% CPI band is ~2.6pp wide by 2027 and spans BoE's central, milder and adverse
   paths - at this horizon the SVAR does not discriminate between them.
@@ -92,18 +101,18 @@ volumes, ONS ABMI basis) - the same two ONS series the SVAR and the BoE MPR use.
 CPI inflation, four-quarter %:
 | Quarter | SVAR median | SVAR 68% | BoE Jul-26 | OBR Mar-26 EFO |
 |---|---|---|---|---|
-| 2026Q3 | 2.61 | 1.89-3.31 | 2.9 | 2.08 |
-| 2027Q3 | 2.96 | 1.66-4.23 | 2.6 | 2.01 |
-| 2028Q3 | 2.93 | 1.65-4.41 | 1.8 | 2.02 |
-| 2029Q3 | 2.97 | 1.59-4.39 | 1.9 | 2.00 |
+| 2026Q3 | 2.64 | 1.90-3.37 | 2.9 | 2.08 |
+| 2027Q3 | 3.00 | 1.68-4.32 | 2.6 | 2.01 |
+| 2028Q3 | 2.98 | 1.67-4.51 | 1.8 | 2.02 |
+| 2029Q3 | 3.02 | 1.60-4.49 | 1.9 | 2.00 |
 
 GDP growth, four-quarter %:
 | Quarter | SVAR median | SVAR 68% | BoE Jul-26 | OBR Mar-26 EFO |
 |---|---|---|---|---|
-| 2026Q3 | 1.36 | 0.58-2.19 | 1.1 | 1.22 |
-| 2027Q3 | 1.46 | 0.19-2.64 | 1.1 | 1.61 |
-| 2028Q3 | 1.45 | 0.06-2.72 | 1.7 | 1.59 |
-| 2029Q3 | 1.51 | 0.10-2.76 | 1.6 | 1.53 |
+| 2026Q3 | 1.37 | 0.59-2.21 | 1.1 | 1.22 |
+| 2027Q3 | 1.47 | 0.19-2.68 | 1.1 | 1.61 |
+| 2028Q3 | 1.46 | 0.06-2.75 | 1.7 | 1.59 |
+| 2029Q3 | 1.53 | 0.10-2.80 | 1.6 | 1.53 |
 
 The OBR CPI path in the workbook reads 2.021, 2.063, 2.081, 2.000, 2.000, 2.00015 for
 2028Q3-2029Q4. It converges to the 2% target to three decimal places. That is not a
@@ -124,16 +133,16 @@ partial-equilibrium scaling of the identified MP-shock IRF and ignores expectati
 anchoring effects the SVAR cannot represent - but on its own terms, essentially none
 of the gap.
 
-**(b) Estimation window: this is what sets the long-run level. ~0.95pp.**
+**(b) Estimation window: this is what sets the long-run level. ~1.0pp.**
 Re-estimating on 1992Q1-2019Q4 (pre-Covid, so the 2021-23 inflation episode is out of
 the parameters) and forecasting from the same 2026Q1 origin:
 
 | Quarter | SVAR full (1992-2025Q1) | SVAR pre-Covid (1992-2019Q4) | BoE | OBR |
 |---|---|---|---|---|
-| 2026Q3 | 2.61 | 2.19 | 2.9 | 2.08 |
-| 2027Q3 | 2.96 | 1.97 | 2.6 | 2.01 |
-| 2028Q3 | 2.93 | 2.00 | 1.8 | 2.02 |
-| 2029Q3 | 2.97 | 1.99 | 1.9 | 2.00 |
+| 2026Q3 | 2.64 | 2.22 | 2.9 | 2.08 |
+| 2027Q3 | 3.00 | 1.99 | 2.6 | 2.01 |
+| 2028Q3 | 2.98 | 2.02 | 1.8 | 2.02 |
+| 2029Q3 | 3.02 | 2.01 | 1.9 | 2.00 |
 
 The pre-Covid SVAR lands on 2.0% - on top of the OBR and within 0.1-0.2pp of BoE, with
 no anchor imposed and no conditioning path.
@@ -160,11 +169,11 @@ That is exactly what the numbers show:
 
 | Estimation sample | Realised annualised CPI inflation at the sample edge | Model plateau |
 |---|---|---|
-| 1992Q1-2025Q1 | 2.89% (2023Q4-2026Q1) | 2.93-2.97% |
-| 1992Q1-2019Q4 | 2.02% (1992Q1-2019Q4) | 1.97-2.00% |
+| 1992Q1-2025Q1 | 2.93% (2023Q4-2026Q1) | 2.98-3.02% |
+| 1992Q1-2019Q4 | 2.04% (1992Q1-2019Q4) | 1.99-2.02% |
 
-For contrast, realised annualised inflation was 6.73% across 2021Q1-2023Q4 and 4.18%
-over 2019Q4-2026Q1, and the whole-sample average is 2.39%. The forecast tracks none of
+For contrast, realised annualised inflation was 6.97% across 2021Q1-2023Q4 and 4.27%
+over 2019Q4-2026Q1, and the whole-sample average is 2.42%. The forecast tracks none of
 those; it tracks the most recent drift.
 
 So the model is not forecasting an inflation overshoot on any economic reasoning. It is
@@ -181,8 +190,8 @@ The gap is not a monetary-policy-path disagreement and not a data-vintage artefa
 is that BoE and OBR both impose a 2% anchor - OBR literally, as an exogenous CPI path
 that converges to 2.000 because the model's CPI equation is commented out; BoE through
 MPC judgement - while the SVAR has no anchor at all and, having a unit root, no mechanism
-that could supply one. It extrapolates the drift at the edge of its data: 2.89% realised
-since the spike ended gives a ~2.95% forecast; re-estimated pre-Covid, 2.02% realised gives
+that could supply one. It extrapolates the drift at the edge of its data: 2.93% realised
+since the spike ended gives a ~3.0% forecast; re-estimated pre-Covid, 2.04% realised gives
 a 2.0% forecast. Put plainly, the SVAR is not forecasting an overshoot - it is forecasting
 that recent inflation continues, and the disagreement with BoE and OBR *is* the 2% anchor.
 
