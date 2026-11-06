@@ -318,6 +318,14 @@ def main() -> None:
         "paths_per_draw": args.paths,
         "seed": args.seed,
         "sample": {"start": str(df.index[0]), "end": str(df.index[-1])},
+        # The data sample above is not the evaluation window: coverage is
+        # scored only on these origins (and their outturns), which the Covid
+        # and 2022 inflation quarters dominate.
+        "evaluated_origins": {
+            "first": str(df.index[args.first_origin]),
+            "last": str(df.index[T - args.horizons - 1]),
+            "last_outturn": str(df.index[-1]),
+        },
         "limitations": [
             "Estimation uses final revised data (pseudo-, not real-time).",
             "Coverage is on series levels in transformed model units.",
