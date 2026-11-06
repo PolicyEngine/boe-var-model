@@ -115,3 +115,36 @@ def test_a_uk_rate_shock_barely_moves_world_gdp(mp_irfs):
 def test_gdp_trough_comes_after_the_impact_quarter(mp_irfs):
     gdp = mp_irfs[:, UK_GDP, :13]
     assert (np.argmin(gdp, axis=1) > 0).mean() >= 0.60
+
+
+# ---------------------------------------------------------------------------
+# What Brignone & Piffer (2025) Section 3.1 says in TEXT about Figures 2-3.
+# These are the paper's own words, so they are a legitimate benchmark; the
+# figures' magnitudes are not (no digitising, issue #11).
+# ---------------------------------------------------------------------------
+
+WORLD_CPI, CPI_ENERGY = 1, 6
+WORLD_ENERGY = SHOCK_NAMES.index("World energy")
+
+
+def test_mp_shock_lowers_energy_and_world_cpi_but_not_significantly(mp_irfs):
+    """Paper p.11: a UK monetary policy shock "generates a negative response
+    of CPI energy and World CPI, though not particularly significant".
+    Measured at h=1/4/8: P(<0) world CPI 0.84/0.79/0.72, CPI energy
+    0.60/0.67/0.67, so the sign is right and the 90% set still spans zero."""
+    for var in (WORLD_CPI, CPI_ENERGY):
+        for h in (1, 4, 8):
+            r = mp_irfs[:, var, h]
+            assert (r < 0).mean() >= 0.55, (var, h)
+            assert (r > 0).mean() >= 0.05, ("90% set excludes zero", var, h)
+
+
+def test_bank_rate_does_not_significantly_respond_to_world_energy(identified):
+    """Paper p.11: under the expansionary world energy shock, "Bank Rate,
+    which is left unconstrained, does not significantly respond". The 68%
+    credible set straddles zero at h=0..8 (measured 16th pct -0.011 to
+    -0.064, 84th 0.091 to 0.131)."""
+    br = np.stack([irf(d, B, 9)[BANK_RATE, WORLD_ENERGY, :]
+                   for d, B in identified.pairs])
+    lo, hi = np.percentile(br, [16, 84], axis=0)
+    assert (lo < 0).all() and (hi > 0).all(), (lo, hi)
