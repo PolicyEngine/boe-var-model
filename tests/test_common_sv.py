@@ -186,8 +186,6 @@ def test_committed_artifact_is_not_stale(name, extra):
     from boe_var.evaluation import evaluation_code_version
 
     path = RESULTS / name
-    if not path.exists():
-        pytest.skip(f"{name} not generated yet")
     recorded = json.loads(path.read_text())["code_version"]
     current = evaluation_code_version(
         extra_paths=[sv.__file__] + [SCRIPTS / e for e in extra])

@@ -1,0 +1,355 @@
+{
+ "sample": "1992Q1-2025Q1",
+ "lam": 0.2,
+ "lags": 4,
+ "covid_dummies": "2020Q1-2021Q2",
+ "draws": 10000,
+ "seed": 20260812,
+ "paper_values": "none stated: Brignone & Piffer (2025) p.10 fn 4 cite GLP (2015) Minnesota (random walk) + sum-of-coefficients; the repo's lam 0.2, mu 1, theta 1 are GLP's hyperprior modes",
+ "grid": [
+  {
+   "mu": 1.0,
+   "theta": 1.0,
+   "posterior": {
+    "share_max_root_gt_1": 0.992,
+    "share_gt_1.005": 0.3968,
+    "median_max_root": 1.00396,
+    "p95": 1.01485
+   },
+   "prior_only": {
+    "share_max_root_gt_1": 0.998,
+    "share_gt_1.005": 0.724,
+    "median_max_root": 1.01,
+    "p95": 1.03486,
+    "prior_df": 17
+   },
+   "log_ml": -1823.29,
+   "holdout_theta_off": {
+    "coverage_68": 0.6126,
+    "coverage_90": 0.7666,
+    "crps_mean": 4.715,
+    "crps_by_variable": {
+     "world_gdp": 1.0495,
+     "world_cpi": 1.1246,
+     "oil_price": 18.7449,
+     "bank_rate": 0.5482,
+     "eri": 3.7274,
+     "cpisa": 1.5024,
+     "cpi_energy": 8.8105,
+     "uk_gdp": 2.2122
+    }
+   }
+  },
+  {
+   "mu": 2.0,
+   "theta": 1.0,
+   "posterior": {
+    "share_max_root_gt_1": 0.9911,
+    "share_gt_1.005": 0.5827,
+    "median_max_root": 1.00596,
+    "p95": 1.02027
+   },
+   "prior_only": {
+    "share_max_root_gt_1": 0.999,
+    "share_gt_1.005": 0.8725,
+    "median_max_root": 1.01908,
+    "p95": 1.06609,
+    "prior_df": 17
+   },
+   "log_ml": -1823.87,
+   "holdout_theta_off": {
+    "coverage_68": 0.5944,
+    "coverage_90": 0.7605,
+    "crps_mean": 4.8009,
+    "crps_by_variable": {
+     "world_gdp": 1.0578,
+     "world_cpi": 1.1488,
+     "oil_price": 18.8412,
+     "bank_rate": 0.5692,
+     "eri": 4.1237,
+     "cpisa": 1.5603,
+     "cpi_energy": 8.8418,
+     "uk_gdp": 2.2645
+    }
+   }
+  },
+  {
+   "mu": 5.0,
+   "theta": 1.0,
+   "posterior": {
+    "share_max_root_gt_1": 0.9807,
+    "share_gt_1.005": 0.7423,
+    "median_max_root": 1.00889,
+    "p95": 1.0268
+   },
+   "prior_only": {
+    "share_max_root_gt_1": 0.999,
+    "share_gt_1.005": 0.973,
+    "median_max_root": 1.03714,
+    "p95": 1.11943,
+    "prior_df": 17
+   },
+   "log_ml": -1828.03,
+   "holdout_theta_off": {
+    "coverage_68": 0.5788,
+    "coverage_90": 0.7551,
+    "crps_mean": 4.9742,
+    "crps_by_variable": {
+     "world_gdp": 1.0955,
+     "world_cpi": 1.1972,
+     "oil_price": 19.6312,
+     "bank_rate": 0.6286,
+     "eri": 4.536,
+     "cpisa": 1.6715,
+     "cpi_energy": 8.725,
+     "uk_gdp": 2.3083
+    }
+   }
+  },
+  {
+   "mu": 10.0,
+   "theta": 1.0,
+   "posterior": {
+    "share_max_root_gt_1": 0.9693,
+    "share_gt_1.005": 0.7804,
+    "median_max_root": 1.0107,
+    "p95": 1.03227
+   },
+   "prior_only": {
+    "share_max_root_gt_1": 0.9995,
+    "share_gt_1.005": 0.994,
+    "median_max_root": 1.05229,
+    "p95": 1.15049,
+    "prior_df": 17
+   },
+   "log_ml": -1831.35,
+   "holdout_theta_off": {
+    "coverage_68": 0.5698,
+    "coverage_90": 0.7545,
+    "crps_mean": 5.0288,
+    "crps_by_variable": {
+     "world_gdp": 1.1271,
+     "world_cpi": 1.1968,
+     "oil_price": 20.2355,
+     "bank_rate": 0.6951,
+     "eri": 4.6013,
+     "cpisa": 1.7354,
+     "cpi_energy": 8.3445,
+     "uk_gdp": 2.2943
+    }
+   }
+  },
+  {
+   "mu": "off (1e6)",
+   "theta": 1.0,
+   "posterior": {
+    "share_max_root_gt_1": 0.9039,
+    "share_gt_1.005": 0.6481,
+    "median_max_root": 1.00807,
+    "p95": 1.03843
+   },
+   "prior_only": {
+    "share_max_root_gt_1": 1.0,
+    "share_gt_1.005": 0.9995,
+    "median_max_root": 1.14293,
+    "p95": 1.28317,
+    "prior_df": 17
+   },
+   "log_ml": -1853.3,
+   "holdout_theta_off": {
+    "coverage_68": 0.5596,
+    "coverage_90": 0.749,
+    "crps_mean": 5.4165,
+    "crps_by_variable": {
+     "world_gdp": 1.2433,
+     "world_cpi": 1.362,
+     "oil_price": 23.1146,
+     "bank_rate": 0.8847,
+     "eri": 5.0173,
+     "cpisa": 1.7138,
+     "cpi_energy": 7.7522,
+     "uk_gdp": 2.2438
+    }
+   }
+  },
+  {
+   "mu": 1.0,
+   "theta": "off",
+   "posterior": {
+    "share_max_root_gt_1": 0.9916,
+    "share_gt_1.005": 0.3981,
+    "median_max_root": 1.00398,
+    "p95": 1.01495
+   },
+   "prior_only": {
+    "share_max_root_gt_1": 0.9995,
+    "share_gt_1.005": 0.734,
+    "median_max_root": 1.01028,
+    "p95": 1.03764,
+    "prior_df": 16
+   },
+   "log_ml": -1870.02,
+   "holdout_theta_off": {
+    "coverage_68": 0.6126,
+    "coverage_90": 0.7666,
+    "crps_mean": 4.715,
+    "crps_by_variable": {
+     "world_gdp": 1.0495,
+     "world_cpi": 1.1246,
+     "oil_price": 18.7449,
+     "bank_rate": 0.5482,
+     "eri": 3.7274,
+     "cpisa": 1.5024,
+     "cpi_energy": 8.8105,
+     "uk_gdp": 2.2122
+    }
+   }
+  },
+  {
+   "mu": 2.0,
+   "theta": "off",
+   "posterior": {
+    "share_max_root_gt_1": 0.9895,
+    "share_gt_1.005": 0.5846,
+    "median_max_root": 1.00604,
+    "p95": 1.0204
+   },
+   "prior_only": {
+    "share_max_root_gt_1": 0.9995,
+    "share_gt_1.005": 0.8855,
+    "median_max_root": 1.01965,
+    "p95": 1.07029,
+    "prior_df": 16
+   },
+   "log_ml": -1870.63,
+   "holdout_theta_off": {
+    "coverage_68": 0.5944,
+    "coverage_90": 0.7605,
+    "crps_mean": 4.8009,
+    "crps_by_variable": {
+     "world_gdp": 1.0578,
+     "world_cpi": 1.1488,
+     "oil_price": 18.8412,
+     "bank_rate": 0.5692,
+     "eri": 4.1237,
+     "cpisa": 1.5603,
+     "cpi_energy": 8.8418,
+     "uk_gdp": 2.2645
+    }
+   }
+  },
+  {
+   "mu": 5.0,
+   "theta": "off",
+   "posterior": {
+    "share_max_root_gt_1": 0.9784,
+    "share_gt_1.005": 0.7374,
+    "median_max_root": 1.00891,
+    "p95": 1.02692
+   },
+   "prior_only": {
+    "share_max_root_gt_1": 0.9995,
+    "share_gt_1.005": 0.9765,
+    "median_max_root": 1.03861,
+    "p95": 1.12996,
+    "prior_df": 16
+   },
+   "log_ml": -1874.7,
+   "holdout_theta_off": {
+    "coverage_68": 0.5788,
+    "coverage_90": 0.7551,
+    "crps_mean": 4.9742,
+    "crps_by_variable": {
+     "world_gdp": 1.0955,
+     "world_cpi": 1.1972,
+     "oil_price": 19.6312,
+     "bank_rate": 0.6286,
+     "eri": 4.536,
+     "cpisa": 1.6715,
+     "cpi_energy": 8.725,
+     "uk_gdp": 2.3083
+    }
+   }
+  },
+  {
+   "mu": 10.0,
+   "theta": "off",
+   "posterior": {
+    "share_max_root_gt_1": 0.964,
+    "share_gt_1.005": 0.7742,
+    "median_max_root": 1.01064,
+    "p95": 1.03225
+   },
+   "prior_only": {
+    "share_max_root_gt_1": 1.0,
+    "share_gt_1.005": 0.995,
+    "median_max_root": 1.05516,
+    "p95": 1.16144,
+    "prior_df": 16
+   },
+   "log_ml": -1877.81,
+   "holdout_theta_off": {
+    "coverage_68": 0.5698,
+    "coverage_90": 0.7545,
+    "crps_mean": 5.0288,
+    "crps_by_variable": {
+     "world_gdp": 1.1271,
+     "world_cpi": 1.1968,
+     "oil_price": 20.2355,
+     "bank_rate": 0.6951,
+     "eri": 4.6013,
+     "cpisa": 1.7354,
+     "cpi_energy": 8.3445,
+     "uk_gdp": 2.2943
+    }
+   }
+  },
+  {
+   "mu": "off (1e6)",
+   "theta": "off",
+   "posterior": {
+    "share_max_root_gt_1": 0.8693,
+    "share_gt_1.005": 0.6176,
+    "median_max_root": 1.00756,
+    "p95": 1.03805
+   },
+   "prior_only": {
+    "share_max_root_gt_1": 1.0,
+    "share_gt_1.005": 1.0,
+    "median_max_root": 1.15343,
+    "p95": 1.30189,
+    "prior_df": 16
+   },
+   "log_ml": -1895.73,
+   "holdout_theta_off": {
+    "coverage_68": 0.5596,
+    "coverage_90": 0.749,
+    "crps_mean": 5.4165,
+    "crps_by_variable": {
+     "world_gdp": 1.2433,
+     "world_cpi": 1.362,
+     "oil_price": 23.1146,
+     "bank_rate": 0.8847,
+     "eri": 5.0173,
+     "cpisa": 1.7138,
+     "cpi_energy": 7.7522,
+     "uk_gdp": 2.2438
+    }
+   }
+  }
+ ],
+ "ml_optimal": {
+  "lam": 1.0395,
+  "mu": 1.0,
+  "theta": 1.0,
+  "log_ml": -1754.8146,
+  "posterior": {
+   "share_max_root_gt_1": 0.9933,
+   "share_gt_1.005": 0.4837,
+   "median_max_root": 1.00481,
+   "p95": 1.01889
+  }
+ },
+ "holdout_note": "held-out columns use the coverage evaluation's convention (theta off) at each mu, with the six Covid dummies; 49 origins",
+ "code_version": "a1d7c84c128e57832a98db854a4e75022b24046093bca101732466232f2a0ce6"
+}
