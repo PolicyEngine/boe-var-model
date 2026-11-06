@@ -54,28 +54,28 @@ class TestRollingEvaluationArtifact:
     # RMSE). Regenerating on unchanged data reproduces these bit-for-bit;
     # the tolerance only absorbs BLAS-level float noise across machines.
     RTOL = 1e-3
-    H1_VS_RW = {"world_gdp": 1.0450, "world_cpi": 0.7329, "oil_price": 1.0301,
-                "bank_rate": 0.8809, "eri": 1.0386, "cpisa": 0.6293,
-                "cpi_energy": 0.9762, "uk_gdp": 1.0637}
-    H1_VS_DRIFT = {"world_gdp": 1.0710, "world_cpi": 0.9433,
-                   "oil_price": 1.0135, "bank_rate": 0.7933, "eri": 1.0299,
-                   "cpisa": 0.8306, "cpi_energy": 0.9771, "uk_gdp": 1.0635}
-    H1_VS_AR1 = {"world_gdp": 0.7227, "world_cpi": 0.9713,
-                 "oil_price": 1.0199, "bank_rate": 1.3822, "eri": 1.0680,
-                 "cpisa": 1.0284, "cpi_energy": 0.9802, "uk_gdp": 0.6984}
-    H8_VS_RW = {"world_gdp": 0.7108, "world_cpi": 0.6741, "oil_price": 1.0837,
-                "bank_rate": 1.0280, "eri": 1.4104, "cpisa": 0.6731,
-                "cpi_energy": 1.1343, "uk_gdp": 1.0581}
+    H1_VS_RW = {"world_gdp": 1.0433, "world_cpi": 0.7334, "oil_price": 1.0276,
+                "bank_rate": 0.8814, "eri": 1.0379, "cpisa": 0.6286,
+                "cpi_energy": 0.9771, "uk_gdp": 1.0631}
+    H1_VS_DRIFT = {"world_gdp": 1.0716, "world_cpi": 0.9440,
+                   "oil_price": 1.0102, "bank_rate": 0.7950, "eri": 1.0287,
+                   "cpisa": 0.8313, "cpi_energy": 0.9730, "uk_gdp": 1.0634}
+    H1_VS_AR1 = {"world_gdp": 0.7223, "world_cpi": 0.9701,
+                 "oil_price": 1.0156, "bank_rate": 1.3789, "eri": 1.0675,
+                 "cpisa": 1.0289, "cpi_energy": 0.9813, "uk_gdp": 0.6987}
+    H8_VS_RW = {"world_gdp": 0.7003, "world_cpi": 0.6682, "oil_price": 1.0848,
+                "bank_rate": 1.0255, "eri": 1.4122, "cpisa": 0.6681,
+                "cpi_energy": 1.1342, "uk_gdp": 1.0471}
 
     def test_design_matches_the_published_evaluation(self):
         report = _load("rolling_evaluation.json")
-        assert report["origins"] == 49
+        assert report["origins"] == 50
         assert report["first_origin"] == 80
-        assert report["last_origin"] == 128
+        assert report["last_origin"] == 129
         assert report["lags"] == 4
         assert report["variables"] == VARIABLES
         assert [row["horizon"] for row in report["horizons"]] == list(range(1, 9))
-        assert all(row["n_origins"] == 49 for row in report["horizons"])
+        assert all(row["n_origins"] == 50 for row in report["horizons"])
         assert report["finite"] is True
 
     @pytest.mark.parametrize("key, expected", [
@@ -126,8 +126,8 @@ class TestProductionSpecEvaluationArtifact:
     RTOL = 1e-3
     # UK GDP / CPI / Bank Rate against the random walk WITH DRIFT, the
     # benchmark the model has to beat to be worth running.
-    H1_VS_DRIFT = {"uk_gdp": 0.9873, "cpisa": 0.8232, "bank_rate": 0.7809}
-    H8_VS_DRIFT = {"uk_gdp": 0.9469, "cpisa": 1.0117, "bank_rate": 0.8298}
+    H1_VS_DRIFT = {"uk_gdp": 0.9874, "cpisa": 0.8237, "bank_rate": 0.7835}
+    H8_VS_DRIFT = {"uk_gdp": 0.9461, "cpisa": 1.0113, "bank_rate": 0.8319}
 
     def test_block_is_present_and_shares_the_headline_design(self):
         report = _load("rolling_evaluation.json")
@@ -199,7 +199,7 @@ class TestCoverageEvaluationArtifact:
 
     def test_design_matches_the_rolling_evaluation(self):
         report = _load("coverage_evaluation.json")
-        assert report["origins"] == 49
+        assert report["origins"] == 50
         assert report["first_origin"] == 80
         assert report["lags"] == 4
         assert report["horizons"] == 8
@@ -208,11 +208,12 @@ class TestCoverageEvaluationArtifact:
 
     def test_68_band_mean_coverage_stays_in_the_recorded_band(self):
         """The site quotes ~57-71% empirical coverage for the 68% band
-        (mean across the eight variables, per horizon)."""
+        (mean across the eight variables, per horizon; 2026Q1 data). On the
+        2026Q2 data it is 58-71%."""
         cov = _load("coverage_evaluation.json")["coverage"]["68"]
         means = [np.mean(list(cov[f"h{h}"].values())) for h in range(1, 9)]
-        assert min(means) == pytest.approx(0.5663, abs=0.01)
-        assert max(means) == pytest.approx(0.7117, abs=0.01)
+        assert min(means) == pytest.approx(0.5800, abs=0.01)
+        assert max(means) == pytest.approx(0.7125, abs=0.01)
         for h, m in enumerate(means, start=1):
             assert 0.55 <= m <= 0.72, f"68% band mean coverage at h{h}: {m}"
 
@@ -227,7 +228,7 @@ class TestCoverageEvaluationArtifact:
     def test_90_band_mean_coverage_stays_in_the_recorded_band(self):
         cov = _load("coverage_evaluation.json")["coverage"]["90"]
         means = [np.mean(list(cov[f"h{h}"].values())) for h in range(1, 9)]
-        assert np.mean(means) == pytest.approx(0.772, abs=0.02)
+        assert np.mean(means) == pytest.approx(0.777, abs=0.02)
 
 
 class TestSatelliteValidationArtifact:
