@@ -85,3 +85,37 @@ def test_recorded_stretch_reproduces_hits_on_real_data():
         S = rec["stretch"][lv]
         assert S.shape == (6, 3, k)
         np.testing.assert_array_equal((S <= 1.0).sum(axis=0), hits[lv])
+
+
+def _artifact():
+    import json
+
+    path = Path(__file__).resolve().parents[1] / "results" / "coverage_evaluation.json"
+    return json.loads(path.read_text())
+
+
+def test_artifact_records_the_evaluated_window():
+    d = _artifact()
+    assert d["evaluated_origins"] == {
+        "first": "2012Q1", "last": "2024Q1", "last_outturn": "2026Q1"}
+
+
+@pytest.mark.parametrize("spec", ["headline", "production_spec"])
+def test_68_calibration_survives_out_of_sample(spec):
+    """Recorded 6 Nov 2026: rolling-origin 0.696 / 0.686, LOO 0.681 / 0.684."""
+    b = _artifact()["calibration_holdout"][spec]["68"]
+    assert b["rolling_origin_calibrated"]["mean"] == pytest.approx(0.68, abs=0.03)
+    assert b["leave_one_out_calibrated"]["mean"] == pytest.approx(0.68, abs=0.03)
+
+
+@pytest.mark.parametrize("spec", ["headline", "production_spec"])
+def test_90_bands_still_under_cover_after_calibration(spec):
+    """LIMIT (pinned). A Gaussian half-width factor cannot fix the tails:
+    rolling-origin calibrated 90% coverage is 0.840 / 0.822, short of 0.90.
+    This is evidence for issue #12 (fat tails / volatility), not a bug."""
+    b = _artifact()["calibration_holdout"][spec]["90"]
+    roll = b["rolling_origin_calibrated"]["mean"]
+    assert roll < 0.87
+    assert roll > b["rolling_origin_raw_same_origins"]["mean"]
+    assert b["in_sample_calibrated"]["mean"] < 0.88, (
+        "even in sample the Gaussian k does not reach 90%")
