@@ -24,33 +24,43 @@ writeup of the method and of where this replication deviates from the paper.
 ├── SPEC.md                 # replication spec (model, restrictions, API)
 ├── docs/
 │   ├── a-structural-var-model-for-the-uk-economy.pdf   # the paper
-│   └── methodology.md      # method writeup + differences from the paper
+│   ├── methodology.md      # method writeup + differences from the paper
+│   └── improvements.md     # ranked list of fidelity gaps
 ├── src/boe_var/            # package (src layout)
 │   ├── data.py             # load_data() -> transformed quarterly DataFrame
 │   ├── bvar.py             # BVAR class: NIW posterior sampling
 │   ├── identification.py   # zero/sign restrictions, draw_Q, identify
-│   └── analysis.py         # IRFs, FEVDs, shocks, historical decompositions
+│   ├── analysis.py         # IRFs, FEVDs, shocks, historical decompositions
+│   ├── forecast.py         # forecasts, fan bands, forecast revisions
+│   ├── evaluation.py       # rolling-origin point and band evaluation
+│   └── unemployment_satellite.py  # GDP growth -> unemployment mapping
 ├── scripts/
 │   ├── download_data.py    # fetch raw series -> data/boe_var_data.csv
-│   └── run_replication.py  # end-to-end: estimate, identify, write results/
+│   ├── run_replication.py  # estimate, identify, write fig2-fig6 + summary.md
+│   ├── run_forecast_revision.py   # paper section 5: fig1, fig7-fig9, forecast_summary.md
+│   ├── run_rolling_evaluation.py  # results/rolling_evaluation.json
+│   ├── run_coverage_evaluation.py # results/coverage_evaluation.json
+│   ├── run_satellite_validation.py
+│   └── run_external_comparison.py # numbers in results/forecast_vs_boe_obr.md
 ├── data/                   # raw + assembled data (raw data git-ignored)
-├── results/                # figures (fig2..fig6 *.png) and summary.md
-├── tests/                  # unit tests for bvar and identification
+├── results/                # figures, summaries and evaluation JSON
+├── tests/
 ├── RESOURCES.md            # annotated links: paper, code, methods, data
-├── pyproject.toml          # package boe_var
-└── requirements.txt
+└── pyproject.toml          # package boe_var
 ```
 
 ## Quickstart
 
-Use the existing conda env `python313` (do not create a new venv):
+Python 3.11 or later. With [uv](https://docs.astral.sh/uv/) (what CI uses):
 
 ```bash
-conda activate python313
-pip install -e .
-python scripts/download_data.py     # builds data/boe_var_data.csv
-python scripts/run_replication.py   # writes figures + summary to results/
+uv sync
+uv run python scripts/download_data.py     # builds data/boe_var_data.csv
+uv run python scripts/run_replication.py   # writes figures + summary to results/
+uv run pytest -q -m "not calibration and not slow"
 ```
+
+`pip install -e .` in any Python 3.11+ environment also works.
 
 Outputs land in `results/`: `fig2_irf_world.png`, `fig3_irf_uk.png`,
 `fig4_fevd.png`, `fig5_shocks.png`, `fig6_hist_decomp.png`, `summary.md`.
@@ -86,7 +96,36 @@ See `RESOURCES.md` for the full annotated list (method papers, data sources).
   description and standard references, and can only be validated
   qualitatively against the published figures.
 - The paper does not state the lag length; we assume p = 4 (a parameter).
-- Fewer accepted identification draws by default (1,000+ vs the paper's
-  10,000), and a simplified pandemic-prior treatment (Covid dummies as
-  exogenous regressors). See `docs/methodology.md` for the full list of
-  differences.
+- Fewer accepted identification draws: the committed figures use 744
+  accepted draws out of 10,000 posterior draws (importance-weight ESS 356,
+  `results/summary.md`), and the script default is 200 (`--accepted`),
+  against the paper's 10,000 accepted. The pandemic-prior treatment is
+  simplified (Covid dummies as exogenous regressors). See
+  `docs/methodology.md` for the full list of differences.
+
+## Known failures
+
+Read these before quoting a forecast, a band or an impulse response.
+
+- **No forecast skill over simple benchmarks.** In the rolling-origin
+  evaluation (49 origins), no variable × horizon is significantly more
+  accurate than a random walk, a random walk with drift or an AR(1) once the 64 tests per benchmark are
+  adjusted together (Benjamini–Hochberg q < 0.05 in 0 of 64;
+  `results/rolling_evaluation.json`, `multiplicity`).
+- **The 90% bands are too narrow.** Raw production-spec 90% bands cover
+  88% of UK GDP outturns one quarter ahead, falling to 71% at eight
+  quarters (`results/coverage_evaluation.json`). The 68% band covers 51% of
+  GDP outturns at eight quarters. Scoring the band rescaling on held-out
+  origins is in PR #19; the choice between labelling and dropping the 90%
+  band is issue #12.
+- **Monetary-policy level effects do not fade.** The posterior has a unit
+  root: every draw checked on the test fixture has a largest companion
+  eigenvalue above 1, and nothing truncates explosive draws. The GDP and
+  CPI level responses to a monetary-policy shock stay away from zero out to
+  80 quarters (PR #17 and its verification comment). Impulse-response
+  magnitudes are not yet checked against the paper's Figures 2–3 (issue #11).
+- **Year-on-year rates are log differences.** `forecast.py` computes YoY as
+  a difference of 100·log levels. The BoE and OBR publish simple rates, so on
+  `main` the external comparison sets the two bases against each other (CPI
+  about 0.03–0.05pp low at current rates). PR #18 moves that comparison to
+  the simple basis; `forecast_summary.md` and `fig9` remain log basis.
