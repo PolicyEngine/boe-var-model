@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import multiprocessing
 import sys
 from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
@@ -237,8 +238,13 @@ def main() -> None:
                   n_draws=args.draws, n_paths=args.paths, seed=SEED)
     jobs = [("vsv_rw", False, common, args.burn, args.thin),
             ("vsv_rw_dummies", True, common, args.burn, args.thin)]
-    with ProcessPoolExecutor(max_workers=args.workers) as ex:
-        res = list(ex.map(_run_spec, jobs))
+    if args.workers > 1:
+        ctx = multiprocessing.get_context("spawn")      # fork + BLAS can hang
+        with ProcessPoolExecutor(max_workers=args.workers,
+                                 mp_context=ctx) as ex:
+            res = list(ex.map(_run_spec, jobs))
+    else:
+        res = [_run_spec(j) for j in jobs]
     ref = json.loads((RESULTS / "common_sv_evaluation.json").read_text())
     specs = {label: ref["specs"][key] for label, key in COMPARE.items()}
     vol = {}
