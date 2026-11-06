@@ -7,14 +7,16 @@ reduced-form covariance,
 
     y_t = A_1 y_{t-1} + ... + A_p y_{t-p} + c + D d_t + lambda_t^{1/2} u_t,
     u_t ~ N(0, Sigma),
-    h_t = log lambda_t = phi h_{t-1} + nu_t,   nu_t ~ N(0, sigma2),
+    h_t = log lambda_t = c + phi h_{t-1} + nu_t,   nu_t ~ N(0, sigma2),
 
-with ``phi = 1`` (random walk, ``law="rw"``) or ``phi`` sampled
-(``law="ar1"``, normal prior truncated to |phi| < 1). The scale of
-``lambda_t Sigma`` is only identified up to a constant, so the pre-sample
-log-volatility is pinned at h_0 = 0: Sigma is the covariance of the
-quarter before the first effective observation and lambda_t is volatility
-relative to it.
+with ``c = 0, phi = 1`` (random walk, ``law="rw"``, CCM's law of motion) or
+(c, phi) sampled (``law="ar1"``, normal priors, |phi| < 1, so h reverts to
+its estimated mean c / (1 - phi)). The scale of ``lambda_t Sigma`` is only
+identified up to a constant, so the pre-sample log-volatility is pinned at
+h_0 = 0: Sigma is the covariance of the quarter before the first effective
+observation and lambda_t is volatility relative to it. The product
+lambda_t Sigma, which is all the forecasts use, does not depend on the
+pin.
 
 Gibbs sampler, one sweep:
 
@@ -30,7 +32,8 @@ Gibbs sampler, one sweep:
    mixture indicators, collapse the k measurements of period t into one
    Gaussian pseudo-observation, and draw the whole path by forward-filtering
    backward-sampling (scalar state).
-3. (sigma2 | h): inverse gamma. (phi | h, sigma2): truncated normal (ar1).
+3. (sigma2 | h): inverse gamma. (c, phi | h, sigma2): bivariate normal,
+   truncated to |phi| < 1 (ar1).
 
 Identification: the structural code uses Sigma only through chol(Sigma)
 (the zero-restriction null spaces, the sign checks) and |det A0|. With
@@ -79,6 +82,7 @@ KSC_VARS = np.array([5.79596, 2.61369, 5.17950, 0.16735, 0.64009, 0.34023,
 # (a 0.2 quarterly sd of the log-variance innovation, CCM-sized).
 SIGMA2_PRIOR = (3.0, 0.08)
 PHI_PRIOR = (0.9, 0.1 ** 2)     # ar1 only: N(mean, var) truncated to |phi| < 1
+C_PRIOR = (0.0, 1.0)            # ar1 only: intercept c ~ N(mean, var)
 OFFSET = 1e-6                   # c in log(e^2 + c)
 
 
@@ -86,13 +90,15 @@ OFFSET = 1e-6                   # c in log(e^2 + c)
 class SVDraw(PosteriorDraw):
     """``PosteriorDraw`` plus the volatility state needed to forecast.
 
-    h_T: log-volatility in the last sample period; sigma2, phi: law of motion.
+    h_T: log-volatility in the last sample period; c, phi, sigma2: law of
+    motion h' = c + phi h + nu.
     ``Sigma`` is the covariance at lambda = 1 (h = 0).
     """
 
     h_T: float = 0.0
     sigma2: float = 0.0
     phi: float = 1.0
+    c: float = 0.0
 
 
 class CommonSVBVAR:
@@ -105,13 +111,14 @@ class CommonSVBVAR:
 
     def __init__(self, y, lags: int = 4, dummies=None, law: str = "rw",
                  sigma2_prior=SIGMA2_PRIOR, phi_prior=PHI_PRIOR,
-                 offset: float = OFFSET, **bvar_kwargs):
+                 c_prior=C_PRIOR, offset: float = OFFSET, **bvar_kwargs):
         if law not in ("rw", "ar1"):
             raise ValueError("law must be 'rw' or 'ar1'")
         self.base = BVAR(y, lags=lags, dummies=dummies, **bvar_kwargs)
         self.law = law
         self.sigma2_prior = tuple(float(v) for v in sigma2_prior)
         self.phi_prior = tuple(float(v) for v in phi_prior)
+        self.c_prior = tuple(float(v) for v in c_prior)
         self.offset = float(offset)
         b = self.base
         n = b.Y.shape[0]
@@ -156,7 +163,7 @@ class CommonSVBVAR:
         return B.T.copy(), Sigma
 
     # ------------------------------------------------------------------
-    def _draw_h(self, Pi, Sigma, h, sigma2, phi, rng):
+    def _draw_h(self, Pi, Sigma, h, sigma2, phi, c, rng):
         """KSC mixture indicators, then FFBS for the scalar log-vol path."""
         U = self.Y - self.X @ Pi.T
         L = cholesky(Sigma, lower=True)
@@ -178,10 +185,10 @@ class CommonSVBVAR:
         # forward filter, h_0 = 0 known
         n = self.n_obs
         mf, Pf = np.empty(n), np.empty(n)
-        a, P = 0.0, sigma2
+        a, P = c, sigma2
         for t in range(n):
             if t:
-                a, P = phi * mf[t - 1], phi * phi * Pf[t - 1] + sigma2
+                a, P = c + phi * mf[t - 1], phi * phi * Pf[t - 1] + sigma2
             K = P / (P + R[t])
             mf[t] = a + K * (obs[t] - a)
             Pf[t] = (1.0 - K) * P
@@ -192,27 +199,33 @@ class CommonSVBVAR:
         for t in range(n - 2, -1, -1):
             Pn = phi * phi * Pf[t] + sigma2
             G = Pf[t] * phi / Pn
-            mean = mf[t] + G * (out[t + 1] - phi * mf[t])
+            mean = mf[t] + G * (out[t + 1] - c - phi * mf[t])
             var = max(Pf[t] - G * phi * Pf[t], 0.0)
             out[t] = mean + np.sqrt(var) * e[t]
         return out
 
-    def _draw_sigma2(self, h, phi, rng):
+    def _draw_sigma2(self, h, phi, c, rng):
         a0, b0 = self.sigma2_prior
         lag = np.concatenate([[0.0], h[:-1]])
-        ssr = float(np.sum((h - phi * lag) ** 2))
+        ssr = float(np.sum((h - c - phi * lag) ** 2))
         return 1.0 / rng.gamma(a0 + 0.5 * h.size, 1.0 / (b0 + 0.5 * ssr))
 
-    def _draw_phi(self, h, sigma2, phi_old, rng):
-        m0, v0 = self.phi_prior
-        lag = np.concatenate([[0.0], h[:-1]])
-        prec = 1.0 / v0 + lag @ lag / sigma2
-        mean = (m0 / v0 + lag @ h / sigma2) / prec
+    def _draw_c_phi(self, h, sigma2, c_old, phi_old, rng):
+        """(c, phi) from the regression h_t = c + phi h_{t-1} + nu_t."""
+        mc, vc = self.c_prior
+        mp, vp = self.phi_prior
+        Z = np.column_stack([np.ones(h.size),
+                             np.concatenate([[0.0], h[:-1]])])
+        P0 = np.diag([1.0 / vc, 1.0 / vp])
+        prec = P0 + Z.T @ Z / sigma2
+        cov = np.linalg.inv(prec)
+        mean = cov @ (P0 @ np.array([mc, mp]) + Z.T @ h / sigma2)
+        L = np.linalg.cholesky(cov)
         for _ in range(100):
-            phi = mean + rng.standard_normal() / np.sqrt(prec)
+            c, phi = mean + L @ rng.standard_normal(2)
             if abs(phi) < 1.0:
-                return float(phi)
-        return phi_old
+                return float(c), float(phi)
+        return c_old, phi_old
 
     # ------------------------------------------------------------------
     def sample(self, n_draws: int, seed: int | None = None, burn: int = 1000,
@@ -241,18 +254,19 @@ class CommonSVBVAR:
         h = np.zeros(self.n_obs)
         sigma2 = self.sigma2_prior[1] / (self.sigma2_prior[0] - 1.0)
         phi = 1.0 if self.law == "rw" else self.phi_prior[0]
+        c = 0.0
         out, hs = [], []
         total = burn + n_draws * thin
         for it in range(total):
             Pi, Sigma = self._draw_niw(*self._moments(h), rng)
-            h = self._draw_h(Pi, Sigma, h, sigma2, phi, rng)
-            sigma2 = self._draw_sigma2(h, phi, rng)
+            h = self._draw_h(Pi, Sigma, h, sigma2, phi, c, rng)
+            sigma2 = self._draw_sigma2(h, phi, c, rng)
             if self.law == "ar1":
-                phi = self._draw_phi(h, sigma2, phi, rng)
+                c, phi = self._draw_c_phi(h, sigma2, c, phi, rng)
             if it >= burn and (it - burn) % thin == thin - 1:
                 out.append(SVDraw(Pi=Pi, Sigma=Sigma, lags=p, k=k,
                                   h_T=float(h[-1]), sigma2=float(sigma2),
-                                  phi=float(phi)))
+                                  phi=float(phi), c=float(c)))
                 hs.append(h.copy())
         H = np.asarray(hs)
         self.h_mean = H.mean(axis=0)
@@ -266,7 +280,7 @@ def simulate_log_vol(draw: SVDraw, horizons: int, rng) -> np.ndarray:
     h = np.empty(horizons)
     prev = draw.h_T
     for j in range(horizons):
-        prev = draw.phi * prev + e[j]
+        prev = draw.c + draw.phi * prev + e[j]
         h[j] = prev
     return h
 

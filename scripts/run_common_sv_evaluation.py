@@ -102,6 +102,7 @@ def run_coverage_sv(y, *, lags=LAGS, horizons=HORIZONS,
             "h_T_mean": round(float(np.mean([d.h_T for d in draws])), 4),
             "sigma2_mean": round(float(np.mean([d.sigma2 for d in draws])), 4),
             "phi_mean": round(float(np.mean([d.phi for d in draws])), 4),
+            "c_mean": round(float(np.mean([d.c for d in draws])), 4),
         })
         paths = np.empty((n_draws * n_paths, horizons, k))
         i = 0
@@ -163,6 +164,9 @@ def full_sample_sv(n_draws=1000, seed=ROOTS_SEED):
                     for j in (1, 0, 2)] for q, p in zip(show, pos)},
             "sigma2_mean": round(float(np.mean([d.sigma2 for d in draws])), 4),
             "phi_mean": round(float(np.mean([d.phi for d in draws])), 4),
+            "h_mean_ar1": round(float(np.mean([d.c / (1 - d.phi) if d.phi < 1
+                                               else np.nan for d in draws])),
+                                4) if kw.get("law") == "ar1" else None,
             "share_max_root_gt_1": round(float((R > 1).mean()), 4),
             "share_gt_1.005": round(float((R > 1.005).mean()), 4),
             "median_max_root": round(float(np.median(R)), 5),
@@ -217,10 +221,11 @@ def main() -> None:
             "units. sv_* re-run the Carriero-Clark-Marcellino (2016) common "
             "stochastic volatility Gibbs sampler (KSC mixture + FFBS for the "
             "log-volatility, NIW for (Pi, Sigma | h), IG for sigma2, truncated "
-            "normal for phi) on each origin's training sample and simulate "
+            "normal for (c, phi)) on each origin's training sample and simulate "
             "the log-volatility forward over the forecast horizon"),
         "priors": {"sigma2": f"IG{sv.SIGMA2_PRIOR}",
                    "phi_ar1": f"N{sv.PHI_PRIOR} truncated to |phi|<1",
+                   "c_ar1": f"N{sv.C_PRIOR}",
                    "h_0": "pinned at 0 (pre-sample quarter)"},
         "gibbs": {"burn": args.burn, "thin": args.thin},
         "origins": len(origins),

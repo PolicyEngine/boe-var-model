@@ -85,6 +85,10 @@ def test_log_vol_law_of_motion():
     ar = sv.SVDraw(**base, h_T=1.0, sigma2=0.0, phi=0.5)
     np.testing.assert_allclose(sv.simulate_log_vol(ar, 3, rng),
                                [0.5, 0.25, 0.125])
+    # with an intercept h reverts to c / (1 - phi) = 2
+    ar = sv.SVDraw(**base, h_T=1.0, sigma2=0.0, phi=0.5, c=1.0)
+    np.testing.assert_allclose(sv.simulate_log_vol(ar, 3, rng),
+                               [1.5, 1.75, 1.875])
 
 
 @pytest.mark.parametrize("with_dummies", [False, True])
