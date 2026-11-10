@@ -14,9 +14,10 @@ adjusted, % aged 16+), ``du_t = u_t - u_{t-1}``, and ``g_t`` is year-on-year
 real GDP growth in percent (the same units the forecast bands report).
 
 Data provenance: ``_data/uk_unemployment_mgsx.csv`` is the ONS MGSX series
-copied from the PolicyEngine Macro committed vintage store
-(data/latest/uk_unemployment_rate.json, release 2026-07-20, spanning
-1971Q1-2026Q1). The default estimation sample matches the VAR's:
+(LMS), first copied from the PolicyEngine Macro committed vintage store
+(data/latest/uk_unemployment_rate.json, release 2026-07-20, 1971Q1-2026Q1)
+and extended to 2026Q2 from the ONS generator CSV (LMS release 2026-10-20;
+1971Q1-2026Q1 unchanged in that release). The default estimation sample matches the VAR's:
 1992Q1-2025Q1.
 
 Forecast quantile mapping: conditional on the fitted coefficients the

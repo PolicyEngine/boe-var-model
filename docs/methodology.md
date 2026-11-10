@@ -41,7 +41,7 @@ of restricting the set of admissible Q.
 
 Quarterly data; estimation sample **1992Q1–2025Q1** (originally **1992Q1–2023Q2**) (start of UK inflation
 targeting; last year of data reserved because recent data are revision-
-prone). Data through 2026Q1 are kept for the paper's forecast-revision
+prone). Data through 2026Q2 are kept for the paper's forecast-revision
 exercises. Ordering is fixed — the zero restrictions below reference it.
 
 | # | Variable | Enters model | Shown in figures |

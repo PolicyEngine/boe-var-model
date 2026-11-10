@@ -32,7 +32,7 @@ UA = {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) boe-var-rep
 ONS_URL = "https://www.ons.gov.uk/generator?format=csv&uri=/economy/{area}/timeseries/{cdid}/{dataset}"
 BOE_URL = (
     "https://www.bankofengland.co.uk/boeapps/iadb/fromshowcolumns.asp?csv.x=yes"
-    "&Datefrom=01/Jan/1988&Dateto=01/Jul/2026&SeriesCodes={codes}"
+    "&Datefrom=01/Jan/1988&Dateto=01/Jan/2027&SeriesCodes={codes}"
     "&CSVF=TN&UsingCodes=Y&VPD=Y&VFD=N"
 )
 FRED_URL = "https://fred.stlouisfed.org/graph/fredgraph.csv?id={sid}"
@@ -338,7 +338,7 @@ def build() -> tuple[pd.DataFrame, pd.DataFrame]:
             "uk_gdp": 100 * np.log(uk_gdp),
         }
     )
-    df = df.loc["1990Q1":"2026Q1"].dropna()
+    df = df.loc["1990Q1":"2026Q2"].dropna()
     # verify required window
     req = df.loc["1992Q1":"2023Q2"]
     n_req = (pd.Period("2023Q2") - pd.Period("1992Q1")).n + 1
