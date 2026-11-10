@@ -500,3 +500,31 @@ class TestArtifactStaleness:
             "results/unemployment_satellite_validation.json was generated; "
             "re-run scripts/run_satellite_validation.py"
         )
+
+
+class TestArtifactDataVintage:
+    """Fail when the packaged data changes length without regenerating.
+
+    Since PR #18, ``code_version`` also hashes the dataset ``load_data()``
+    reads, so any data change already fails the staleness guard above.
+    These checks are a second, readable layer: they pin each artifact's
+    recorded sample and origin count to the data the package loads today,
+    so a failure names the sample mismatch directly.
+    """
+
+    @pytest.mark.parametrize("name", ["coverage_evaluation.json",
+                                      "rolling_evaluation.json"])
+    def test_artifact_sample_matches_packaged_data(self, name):
+        art = _load(name)
+        df = load_data()
+        assert art["sample"] == {"start": str(df.index[0]),
+                                 "end": str(df.index[-1])}, (
+            f"results/{name} was generated on a different sample than the "
+            "packaged data; re-run its script")
+
+    def test_coverage_origin_count_matches_packaged_data(self):
+        art = _load("coverage_evaluation.json")
+        T = len(load_data())
+        assert art["origins"] == T - art["horizons"] - art["first_origin"], (
+            "coverage origin count no longer follows from the packaged data "
+            "length; re-run scripts/run_coverage_evaluation.py")
