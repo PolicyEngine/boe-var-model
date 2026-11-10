@@ -209,11 +209,13 @@ class TestCoverageEvaluationArtifact:
     def test_68_band_mean_coverage_stays_in_the_recorded_band(self):
         """The site quotes ~57-71% empirical coverage for the 68% band
         (mean across the eight variables, per horizon; 2026Q1 data). On the
-        2026Q2 data it is 58-71%."""
+        2026Q2 data it is 57-71% (0.5675-0.7075 as regenerated with #19;
+        0.5800-0.7125 in the #24 run, a BLAS-level difference of one origin
+        in 34 cells)."""
         cov = _load("coverage_evaluation.json")["coverage"]["68"]
         means = [np.mean(list(cov[f"h{h}"].values())) for h in range(1, 9)]
-        assert min(means) == pytest.approx(0.5800, abs=0.01)
-        assert max(means) == pytest.approx(0.7125, abs=0.01)
+        assert min(means) == pytest.approx(0.5675, abs=0.01)
+        assert max(means) == pytest.approx(0.7075, abs=0.01)
         for h, m in enumerate(means, start=1):
             assert 0.55 <= m <= 0.72, f"68% band mean coverage at h{h}: {m}"
 

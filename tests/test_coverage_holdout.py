@@ -97,7 +97,7 @@ def _artifact():
 def test_artifact_records_the_evaluated_window():
     d = _artifact()
     assert d["evaluated_origins"] == {
-        "first": "2012Q1", "last": "2024Q1", "last_outturn": "2026Q1"}
+        "first": "2012Q1", "last": "2024Q2", "last_outturn": "2026Q2"}
 
 
 @pytest.mark.parametrize("spec", ["headline", "production_spec"])
