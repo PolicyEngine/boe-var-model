@@ -1,7 +1,7 @@
 # Replication summary
 
-- Posterior draws: 10000; accepted identified draws: 744 (acceptance rate 7.4%); lags: 4; seed: 20260812.
-- Importance-weight effective sample size (ESS): 356.1.
+- Posterior draws: 10000; accepted identified draws: 765 (acceptance rate 7.6%); lags: 4; seed: 20260812.
+- Importance-weight effective sample size (ESS): 368.0.
 - Sample: 1992Q1–2025Q1 (133 quarters).
 - Hyperparameters: lam = 0.2000, mu = 1.0000, theta = 1.0000.
 
@@ -11,8 +11,8 @@ Sum of the per-shock posterior medians, renormalised to 100%. This is the histor
 
 | Variable | Identified global | Identified domestic | Unidentified |
 |---|---|---|---|
-| UK GDP | 42.8% | 37.7% | 19.5% |
-| UK CPI | 49.5% | 34.0% | 16.5% |
+| UK GDP | 43.2% | 36.5% | 20.3% |
+| UK CPI | 48.0% | 34.0% | 18.0% |
 
 ### Posterior of the group share (formed per draw)
 
@@ -22,12 +22,12 @@ The **mean** column is the paper-comparable statistic: the paper's Figure 4 plot
 
 | Variable | Group | Mean | Median | 68% band | 90% band |
 |---|---|---|---|---|---|
-| UK GDP | global | 37.4% | 36.1% | [23.4%, 52.2%] | [14.4%, 63.6%] |
-| UK GDP | domestic | 38.9% | 40.1% | [18.9%, 56.3%] | [11.5%, 64.8%] |
-| UK GDP | unidentified | 23.7% | 21.6% | [6.2%, 40.5%] | [1.5%, 53.9%] |
-| UK CPI | global | 42.3% | 42.0% | [25.5%, 60.3%] | [14.0%, 75.5%] |
-| UK CPI | domestic | 36.6% | 37.3% | [17.1%, 53.8%] | [8.5%, 61.2%] |
-| UK CPI | unidentified | 21.1% | 17.5% | [5.9%, 37.0%] | [2.0%, 50.5%] |
+| UK GDP | global | 38.7% | 37.5% | [24.0%, 53.1%] | [15.7%, 65.0%] |
+| UK GDP | domestic | 38.6% | 40.0% | [19.8%, 56.2%] | [10.6%, 63.0%] |
+| UK GDP | unidentified | 22.7% | 19.2% | [5.5%, 39.9%] | [1.8%, 52.6%] |
+| UK CPI | global | 41.5% | 41.9% | [25.6%, 56.3%] | [14.5%, 70.5%] |
+| UK CPI | domestic | 36.8% | 37.4% | [19.9%, 53.9%] | [8.8%, 59.5%] |
+| UK CPI | unidentified | 21.7% | 17.8% | [5.4%, 38.5%] | [1.9%, 54.5%] |
 
 Paper benchmark: identified global shocks explain roughly ~40% of UK GDP and ~50% of UK CPI variation one year after the shocks. Compare against the **mean** column above, not the renormalised table: on the paper's own definition this replication matches on UK GDP and falls materially short on UK CPI. The renormalised table closes that gap arithmetically rather than economically.
 
@@ -37,13 +37,13 @@ Note on the domestic ranking: the paper's prose says UK monetary policy is the l
 
 | Variable | World demand | World energy | World supply | Unident. global | UK demand | UK supply | UK mon. pol. | Unident. UK |
 |---|---|---|---|---|---|---|---|---|
-| World GDP | 38.7 | 24.0 | 22.0 | 14.4 | 0.2 | 0.2 | 0.2 | 0.2 |
-| World CPI | 59.9 | 21.7 | 5.9 | 11.7 | 0.2 | 0.2 | 0.2 | 0.2 |
-| Oil price | 19.4 | 37.6 | 33.3 | 9.1 | 0.2 | 0.1 | 0.1 | 0.1 |
-| Bank Rate | 30.7 | 4.4 | 5.7 | 13.4 | 22.8 | 7.4 | 6.8 | 8.9 |
-| Exch. rate | 5.0 | 8.2 | 3.0 | 6.2 | 18.6 | 17.5 | 18.9 | 22.5 |
-| UK CPISA | 27.2 | 19.4 | 2.9 | 5.8 | 11.4 | 13.9 | 8.7 | 10.8 |
-| CPI Energy | 30.7 | 24.0 | 0.1 | 7.3 | 6.5 | 12.3 | 8.2 | 10.8 |
-| UK GDP | 19.9 | 13.0 | 9.8 | 9.5 | 9.5 | 19.1 | 9.1 | 10.0 |
+| World GDP | 39.5 | 26.9 | 19.6 | 13.1 | 0.2 | 0.2 | 0.2 | 0.3 |
+| World CPI | 59.1 | 24.1 | 5.2 | 10.9 | 0.2 | 0.2 | 0.2 | 0.2 |
+| Oil price | 17.4 | 34.0 | 35.7 | 12.3 | 0.3 | 0.2 | 0.1 | 0.1 |
+| Bank Rate | 32.0 | 4.7 | 5.4 | 12.8 | 19.2 | 8.2 | 6.9 | 10.8 |
+| Exch. rate | 5.2 | 7.7 | 2.9 | 6.9 | 19.0 | 12.7 | 20.6 | 25.0 |
+| UK CPISA | 27.1 | 18.1 | 2.8 | 6.3 | 10.5 | 14.6 | 8.9 | 11.7 |
+| CPI Energy | 30.4 | 23.1 | 0.1 | 8.1 | 6.9 | 11.0 | 11.0 | 9.4 |
+| UK GDP | 21.1 | 12.7 | 9.4 | 9.1 | 9.9 | 18.2 | 8.4 | 11.3 |
 
 Figures: fig2_irf_world.png, fig3_irf_uk.png, fig4_fevd.png, fig5_shocks.png, fig6_hist_decomp.png.

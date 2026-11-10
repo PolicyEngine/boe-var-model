@@ -160,7 +160,7 @@ def main() -> None:
         # satellite module and this script. tests/test_committed_artifacts.py
         # fails if the code changes without this artifact being regenerated.
         "code_version": evaluation_code_version(
-            extra_paths=[satellite.__file__, __file__]
+            extra_paths=[satellite.__file__, satellite._MGSX_PATH, __file__]
         ),
     }
 

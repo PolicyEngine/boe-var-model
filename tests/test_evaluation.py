@@ -1,7 +1,30 @@
 import numpy as np
 import pytest
 
-from boe_var.evaluation import benjamini_hochberg, rolling_origin_evaluation
+from boe_var.evaluation import (
+    benjamini_hochberg,
+    evaluation_code_version,
+    rolling_origin_evaluation,
+)
+
+
+def test_code_version_covers_the_dataset(tmp_path, monkeypatch):
+    """A revision to past data values, with the same sample length, must make
+    the committed artifacts stale. Before this, only source files were hashed."""
+    from boe_var import data
+
+    original = data._DATA_PATH
+    baseline = evaluation_code_version()
+    copy = tmp_path / "boe_var_data.csv"
+    copy.write_bytes(open(original, "rb").read())
+    monkeypatch.setattr(data, "_DATA_PATH", copy)
+    assert evaluation_code_version() == baseline, "same bytes, same digest"
+    lines = copy.read_text().splitlines()
+    head, rest = lines[0], lines[1:]
+    cells = rest[-1].split(",")
+    cells[-1] = str(float(cells[-1]) + 0.01)   # revise the last uk_gdp value
+    copy.write_text("\n".join([head] + rest[:-1] + [",".join(cells)]) + "\n")
+    assert evaluation_code_version() != baseline
 
 
 def test_benjamini_hochberg_matches_the_textbook_step_up():
