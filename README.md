@@ -114,7 +114,7 @@ Read these before quoting a forecast, a band or an impulse response.
   `results/rolling_evaluation.json`, `multiplicity`).
 - **The 90% bands are too narrow.** Raw production-spec 90% bands cover
   88% of UK GDP outturns one quarter ahead, falling to 70% at eight
-  quarters (`results/coverage_evaluation.json`). The 68% band covers 52% of
+  quarters (`results/coverage_evaluation.json`). The 68% band covers 50% of
   GDP outturns at eight quarters. Scoring the band rescaling on held-out
   origins is in PR #19; the choice between labelling and dropping the 90%
   band is issue #12.
