@@ -210,7 +210,7 @@ class TestCoverageEvaluationArtifact:
         """The site quotes ~57-71% empirical coverage for the 68% band
         (mean across the eight variables, per horizon; 2026Q1 data). On the
         2026Q2 data it is 57-71% (0.5675-0.7075 as regenerated with #19;
-        0.5800-0.7125 in the #24 run, a BLAS-level difference of one origin
+        0.5800-0.7125 in the #24 run; machine-dependent, cause not traced, one origin
         in 34 cells)."""
         cov = _load("coverage_evaluation.json")["coverage"]["68"]
         means = [np.mean(list(cov[f"h{h}"].values())) for h in range(1, 9)]
