@@ -17,6 +17,74 @@ September log-basis medians exactly (449 accepted, ESS 210.9), so every change
 below is the units correction, not Monte Carlo noise. Unemployment, Bank Rate,
 the energy contribution (to two decimals) and the MP-shock scaling are unchanged.
 
+## 2026Q2 data refresh (6 November 2026): the SVAR side, old -> new
+
+The data now end in 2026Q2 (ONS quarterly national accounts of 30 Sep 2026,
+CPI of 21 Oct, LMS of 20 Oct; vintage table in `data/README.md`). The forecast
+origin moves from T = 2026Q1 to T = 2026Q2. The coefficient sample is still
+1992Q1-2025Q1, but ONS Blue Book 2026 revised UK GDP history, so the
+coefficients move a little too. `scripts/run_external_comparison.py`, same
+defaults and seed (GitHub Actions run 42154335977): production 6000 draws, 473
+accepted, ESS 209.0 (was 449, ESS 210.9); pre-Covid 260 accepted, ESS 118.9
+(was 296, ESS 167). Parts 1-3 below are the 22 September analysis on the
+2026Q1 data and have not been rewritten; where their SVAR numbers differ from
+this table, this table is current. The BoE and OBR columns are unchanged
+(July 2026 MPR, March 2026 EFO); the vintage-aligned BoE comparator is now
+the November 2026 MPR, not used here.
+
+2026Q3 is now a one-quarter-ahead forecast (it was two quarters ahead), so its
+bands are narrower by construction.
+
+CPI inflation, four-quarter %, production sample:
+| Quarter | Median | 68% band |
+|---|---|---|
+| 2026Q3 | 2.64 -> 3.00 | 1.90-3.37 -> 2.51-3.43 |
+| 2027Q3 | 3.00 -> 3.44 | 1.68-4.32 -> 2.02-4.77 |
+| 2028Q3 | 2.98 -> 3.14 | 1.67-4.51 -> 1.76-4.61 |
+| 2029Q3 | 3.02 -> 3.17 | 1.60-4.49 -> 1.67-4.62 |
+
+GDP growth, four-quarter %, production sample:
+| Quarter | Median | 68% band |
+|---|---|---|
+| 2026Q3 | 1.37 -> 1.59 | 0.59-2.21 -> 1.04-2.17 |
+| 2027Q3 | 1.47 -> 1.20 | 0.19-2.68 -> -0.06-2.40 |
+| 2028Q3 | 1.46 -> 1.23 | 0.06-2.75 -> 0.02-2.50 |
+| 2029Q3 | 1.53 -> 1.35 | 0.10-2.80 -> 0.03-2.65 |
+
+Other rows, production sample (median):
+| Quarter | Unemployment % | Energy contribution pp | Bank Rate % |
+|---|---|---|---|
+| 2026Q3 | 4.96 -> 4.87 | 0.24 -> 0.68 | 3.76 -> 3.85 |
+| 2027Q3 | 4.92 -> 4.84 | 0.08 -> 0.12 | 3.81 -> 3.92 |
+| 2028Q3 | 4.88 -> 4.88 | 0.06 -> 0.05 | 3.87 -> 3.90 |
+| 2029Q3 | 4.84 -> 4.89 | 0.06 -> 0.08 | 3.91 -> 3.91 |
+
+Unemployment 68% bands: 4.84-4.90, 4.57-5.11, 4.31-5.45, 4.01-5.78 (last
+actual 4.9% at 2026Q2, was 5.0% at 2026Q1).
+
+Pre-Covid sample (1992Q1-2019Q4) CPI medians: 2.22/1.99/2.02/2.01 ->
+2.64/2.13/1.93/1.91; GDP medians 1.57/0.97/1.16/1.45 (not recorded before).
+
+MP-shock scaling: Bank Rate on impact 0.106 -> 0.073pp; scaled to a 35bp
+shortfall the effect on YoY CPI is -0.10 to -0.04pp (was 0.06-0.08pp in
+size). Max companion eigenvalue 1.004 [1.002, 1.009] (unchanged). Realised
+annualised CPI: 1992Q1-2025Q1 2.42%, 1992Q1-2019Q4 2.04% (unchanged),
+2021Q1-2023Q4 6.97% -> 6.96%, edge window 2023Q4-2026Q1 2.93% -> 2023Q4-2026Q2
+2.96%.
+
+What moved it: 2026Q2 is the energy-price quarter. In the new data real oil
+is up 21.6 log points on the quarter, CPI energy 6.2, world CPI 1.9 and UK
+CPI 0.8. The SVAR now has that quarter in its conditioning data, which the
+22 September text below expected ("the row most likely to change"): the energy
+contribution in 2026Q3 rises from 0.24 to 0.68pp, against 0.6 in the BoE
+central projection, and near-term CPI rises from 2.64 to 3.00 (BoE 2.9). The
+identified shocks at T are a world energy shock with weight 0.98 on the
+inflationary sign (`results/forecast_summary.md`). The medium-term CPI plateau
+rises from about 3.0% to about 3.15%, above the realised 2.96% edge drift, so
+the Part 2.3(c) reading (the plateau tracks the edge drift) now holds less
+tightly, with the energy shock still feeding through. GDP is 0.2-0.3pp weaker
+from 2027.
+
 ## Part 1: vs the BoE July 2026 MPR central projection
 
 Our forecast: unconditional SVAR, estimated 1992Q1-2025Q1, forecast origin T = 2026Q1

@@ -41,7 +41,7 @@ of restricting the set of admissible Q.
 
 Quarterly data; estimation sample **1992Q1–2025Q1** (originally **1992Q1–2023Q2**) (start of UK inflation
 targeting; last year of data reserved because recent data are revision-
-prone). Data through 2026Q1 are kept for the paper's forecast-revision
+prone). Data through 2026Q2 are kept for the paper's forecast-revision
 exercises. Ordering is fixed — the zero restrictions below reference it.
 
 | # | Variable | Enters model | Shown in figures |
@@ -141,8 +141,9 @@ restrictions before rejecting, materially reducing the cost of reaching
 among columns sharing the same zero pattern — here within {WD, WS, U1... }
 blocks; the replication permutes only within restriction-equivalent groups.)
 
-The paper uses **10,000 accepted draws**; this replication targets 1,000+
-by default (configurable).
+The paper uses **10,000 accepted draws**. The committed figures here use 744
+accepted out of 10,000 posterior draws (ESS 356, `results/summary.md`); the
+`run_replication.py` default is 200 accepted (`--accepted`, configurable).
 
 ## 6. Outputs and what they mean
 
@@ -198,6 +199,8 @@ Explicit deviations of this replication:
 8. **Data vintages.** The paper uses the vintages available for the August
    2024 Monetary Policy Report; we use current vintages, so revised data
    will differ, particularly for recent quarters.
-9. The forecast-revision tool of Section 5 of the paper (structural
-   narrative for round-to-round forecast revisions) is out of scope; we
-   replicate the standard outputs (Figures 2–6) only.
+9. The forecast-revision exercise of Section 5 of the paper (structural
+   narrative for round-to-round forecast revisions) is implemented in
+   `scripts/run_forecast_revision.py` (Figures 1 and 7–9,
+   `results/forecast_summary.md`). Like Figures 2–6, it is compared with the
+   paper qualitatively only.
