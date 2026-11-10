@@ -505,13 +505,11 @@ class TestArtifactStaleness:
 class TestArtifactDataVintage:
     """Fail when the packaged data changes length without regenerating.
 
-    ``code_version`` hashes the evaluation SOURCES only, not
-    ``boe_var_data.csv``. A data refresh that adds a quarter leaves every
-    hash intact, so the staleness guard above stays green while the
-    committed coverage and rolling numbers describe an older sample. These
-    checks pin each artifact's recorded sample and origin count to the data
-    the package loads today. They do not catch a same-length revision of
-    past values; only a data hash in the artifact would.
+    Since PR #18, ``code_version`` also hashes the dataset ``load_data()``
+    reads, so any data change already fails the staleness guard above.
+    These checks are a second, readable layer: they pin each artifact's
+    recorded sample and origin count to the data the package loads today,
+    so a failure names the sample mismatch directly.
     """
 
     @pytest.mark.parametrize("name", ["coverage_evaluation.json",

@@ -108,13 +108,13 @@ See `RESOURCES.md` for the full annotated list (method papers, data sources).
 Read these before quoting a forecast, a band or an impulse response.
 
 - **No forecast skill over simple benchmarks.** In the rolling-origin
-  evaluation (49 origins), no variable × horizon is significantly more
+  evaluation (50 origins, 2026Q2 data), no variable × horizon is significantly more
   accurate than a random walk, a random walk with drift or an AR(1) once the 64 tests per benchmark are
   adjusted together (Benjamini–Hochberg q < 0.05 in 0 of 64;
   `results/rolling_evaluation.json`, `multiplicity`).
 - **The 90% bands are too narrow.** Raw production-spec 90% bands cover
-  88% of UK GDP outturns one quarter ahead, falling to 71% at eight
-  quarters (`results/coverage_evaluation.json`). The 68% band covers 51% of
+  88% of UK GDP outturns one quarter ahead, falling to 70% at eight
+  quarters (`results/coverage_evaluation.json`). The 68% band covers 52% of
   GDP outturns at eight quarters. Scoring the band rescaling on held-out
   origins is in PR #19; the choice between labelling and dropping the 90%
   band is issue #12.
@@ -125,7 +125,8 @@ Read these before quoting a forecast, a band or an impulse response.
   80 quarters (PR #17 and its verification comment). Impulse-response
   magnitudes are not yet checked against the paper's Figures 2–3 (issue #11).
 - **Year-on-year rates are log differences.** `forecast.py` computes YoY as
-  a difference of 100·log levels. The BoE and OBR publish simple rates, so on
-  `main` the external comparison sets the two bases against each other (CPI
-  about 0.03–0.05pp low at current rates). PR #18 moves that comparison to
-  the simple basis; `forecast_summary.md` and `fig9` remain log basis.
+  a difference of 100·log levels, about x²/200 below the simple rates the
+  BoE and OBR publish (0.04pp at 2.8%). The external comparison
+  (`results/forecast_vs_boe_obr.md`) converts to the simple basis with
+  `forecast.yoy_pct` (PR #18); `forecast_summary.md` and `fig9` remain log
+  basis.
