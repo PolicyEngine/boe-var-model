@@ -75,3 +75,20 @@ jobs:
         if: always()
         continue-on-error: true
         run: uv run pytest -q --runslow -m "slow and calibration"
+
+  coverage-determinism:
+    name: Coverage artefact reproduces at the committed seed (issue #26)
+    # Manual only. Reruns scripts/run_coverage_evaluation.py at the committed
+    # configuration and fails if any coverage cell differs from
+    # results/coverage_evaluation.json. It prints the numpy, scipy, BLAS and
+    # CPU it ran on, so a difference can be tied to the machine or ruled out.
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - name: Install
+        run: uv sync
+      - name: Rerun the coverage evaluation and compare with the committed file
+        run: uv run python scripts/check_coverage_determinism.py
