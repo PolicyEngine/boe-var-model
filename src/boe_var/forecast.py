@@ -24,6 +24,7 @@ from .analysis import _ma_coeffs, aggregate
 
 __all__ = [
     "unconditional_forecast",
+    "shock_factor",
     "sample_forecast",
     "forecast_bands",
     "yoy",
@@ -92,6 +93,29 @@ def unconditional_forecast(draw, y_hist, dummies_hist=None, horizons: int = 13):
     return _iterate(draw, y_hist, horizons)
 
 
+def shock_factor(Sigma) -> np.ndarray:
+    """A square root L of Sigma (L @ L.T == Sigma) for drawing the shocks.
+
+    Uses the Cholesky factor, which is unique for a positive definite Sigma,
+    so the same normals give the same shocks on every machine. An eigen
+    square root is equally valid in distribution, but LAPACK builds (and
+    OpenBLAS kernels on different CPUs) return eigenvectors with different
+    signs, so the same seed gave different forecast paths and coverage cells
+    on different machines (issue #26). For a singular Sigma, where Cholesky
+    fails, falls back to the eigen square root with each eigenvector's sign
+    fixed so that its largest-magnitude entry is positive.
+    """
+    S = np.asarray(Sigma, dtype=float)
+    S = 0.5 * (S + S.T)
+    try:
+        return np.linalg.cholesky(S)
+    except np.linalg.LinAlgError:
+        w, V = np.linalg.eigh(S)
+        pick = np.argmax(np.abs(V), axis=0)
+        V = V * np.where(V[pick, np.arange(V.shape[1])] < 0, -1.0, 1.0)
+        return V * np.sqrt(np.clip(w, 0.0, None))
+
+
 def sample_forecast(draw, y_hist, dummies_hist=None, horizons: int = 13,
                     rng: np.random.Generator | None = None):
     """One stochastic forecast path: adds u_{T+h} ~ N(0, Sigma) each step.
@@ -102,12 +126,8 @@ def sample_forecast(draw, y_hist, dummies_hist=None, horizons: int = 13,
     del dummies_hist
     if rng is None:
         rng = np.random.default_rng()
-    Sigma = np.asarray(draw.Sigma, dtype=float)
-    k = draw.k
-    # Robust to (numerically) singular / zero Sigma: use eigen square root.
-    w, V = np.linalg.eigh(0.5 * (Sigma + Sigma.T))
-    Ls = V @ np.diag(np.sqrt(np.clip(w, 0.0, None)))
-    shocks = rng.standard_normal((horizons, k)) @ Ls.T
+    Ls = shock_factor(draw.Sigma)
+    shocks = rng.standard_normal((horizons, draw.k)) @ Ls.T
     return _iterate(draw, y_hist, horizons, shocks=shocks)
 
 

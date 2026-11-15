@@ -11,6 +11,7 @@ from boe_var.forecast import (
     log_to_simple_pct,
     reduced_form_residuals,
     sample_forecast,
+    shock_factor,
     shock_distribution_T,
     unconditional_forecast,
     yoy,
@@ -203,3 +204,31 @@ def test_yoy_transform_irf():
     out = yoy_transform_irf(x)
     np.testing.assert_allclose(out[:4], x[:4])   # h<4: level itself
     np.testing.assert_allclose(out[4:], 4.0)     # thereafter x[h]-x[h-4]=4
+
+
+def test_shock_factor_is_the_cholesky_factor_for_a_pd_sigma():
+    """#26: a unique factor, so the same normals give the same shocks on
+    every LAPACK build (the eigen square root's signs are not fixed)."""
+    A = np.random.default_rng(4).standard_normal((5, 5))
+    S = A @ A.T + 0.1 * np.eye(5)
+    L = shock_factor(S)
+    np.testing.assert_allclose(L @ L.T, S, atol=1e-12)
+    np.testing.assert_array_equal(L, np.tril(L))
+    assert (np.diag(L) > 0).all()
+
+
+def test_shock_factor_handles_a_singular_sigma_with_fixed_signs():
+    v = np.array([1.0, -2.0, 0.5])
+    S = np.outer(v, v)  # rank one: Cholesky fails
+    L = shock_factor(S)
+    np.testing.assert_allclose(L @ L.T, S, atol=1e-12)
+    V, _ = np.linalg.qr(np.random.default_rng(0).standard_normal((3, 3)))
+    S2 = V @ np.diag([0.0, 1.0, 2.0]) @ V.T
+    L2 = shock_factor(S2)
+    np.testing.assert_allclose(L2 @ L2.T, S2, atol=1e-12)
+    for j in range(3):
+        col = L2[:, j]
+        if np.abs(col).max() > 1e-12:
+            assert col[np.argmax(np.abs(col))] > 0
+    np.testing.assert_array_equal(shock_factor(np.zeros((3, 3))),
+                                  np.zeros((3, 3)))

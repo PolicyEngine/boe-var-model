@@ -34,7 +34,8 @@ from boe_var.evaluation import evaluation_code_version
 LAGS = 4
 HORIZONS = 8
 FIRST_ORIGIN = 80          # matches rolling_evaluation.json
-N_DRAWS = 100              # posterior draws per origin
+N_DRAWS = 1000             # posterior draws per origin (#26: 100 left
+                           # seed noise of 0.02-0.08 per cell)
 N_PATHS = 5                # stochastic paths per draw
 SEED = 20260729
 # Predictive quantile levels recorded per origin for the full-distribution
@@ -65,6 +66,20 @@ def _scale_factor(nominal: int, empirical: float) -> float | None:
     if not 0.0 < empirical < 1.0:
         return None
     return _z((1.0 + nominal / 100.0) / 2.0) / _z((1.0 + empirical) / 2.0)
+
+
+def coverage_block(hits: dict, n: np.ndarray, horizons: int) -> dict:
+    """``{level: {hN: {variable: share}}}`` from hit counts."""
+    return {
+        str(lv): {
+            f"h{h + 1}": {
+                var: round(float(hits[lv][h, j] / n[h]), 4)
+                for j, var in enumerate(COLUMNS)
+            }
+            for h in range(horizons)
+        }
+        for lv in (68, 90)
+    }
 
 
 def band_scale_factors(coverage: dict, levels=(68, 90)) -> dict:
@@ -111,6 +126,7 @@ def run_coverage(
     seed: int = SEED,
     dummies: np.ndarray | None = None,
     record: dict | None = None,
+    yoy: dict | None = None,
 ) -> tuple[dict, np.ndarray]:
     """Empirical band coverage. Returns (hits-per-level, origin count per h).
 
@@ -126,6 +142,14 @@ def run_coverage(
     (the six Covid quarters in the published specification). They are
     truncated to the training sample at each origin and set to zero over the
     forecast horizon, exactly as in the published forecast.
+
+    ``yoy``: if a dict is passed, the same simulated paths are also scored on
+    the four-quarter difference of each series (issue #27), which for the
+    log-level series is the year-on-year growth rate the published fans
+    show. Each path is prefixed with the last four observed quarters, so at
+    h1-h4 the year-ago level is the observed one and the result equals the
+    level coverage by construction. It is filled with ``hits`` (same layout
+    as the return value) and ``stretch`` (as in ``record``).
     """
     T, k = y.shape
     last_origin = T - horizons - 1
@@ -137,6 +161,8 @@ def run_coverage(
             dummies = dummies[:, None]
         if dummies.shape[0] != T:
             raise ValueError("dummies must have the same rows as y")
+    if yoy is not None and first_origin < 3:
+        raise ValueError("year-on-year scoring needs four observed quarters")
     origins = list(range(first_origin, last_origin + 1))
     rng = np.random.default_rng(seed)
 
@@ -145,6 +171,8 @@ def run_coverage(
     n = np.zeros(horizons)
     stretch = {lv: [] for lv in (68, 90)}
     quant, acts, pit = [], [], []
+    yoy_hits = {lv: np.zeros((horizons, k)) for lv in (68, 90)}
+    yoy_stretch = {lv: [] for lv in (68, 90)}
 
     for origin in origins:
         train = y[: origin + 1]
@@ -172,6 +200,19 @@ def run_coverage(
             hits[lv] += (lo <= actual) & (actual <= hi)
             if record is not None:
                 stretch[lv].append(band_stretch(med, lo, hi, actual))
+        if yoy is not None:
+            lagged = np.concatenate(
+                [np.broadcast_to(train[-4:], (paths.shape[0], 4, k)), paths],
+                axis=1)
+            paths_yoy = lagged[:, 4:] - lagged[:, :-4]
+            actual_yoy = actual - y[origin - 3: origin + horizons - 3]
+            med_yoy = np.percentile(paths_yoy, 50.0, axis=0)
+            for lv, (a, b) in {68: (16.0, 84.0), 90: (5.0, 95.0)}.items():
+                lo = np.percentile(paths_yoy, a, axis=0)
+                hi = np.percentile(paths_yoy, b, axis=0)
+                yoy_hits[lv] += (lo <= actual_yoy) & (actual_yoy <= hi)
+                yoy_stretch[lv].append(
+                    band_stretch(med_yoy, lo, hi, actual_yoy))
         n += 1
     if record is not None:
         record["stretch"] = {lv: np.asarray(v) for lv, v in stretch.items()}
@@ -181,6 +222,9 @@ def run_coverage(
         record["quantiles"] = np.asarray(quant)
         record["actual"] = np.asarray(acts)
         record["pit"] = np.asarray(pit)
+    if yoy is not None:
+        yoy["hits"] = yoy_hits
+        yoy["stretch"] = {lv: np.asarray(v) for lv, v in yoy_stretch.items()}
     return hits, n
 
 
@@ -570,6 +614,7 @@ def main() -> None:
     n_origins = T - args.horizons - args.first_origin
 
     rec_head, rec_prod = {}, {}
+    yoy_head, yoy_prod = {}, {}
     hits, n = run_coverage(
         y,
         lags=args.lags,
@@ -579,6 +624,7 @@ def main() -> None:
         n_paths=args.paths,
         seed=args.seed,
         record=rec_head,
+        yoy=yoy_head,
     )
 
     # The block above matches rolling_evaluation.json's headline: no Covid
@@ -599,6 +645,7 @@ def main() -> None:
         seed=args.seed,
         dummies=covid,
         record=rec_prod,
+        yoy=yoy_prod,
     )
 
     report = {
@@ -606,7 +653,10 @@ def main() -> None:
             "expanding-window pseudo-out-of-sample interval coverage; "
             "reduced-form BVAR predictive bands with parameter and shock "
             "uncertainty (posterior draws x stochastic paths), percentile "
-            "intervals on the LEVEL of each series"
+            "intervals on the LEVEL of each series; the *_yoy blocks score "
+            "the same paths on the four-quarter difference (year-on-year "
+            "growth for the log-level series), which is what the published "
+            "fans show"
         ),
         "lags": args.lags,
         "horizons": args.horizons,
@@ -626,7 +676,10 @@ def main() -> None:
         },
         "limitations": [
             "Estimation uses final revised data (pseudo-, not real-time).",
-            "Coverage is on series levels in transformed model units.",
+            "'coverage' is on series levels in transformed model units; "
+            "'coverage_yoy' is on four-quarter differences of the same units "
+            "(100 x log change for GDP, prices and the exchange rate; a "
+            "percentage-point change for Bank Rate).",
             "Consecutive-origin outcomes overlap, so the effective number of "
             "independent observations is well below the origin count.",
             "No Covid dummies in the headline block, matching "
@@ -634,16 +687,8 @@ def main() -> None:
             "estimated with them; use 'production_spec' for the bands that "
             "are actually shown.",
         ],
-        "coverage": {
-            str(lv): {
-                f"h{h + 1}": {
-                    var: round(float(hits[lv][h, j] / n[h]), 4)
-                    for j, var in enumerate(COLUMNS)
-                }
-                for h in range(args.horizons)
-            }
-            for lv in (68, 90)
-        },
+        "coverage": coverage_block(hits, n, args.horizons),
+        "coverage_yoy": coverage_block(yoy_head["hits"], n, args.horizons),
         # Staleness guard: hash of the evaluation-relevant sources (plus this
         # script). tests/test_committed_artifacts.py fails if the code changes
         # without this artifact being regenerated.
@@ -667,16 +712,9 @@ def main() -> None:
             "bands are actually shown"
         ),
         "covid_dummies": "2020Q1-2021Q2",
-        "coverage": {
-            str(lv): {
-                f"h{h + 1}": {
-                    var: round(float(hits_prod[lv][h, j] / n_prod[h]), 4)
-                    for j, var in enumerate(COLUMNS)
-                }
-                for h in range(args.horizons)
-            }
-            for lv in (68, 90)
-        },
+        "coverage": coverage_block(hits_prod, n_prod, args.horizons),
+        "coverage_yoy": coverage_block(yoy_prod["hits"], n_prod,
+                                       args.horizons),
     }
     # Publish the derived half-width correction next to the measurement, so a
     # consumer does not have to re-derive it from a number it cannot check.
@@ -687,15 +725,27 @@ def main() -> None:
             "the median. k < 1 narrows an over-covering band."
         ),
         "caveat": (
-            "Measured on series LEVELS in transformed model units. Published "
-            "fans show year-on-year growth, whose forecast error at h > 4 is a "
-            "difference of two level errors, so these factors are an "
-            "approximation there. Apply the production_spec factors to a "
-            "published fan; the headline factors describe a model with no "
-            "Covid dummies."
+            "Measured on series LEVELS in transformed model units. A fan "
+            "drawn in year-on-year growth should use band_scale_factors_yoy: "
+            "beyond four quarters a year-on-year error is the difference of "
+            "two level errors, and the two bases give different factors "
+            "(issue #27). Apply the production_spec factors to a published "
+            "fan; the headline factors describe a model with no Covid dummies."
         ),
         "headline": band_scale_factors(report["coverage"]),
         "production_spec": band_scale_factors(report["production_spec"]["coverage"]),
+    }
+    report["band_scale_factors_yoy"] = {
+        "derivation": report["band_scale_factors"]["derivation"],
+        "caveat": (
+            "Measured on four-quarter differences (coverage_yoy): the basis "
+            "of a fan drawn in year-on-year growth. Identical to the level "
+            "factors at h1-h4 by construction. Bank Rate is published as a "
+            "level, so its level factors apply."
+        ),
+        "headline": band_scale_factors(report["coverage_yoy"]),
+        "production_spec": band_scale_factors(
+            report["production_spec"]["coverage_yoy"]),
     }
     # The factors above are fitted on the same origins their coverage is
     # judged on, so "calibrated coverage = nominal" holds by construction.
@@ -717,6 +767,7 @@ def main() -> None:
         ),
         "headline": holdout_calibration(rec_head["stretch"]),
         "production_spec": holdout_calibration(rec_prod["stretch"]),
+        "production_spec_yoy": holdout_calibration(yoy_prod["stretch"]),
     }
     # Issue #12: the Gaussian factor cannot reach 90% out of sample. Test the
     # distribution-free alternative: the conformal quantile of past
@@ -732,6 +783,7 @@ def main() -> None:
     for i in range(n_rec):
         for h in range(args.horizons):
             covid_out[i, h] = df.index[args.first_origin + i + h + 1] in covid_q
+    conf_prod = conformal_evaluation(rec_prod)
     report["conformal_calibration"] = {
         "method": (
             "split-conformal: per level/horizon/variable the band half-width "
@@ -745,10 +797,13 @@ def main() -> None:
         ),
         "verdict": (
             "not adopted: out of sample the conformal 90% band covers within "
-            "sampling error of the Gaussian-k band (0.824 vs 0.822, s.e. about "
+            "sampling error of the Gaussian-k band ("
+            f"{conf_prod['90']['conformal']['mean']:.3f} vs "
+            f"{conf_prod['90']['gaussian_k']['mean']:.3f}, s.e. about "
             "0.05), at a wider average width and a worse CRPS, and it narrows "
             "bands with a history of small errors (bank_rate 68% coverage "
-            "0.39). Forecast misses cluster in time (2019-22), which "
+            f"{conf_prod['68']['conformal']['by_variable']['bank_rate']:.2f})."
+            " Forecast misses cluster in time (2019-22), which "
             "violates the exchangeability the method relies on; the fix is a "
             "model with time-varying volatility (issue #12 option 1)."
         ),
@@ -759,7 +814,7 @@ def main() -> None:
             "share outturn quarters. Levels in model units."
         ),
         "headline": conformal_evaluation(rec_head),
-        "production_spec": conformal_evaluation(rec_prod),
+        "production_spec": conf_prod,
         "production_spec_covid_outturns_excluded": conformal_evaluation(
             rec_prod, exclude=covid_out),
         "factors_for_next_forecast": {
