@@ -18,16 +18,20 @@ Run:  python scripts/check_coverage_determinism.py [--save PATH]
 from __future__ import annotations
 
 import argparse
+import contextlib
+import hashlib
 import json
+import os
 import platform
+import runpy
 import shutil
-import subprocess
 import sys
 import tempfile
 from pathlib import Path
 
 import numpy as np
 import scipy
+from scipy.linalg import cholesky
 
 from boe_var import forecast as fc
 from boe_var.bvar import BVAR
@@ -65,12 +69,52 @@ def fingerprint() -> dict:
     _, vecs = np.linalg.eigh(0.5 * (sigma + sigma.T))
     path = fc.sample_forecast(draw, y, horizons=2,
                               rng=np.random.default_rng(0))
+    many = BVAR(y, lags=4).sample_posterior(500, seed=1)
+    signs = "".join(
+        "".join("+" if v >= 0 else "-" for v in np.linalg.eigh(
+            0.5 * (d.Sigma + d.Sigma.T))[1][0]) for d in many)
     return {
+        "eigenvector_signs_500_draws_sha256": hashlib.sha256(
+            signs.encode()).hexdigest()[:16],
         "sigma_00": repr(float(sigma[0, 0])),
         "eigenvector_first_row_signs": "".join(
             "+" if v >= 0 else "-" for v in vecs[0]),
         "path_h1": [repr(float(v)) for v in path[0, :3]],
     }
+
+
+def cholesky_sample_forecast(draw, y_hist, dummies_hist=None,
+                             horizons: int = 13, rng=None):
+    """``forecast.sample_forecast`` with a Cholesky shock factor.
+
+    Same distribution as the eigen factor, but the factor is unique (positive
+    diagonal), so it does not depend on the LAPACK build. Used only with
+    ``--factor cholesky`` to test the fix proposed in #26.
+    """
+    del dummies_hist
+    if rng is None:
+        rng = np.random.default_rng()
+    sigma = np.asarray(draw.Sigma, dtype=float)
+    ls = cholesky(0.5 * (sigma + sigma.T), lower=True)
+    shocks = rng.standard_normal((horizons, draw.k)) @ ls.T
+    return fc._iterate(draw, y_hist, horizons, shocks=shocks)
+
+
+def regenerate(out: Path, committed: dict, factor: str) -> dict:
+    """Run scripts/run_coverage_evaluation.py in this process."""
+    if factor == "cholesky":
+        fc.sample_forecast = cholesky_sample_forecast
+    argv = sys.argv
+    sys.argv = [str(SCRIPT), "--output", str(out),
+                "--seed", str(committed["seed"]),
+                "--draws", str(committed["draws_per_origin"]),
+                "--paths", str(committed["paths_per_draw"])]
+    try:
+        with open(os.devnull, "w") as sink, contextlib.redirect_stdout(sink):
+            runpy.run_path(str(SCRIPT), run_name="__main__")
+    finally:
+        sys.argv = argv
+    return json.loads(out.read_text())
 
 
 def cells(block: dict) -> dict:
@@ -84,19 +128,18 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--save", type=Path,
                     help="also write the regenerated file here")
+    ap.add_argument("--factor", choices=("eigh", "cholesky"), default="eigh",
+                    help="shock factor for the random paths; cholesky tests "
+                         "the fix proposed in #26 and is expected to differ "
+                         "from the committed (eigh) file")
     args = ap.parse_args()
-    print(json.dumps({"environment": environment(),
+    print(json.dumps({"factor": args.factor,
+                      "environment": environment(),
                       "fingerprint": fingerprint()}, indent=1))
     committed = json.loads(COMMITTED.read_text())
     with tempfile.TemporaryDirectory() as tmp:
         out = Path(tmp) / "coverage.json"
-        subprocess.run(
-            [sys.executable, str(SCRIPT), "--output", str(out),
-             "--seed", str(committed["seed"]),
-             "--draws", str(committed["draws_per_origin"]),
-             "--paths", str(committed["paths_per_draw"])],
-            check=True, cwd=ROOT, stdout=subprocess.DEVNULL)
-        fresh = json.loads(out.read_text())
+        fresh = regenerate(out, committed, args.factor)
         if args.save:
             args.save.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy(out, args.save)
