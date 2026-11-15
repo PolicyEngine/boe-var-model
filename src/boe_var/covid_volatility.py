@@ -227,11 +227,8 @@ def sample_forecast_scaled(draw, y_hist, horizons: int = 13, rng=None,
     does, so ``shock_scale`` of ones (or None) gives the identical path."""
     if rng is None:
         rng = np.random.default_rng()
-    Sigma = np.asarray(draw.Sigma, dtype=float)
-    k = draw.k
-    w, V = np.linalg.eigh(0.5 * (Sigma + Sigma.T))
-    Ls = V @ np.diag(np.sqrt(np.clip(w, 0.0, None)))
-    shocks = rng.standard_normal((horizons, k)) @ Ls.T
+    Ls = fc.shock_factor(draw.Sigma)
+    shocks = rng.standard_normal((horizons, draw.k)) @ Ls.T
     if shock_scale is not None:
         shocks = shocks * np.asarray(shock_scale, dtype=float)[:, None]
     return fc._iterate(draw, y_hist, horizons, shocks=shocks)

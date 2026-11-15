@@ -203,19 +203,20 @@ class TestCoverageEvaluationArtifact:
         assert report["first_origin"] == 80
         assert report["lags"] == 4
         assert report["horizons"] == 8
-        assert report["draws_per_origin"] == 100
+        assert report["draws_per_origin"] == 1000
         assert report["paths_per_draw"] == 5
 
     def test_68_band_mean_coverage_stays_in_the_recorded_band(self):
         """The site quotes ~57-71% empirical coverage for the 68% band
-        (mean across the eight variables, per horizon; 2026Q1 data). On the
-        2026Q2 data it is 57-71% (0.5675-0.7075 as regenerated with #19;
-        0.5800-0.7125 in the #24 run; machine-dependent, cause not traced, one origin
-        in 34 cells)."""
+        (mean across the eight variables, per horizon). On the 2026Q2 data,
+        1,000 draws per origin and the Cholesky shock factor (#26) it is
+        0.5700-0.7050. Before #26 the eigen factor made this machine-dependent
+        (0.5675-0.7075 on one Mac, 0.5800-0.7125 on a Linux runner); the
+        Cholesky factor gives the same cells on every machine tested."""
         cov = _load("coverage_evaluation.json")["coverage"]["68"]
         means = [np.mean(list(cov[f"h{h}"].values())) for h in range(1, 9)]
-        assert min(means) == pytest.approx(0.5675, abs=0.01)
-        assert max(means) == pytest.approx(0.7075, abs=0.01)
+        assert min(means) == pytest.approx(0.5700, abs=0.01)
+        assert max(means) == pytest.approx(0.7050, abs=0.01)
         for h, m in enumerate(means, start=1):
             assert 0.55 <= m <= 0.72, f"68% band mean coverage at h{h}: {m}"
 
@@ -230,7 +231,45 @@ class TestCoverageEvaluationArtifact:
     def test_90_band_mean_coverage_stays_in_the_recorded_band(self):
         cov = _load("coverage_evaluation.json")["coverage"]["90"]
         means = [np.mean(list(cov[f"h{h}"].values())) for h in range(1, 9)]
-        assert np.mean(means) == pytest.approx(0.777, abs=0.02)
+        assert np.mean(means) == pytest.approx(0.781, abs=0.02)
+
+    def test_yoy_coverage_equals_level_coverage_at_h1_to_h4(self):
+        """The year-ago level is observed for h <= 4, so the four-quarter
+        difference is the level minus a constant: same band, same hits."""
+        report = _load("coverage_evaluation.json")
+        for block in (report, report["production_spec"]):
+            for lv in ("68", "90"):
+                for h in range(1, 5):
+                    assert (block["coverage_yoy"][lv][f"h{h}"]
+                            == block["coverage"][lv][f"h{h}"])
+
+    def test_yoy_factors_match_yoy_coverage(self):
+        """band_scale_factors_yoy is the Gaussian factor of coverage_yoy, so
+        a fan drawn in year-on-year growth gets a like-for-like factor
+        (issue #27)."""
+        sys.path.insert(0, str(SCRIPTS))
+        try:
+            from run_coverage_evaluation import band_scale_factors
+        finally:
+            sys.path.pop(0)
+        report = _load("coverage_evaluation.json")
+        factors = report["band_scale_factors_yoy"]
+        assert factors["production_spec"] == band_scale_factors(
+            report["production_spec"]["coverage_yoy"])
+        assert factors["headline"] == band_scale_factors(
+            report["coverage_yoy"])
+
+    def test_uk_gdp_68_band_at_h8_yoy_vs_level(self):
+        """Issue #27: the GDP fan the site shows is year-on-year growth. Its
+        68% band covered 62% of outturns at h8 against 52% for the GDP level,
+        so the level factor (about 1.4) over-widens the year-on-year fan
+        (about 1.13). Pinned so the README and the site's factors can quote
+        the year-on-year basis."""
+        prod = _load("coverage_evaluation.json")["production_spec"]
+        assert prod["coverage"]["68"]["h8"]["uk_gdp"] == pytest.approx(
+            0.52, abs=0.03)
+        assert prod["coverage_yoy"]["68"]["h8"]["uk_gdp"] == pytest.approx(
+            0.62, abs=0.03)
 
 
 class TestSatelliteValidationArtifact:
@@ -323,11 +362,15 @@ class TestRegenerationSmoke:
         T, k = y.shape
         horizons = 4
         first_origin = T - horizons - 8  # 8 origins
+        yoy = {}
         hits, n = run_coverage(
             y, lags=4, horizons=horizons, first_origin=first_origin,
-            n_draws=25, n_paths=2, seed=0,
+            n_draws=25, n_paths=2, seed=0, yoy=yoy,
         )
         assert (n == 8).all()
+        for lv in (68, 90):
+            np.testing.assert_array_equal(yoy["hits"][lv], hits[lv])
+            assert yoy["stretch"][lv].shape == (8, horizons, k)
         for lv in (68, 90):
             assert hits[lv].shape == (horizons, k)
             assert np.isfinite(hits[lv]).all()
