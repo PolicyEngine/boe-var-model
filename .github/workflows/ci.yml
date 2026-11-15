@@ -77,23 +77,20 @@ jobs:
         run: uv run pytest -q --runslow -m "slow and calibration"
 
   coverage-determinism:
-    name: Coverage determinism (issue #26, ${{ matrix.os }} run ${{ matrix.run }}, ${{ matrix.factor }})
+    name: Coverage artefact reproduces at the committed seed (issue #26, ${{ matrix.os }} run ${{ matrix.run }})
     # Manual only. Reruns scripts/run_coverage_evaluation.py at the committed
-    # configuration and fails if any coverage cell differs from
-    # results/coverage_evaluation.json. It prints the numpy, scipy, BLAS and
-    # CPU it ran on, so a difference can be tied to the machine or ruled out.
-    # Two Linux runs check Linux against itself; the macOS run checks whether
-    # a macOS (Accelerate) build reproduces the committed file, which was
-    # generated on a Mac. The cholesky leg tests the proposed fix: its files
-    # are compared with each other across machines (they are expected to
-    # differ from the committed eigh file). Each run uploads its file.
+    # configuration and fails if any coverage cell (levels or year on year)
+    # differs from results/coverage_evaluation.json. It prints the numpy,
+    # scipy, BLAS and CPU it ran on. Two runs per OS, because ubuntu-latest
+    # lands on different CPU models and OpenBLAS picks kernels by CPU; with
+    # the Cholesky shock factor every leg should pass. Each run uploads its
+    # regenerated file.
     if: github.event_name == 'workflow_dispatch'
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest]
         run: [1, 2]
-        factor: [eigh, cholesky]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 30
     steps:
@@ -102,10 +99,10 @@ jobs:
       - name: Install
         run: uv sync
       - name: Rerun the coverage evaluation and compare with the committed file
-        run: uv run python scripts/check_coverage_determinism.py --factor ${{ matrix.factor }} --save out/coverage_evaluation.json
+        run: uv run python scripts/check_coverage_determinism.py --save out/coverage_evaluation.json
       - name: Upload the regenerated file
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: coverage-${{ matrix.os }}-${{ matrix.run }}-${{ matrix.factor }}
+          name: coverage-${{ matrix.os }}-${{ matrix.run }}
           path: out/coverage_evaluation.json

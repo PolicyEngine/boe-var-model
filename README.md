@@ -112,15 +112,21 @@ Read these before quoting a forecast, a band or an impulse response.
   accurate than a random walk, a random walk with drift or an AR(1) once the 64 tests per benchmark are
   adjusted together (Benjamini–Hochberg q < 0.05 in 0 of 64;
   `results/rolling_evaluation.json`, `multiplicity`).
-- **The 90% bands are too narrow.** Raw production-spec 90% bands cover
-  88% of UK GDP outturns one quarter ahead, falling to 70% at eight
-  quarters (`results/coverage_evaluation.json`). The 68% band covers 50% of
-  GDP outturns at eight quarters. These are measured on the level of each
-  series; the published fans are year-on-year rates (issue #27). Rescaling
-  the bands to measured coverage, scored on held-out origins, lifts the 90%
-  band from 77% to 83% across all variables and horizons
-  (`calibration_holdout`, production spec, rolling origin); the choice
-  between labelling and dropping the 90% band is issue #12.
+- **The 90% bands are too narrow.** Raw production-spec 90% bands for
+  year-on-year UK GDP growth, the basis of the published fan, cover 88% of
+  outturns one quarter ahead, falling to 74% at eight quarters
+  (`results/coverage_evaluation.json`, `coverage_yoy`). The 68% band covers
+  62% of year-on-year GDP outturns at eight quarters. On the GDP level the
+  same bands cover 70% and 52%. The two bases differ beyond four quarters
+  (issue #27). A fan drawn in year-on-year growth should use
+  `band_scale_factors_yoy`; the UK GDP 68% factor at eight quarters is 1.13
+  on that basis and 1.41 on levels. Rescaling the bands to measured
+  coverage, scored on held-out origins, lifts the 90% band from 77% to 83%
+  across all variables and horizons on levels, and from 78% to 83% year on
+  year (`calibration_holdout`, production spec, rolling origin). The choice
+  between labelling and dropping the 90% band is issue #12. The evaluation
+  uses 1,000 posterior draws per origin. The Cholesky shock factor gives
+  the same cells on every machine tested (issue #26).
 - **Monetary-policy level effects do not fade.** The posterior has a unit
   root: every draw checked on the test fixture has a largest companion
   eigenvalue above 1, and nothing truncates explosive draws. The GDP and
