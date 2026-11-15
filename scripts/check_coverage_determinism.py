@@ -12,13 +12,15 @@ go through. ``forecast.sample_forecast`` builds its shock factor from
 a different LAPACK build can return a different (equally valid) factor and
 hence different shock paths from the same seed.
 
-Run:  python scripts/check_coverage_determinism.py
+Run:  python scripts/check_coverage_determinism.py [--save PATH]
 """
 
 from __future__ import annotations
 
+import argparse
 import json
 import platform
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -79,6 +81,10 @@ def cells(block: dict) -> dict:
 
 
 def main() -> int:
+    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap.add_argument("--save", type=Path,
+                    help="also write the regenerated file here")
+    args = ap.parse_args()
     print(json.dumps({"environment": environment(),
                       "fingerprint": fingerprint()}, indent=1))
     committed = json.loads(COMMITTED.read_text())
@@ -91,6 +97,9 @@ def main() -> int:
              "--paths", str(committed["paths_per_draw"])],
             check=True, cwd=ROOT, stdout=subprocess.DEVNULL)
         fresh = json.loads(out.read_text())
+        if args.save:
+            args.save.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy(out, args.save)
 
     failed = False
     for name, pick in (("headline", lambda r: r["coverage"]),

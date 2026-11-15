@@ -77,13 +77,23 @@ jobs:
         run: uv run pytest -q --runslow -m "slow and calibration"
 
   coverage-determinism:
-    name: Coverage artefact reproduces at the committed seed (issue #26)
+    name: Coverage artefact reproduces at the committed seed (issue #26, ${{ matrix.os }} run ${{ matrix.run }})
     # Manual only. Reruns scripts/run_coverage_evaluation.py at the committed
     # configuration and fails if any coverage cell differs from
     # results/coverage_evaluation.json. It prints the numpy, scipy, BLAS and
     # CPU it ran on, so a difference can be tied to the machine or ruled out.
+    # Two Linux runs check Linux against itself; the macOS run checks whether
+    # a macOS (Accelerate) build reproduces the committed file, which was
+    # generated on a Mac. Each run uploads its regenerated file.
     if: github.event_name == 'workflow_dispatch'
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {os: ubuntu-latest, run: 1}
+          - {os: ubuntu-latest, run: 2}
+          - {os: macos-latest, run: 1}
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
@@ -91,4 +101,10 @@ jobs:
       - name: Install
         run: uv sync
       - name: Rerun the coverage evaluation and compare with the committed file
-        run: uv run python scripts/check_coverage_determinism.py
+        run: uv run python scripts/check_coverage_determinism.py --save out/coverage_evaluation.json
+      - name: Upload the regenerated file
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-${{ matrix.os }}-${{ matrix.run }}
+          path: out/coverage_evaluation.json
