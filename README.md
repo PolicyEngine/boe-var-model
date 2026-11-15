@@ -96,8 +96,8 @@ See `RESOURCES.md` for the full annotated list (method papers, data sources).
   description and standard references, and can only be validated
   qualitatively against the published figures.
 - The paper does not state the lag length; we assume p = 4 (a parameter).
-- Fewer accepted identification draws: the committed figures use 744
-  accepted draws out of 10,000 posterior draws (importance-weight ESS 356,
+- Fewer accepted identification draws: the committed figures use 765
+  accepted draws out of 10,000 posterior draws (importance-weight ESS 368,
   `results/summary.md`), and the script default is 200 (`--accepted`),
   against the paper's 10,000 accepted. The pandemic-prior treatment is
   simplified (Covid dummies as exogenous regressors). See
@@ -115,9 +115,12 @@ Read these before quoting a forecast, a band or an impulse response.
 - **The 90% bands are too narrow.** Raw production-spec 90% bands cover
   88% of UK GDP outturns one quarter ahead, falling to 70% at eight
   quarters (`results/coverage_evaluation.json`). The 68% band covers 50% of
-  GDP outturns at eight quarters. Scoring the band rescaling on held-out
-  origins is in PR #19; the choice between labelling and dropping the 90%
-  band is issue #12.
+  GDP outturns at eight quarters. These are measured on the level of each
+  series; the published fans are year-on-year rates (issue #27). Rescaling
+  the bands to measured coverage, scored on held-out origins, lifts the 90%
+  band from 77% to 83% across all variables and horizons
+  (`calibration_holdout`, production spec, rolling origin); the choice
+  between labelling and dropping the 90% band is issue #12.
 - **Monetary-policy level effects do not fade.** The posterior has a unit
   root: every draw checked on the test fixture has a largest companion
   eigenvalue above 1, and nothing truncates explosive draws. The GDP and

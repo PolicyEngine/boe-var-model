@@ -141,8 +141,8 @@ restrictions before rejecting, materially reducing the cost of reaching
 among columns sharing the same zero pattern — here within {WD, WS, U1... }
 blocks; the replication permutes only within restriction-equivalent groups.)
 
-The paper uses **10,000 accepted draws**. The committed figures here use 744
-accepted out of 10,000 posterior draws (ESS 356, `results/summary.md`); the
+The paper uses **10,000 accepted draws**. The committed figures here use 765
+accepted out of 10,000 posterior draws (ESS 368, `results/summary.md`); the
 `run_replication.py` default is 200 accepted (`--accepted`, configurable).
 
 ## 6. Outputs and what they mean
