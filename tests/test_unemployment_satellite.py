@@ -87,7 +87,7 @@ def test_no_residual_and_no_coefficient_draws_reproduce_the_forecast():
                                rtol=0, atol=1e-12)
 
 
-def test_h1_68_half_width_is_at_least_the_residual_sd():
+def test_h1_68_half_width_is_close_to_the_residual_sd():
     """One quarter of satellite residual alone is +/- sigma at 68%; the old
     GDP-only band at h1 was a fraction of that."""
     fit = _default_fit()
@@ -111,7 +111,17 @@ def test_joint_bands_are_no_narrower_than_gdp_only_bands():
 
 
 def test_coefficient_covariance_is_the_ols_one():
-    fit = _default_fit()
+    df = load_data()
+    g = yoy(np.asarray(df["uk_gdp"], dtype=float))
+    gq = [str(q) for q in df.index][4:]
+    uq, u = satellite.load_unemployment()
+    g_a, du, du_lag = satellite.align_satellite_inputs(
+        uq, u, gq, g, *satellite.DEFAULT_SAMPLE)
+    X = np.column_stack([np.ones_like(g_a), g_a, du_lag])
+    fit = satellite.fit_satellite(g_a, du, du_lag)
+    np.testing.assert_allclose(fit.coef_cov,
+                               fit.sigma ** 2 * np.linalg.inv(X.T @ X),
+                               rtol=1e-12)
     assert fit.coef_cov.shape == (3, 3)
     np.testing.assert_allclose(fit.coef_cov, fit.coef_cov.T)
     assert (np.linalg.eigvalsh(fit.coef_cov) > 0).all()

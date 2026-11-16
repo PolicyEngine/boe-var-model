@@ -201,6 +201,10 @@ def simulate_unemployment_paths(fit: SatelliteFit, gdp_paths: np.ndarray,
     ``coefficients``) and a residual N(0, sigma) is added at every step (if
     ``residual``). With both off this is ``fit.forecast`` applied to each
     path. Returns (n, H).
+
+    Coefficient draws are not truncated: a draw with gamma near or above 1
+    makes the path explosive. Over the validated four quarters this has no
+    visible effect; it is one more reason not to read the bands beyond h4.
     """
     g = np.atleast_2d(np.asarray(gdp_paths, dtype=float))
     n, H = g.shape

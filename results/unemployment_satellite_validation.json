@@ -21,8 +21,8 @@
     "note": "svar = posterior-mean BVAR re-fit per origin (end-to-end). See band_coverage for the measured coverage of GDP-only and joint predictive bands."
   },
   "band_coverage": {
-    "method": "h1-h4; per origin 1000 reduced-form posterior draws of the no-dummy BVAR(4) refit through the origin, one stochastic GDP path each (raw, not recalibrated); gdp_only maps the GDP quantile paths through the fitted equation (the bands published before); gdp_residual adds a N(0, sigma) residual per step; joint also draws the coefficients from N(coef, sigma^2 (X'X)^-1). Residual and coefficient draws are independent of the GDP shock path. Seed 20261116 + origin index.",
-    "caveat": "73 overlapping origins: binomial s.e. about 0.035 at 90% and 0.055 at 68% before serial correlation, so the true uncertainty is larger. The GDP paths come from a no-dummy BVAR refit per origin, not the production specification, and raw SVAR GDP bands themselves under-cover. Assumes a stable GDP-unemployment relation and a constant Gaussian residual variance (Covid quarters excluded from the fit). Latest-vintage data (pseudo-, not real-time).",
+    "method": "h1-h4; per origin 1000 reduced-form posterior draws of the no-dummy BVAR(4) refit through the origin, one stochastic GDP path each (raw, not recalibrated); gdp_only maps the GDP quantile paths through the fitted equation (the bands published before); gdp_residual adds a N(0, sigma) residual per step; joint also draws the coefficients from N(coef, sigma^2 (X'X)^-1). Residual and coefficient draws are independent of the GDP shock path. Posterior draws seeded 20261116 + origin index; shock, residual and coefficient draws from a separate stream [20261116, origin index, 1].",
+    "caveat": "73 overlapping origins, 67 of them with a non-Covid target at each horizon: binomial s.e. about 0.037 at 90% and 0.057 at 68% (n = 67) before serial correlation, so the true uncertainty is larger. The GDP paths come from a no-dummy BVAR refit per origin, not the production specification, and raw SVAR GDP bands themselves under-cover. Assumes a stable GDP-unemployment relation and a constant Gaussian residual variance (Covid quarters excluded from the fit). Latest-vintage data (pseudo-, not real-time).",
     "ex_covid_targets": {
       "gdp_only": {
         "68": {
@@ -31,15 +31,15 @@
             "n": 67
           },
           "h2": {
-            "coverage": 0.2985,
+            "coverage": 0.3134,
             "n": 67
           },
           "h3": {
-            "coverage": 0.4328,
+            "coverage": 0.4179,
             "n": 67
           },
           "h4": {
-            "coverage": 0.4627,
+            "coverage": 0.4776,
             "n": 67
           }
         },
@@ -62,16 +62,16 @@
           }
         },
         "mean_half_width_68": {
-          "h1": 0.0475,
-          "h2": 0.1259,
-          "h3": 0.2289,
-          "h4": 0.3522
+          "h1": 0.042,
+          "h2": 0.1161,
+          "h3": 0.2186,
+          "h4": 0.3489
         }
       },
       "gdp_residual": {
         "68": {
           "h1": {
-            "coverage": 0.6418,
+            "coverage": 0.6567,
             "n": 67
           },
           "h2": {
@@ -79,21 +79,21 @@
             "n": 67
           },
           "h3": {
-            "coverage": 0.6418,
+            "coverage": 0.6269,
             "n": 67
           },
           "h4": {
-            "coverage": 0.6269,
+            "coverage": 0.5821,
             "n": 67
           }
         },
         "90": {
           "h1": {
-            "coverage": 0.8806,
+            "coverage": 0.8657,
             "n": 67
           },
           "h2": {
-            "coverage": 0.7761,
+            "coverage": 0.7612,
             "n": 67
           },
           "h3": {
@@ -106,10 +106,10 @@
           }
         },
         "mean_half_width_68": {
-          "h1": 0.1759,
-          "h2": 0.2892,
-          "h3": 0.3982,
-          "h4": 0.5154
+          "h1": 0.1742,
+          "h2": 0.2817,
+          "h3": 0.3894,
+          "h4": 0.5086
         }
       },
       "joint": {
@@ -123,37 +123,37 @@
             "n": 67
           },
           "h3": {
-            "coverage": 0.6567,
+            "coverage": 0.6418,
             "n": 67
           },
           "h4": {
-            "coverage": 0.6119,
+            "coverage": 0.597,
             "n": 67
           }
         },
         "90": {
           "h1": {
-            "coverage": 0.8806,
+            "coverage": 0.8657,
             "n": 67
           },
           "h2": {
-            "coverage": 0.791,
+            "coverage": 0.7761,
             "n": 67
           },
           "h3": {
-            "coverage": 0.7313,
+            "coverage": 0.7463,
             "n": 67
           },
           "h4": {
-            "coverage": 0.7164,
+            "coverage": 0.7015,
             "n": 67
           }
         },
         "mean_half_width_68": {
-          "h1": 0.1841,
-          "h2": 0.3029,
-          "h3": 0.4172,
-          "h4": 0.5349
+          "h1": 0.1783,
+          "h2": 0.2933,
+          "h3": 0.4056,
+          "h4": 0.5284
         }
       }
     },
@@ -165,15 +165,15 @@
             "n": 73
           },
           "h2": {
-            "coverage": 0.2877,
+            "coverage": 0.3014,
             "n": 73
           },
           "h3": {
-            "coverage": 0.3973,
+            "coverage": 0.3836,
             "n": 73
           },
           "h4": {
-            "coverage": 0.4384,
+            "coverage": 0.4521,
             "n": 73
           }
         },
@@ -196,16 +196,16 @@
           }
         },
         "mean_half_width_68": {
-          "h1": 0.0475,
-          "h2": 0.1259,
+          "h1": 0.0479,
+          "h2": 0.1264,
           "h3": 0.2289,
-          "h4": 0.3522
+          "h4": 0.3533
         }
       },
       "gdp_residual": {
         "68": {
           "h1": {
-            "coverage": 0.589,
+            "coverage": 0.6027,
             "n": 73
           },
           "h2": {
@@ -213,21 +213,21 @@
             "n": 73
           },
           "h3": {
-            "coverage": 0.6164,
+            "coverage": 0.6027,
             "n": 73
           },
           "h4": {
-            "coverage": 0.6027,
+            "coverage": 0.5616,
             "n": 73
           }
         },
         "90": {
           "h1": {
-            "coverage": 0.8219,
+            "coverage": 0.7945,
             "n": 73
           },
           "h2": {
-            "coverage": 0.7534,
+            "coverage": 0.7397,
             "n": 73
           },
           "h3": {
@@ -240,10 +240,10 @@
           }
         },
         "mean_half_width_68": {
-          "h1": 0.1759,
-          "h2": 0.2892,
-          "h3": 0.3982,
-          "h4": 0.5154
+          "h1": 0.1769,
+          "h2": 0.2883,
+          "h3": 0.3979,
+          "h4": 0.5137
         }
       },
       "joint": {
@@ -257,37 +257,37 @@
             "n": 73
           },
           "h3": {
-            "coverage": 0.6438,
+            "coverage": 0.6301,
             "n": 73
           },
           "h4": {
-            "coverage": 0.589,
+            "coverage": 0.5753,
             "n": 73
           }
         },
         "90": {
           "h1": {
-            "coverage": 0.8219,
+            "coverage": 0.8082,
             "n": 73
           },
           "h2": {
-            "coverage": 0.7671,
+            "coverage": 0.7534,
             "n": 73
           },
           "h3": {
-            "coverage": 0.726,
+            "coverage": 0.7397,
             "n": 73
           },
           "h4": {
-            "coverage": 0.6986,
+            "coverage": 0.6849,
             "n": 73
           }
         },
         "mean_half_width_68": {
-          "h1": 0.1841,
-          "h2": 0.3029,
-          "h3": 0.4172,
-          "h4": 0.5349
+          "h1": 0.1849,
+          "h2": 0.3056,
+          "h3": 0.4205,
+          "h4": 0.5385
         }
       }
     }
@@ -792,5 +792,5 @@
       }
     }
   ],
-  "code_version": "607fe0e14de1b07620fca700461abf04863d6d6f8784a2c38e08b149c6a99f8d"
+  "code_version": "7308cf36b399de40dda4b2ac7c51c52f207b4f42b243b02e6674a6e3951b2b08"
 }

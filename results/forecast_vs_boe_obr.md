@@ -66,23 +66,29 @@ uncertainty only; see the next paragraph.
 **Unemployment bands with the satellite's own uncertainty (16 Nov 2026).**
 The bands above mapped the GDP quantile paths through the fitted
 GDP-unemployment equation, so they left out the equation's residual
-(sigma 0.17pp per quarter) and its estimation uncertainty. Scored over 73
-rolling origins (ex-Covid targets, h1-h4), those bands covered 22-46% of
-outturns at 68% and 30-61% at 90%
+(sigma 0.17pp per quarter) and its estimation uncertainty. Over 73 rolling
+origins, 67 of them with a non-Covid target at each of h1-h4, those bands
+covered 22-48% of outturns at 68% and 30-61% at 90%
 (`results/unemployment_satellite_validation.json`, `band_coverage`). The
 satellite now simulates along every GDP path with residual and coefficient
-draws (`unemployment_predictive_bands`). Those bands covered 61-66% at 68% and
-72-88% at 90%. The 90% band is still short at h3-h4 (0.73, 0.72), and with 67
-overlapping origins the sampling error is several points. Same production run
-as above (473 accepted, ESS 209.0, after the #30 Cholesky factor). Medians are
-the deterministic mapping of the GDP median, as before:
+draws (`unemployment_predictive_bands`). Those bands covered 60-66% at 68%
+(below nominal at every horizon, by one to one and a half binomial standard
+errors) and 87%, 78%, 75% and 70% at 90% for h1-h4. So the 90% band is close
+to nominal only one quarter ahead and still too narrow from two quarters
+on.
 
-| Quarter | Median | 68%, GDP only (before) | 68%, joint (now) | 90%, joint (now) |
-|---|---|---|---|---|
-| 2026Q3 | 4.87 | 4.84-4.90 | 4.70-5.05 | 4.59-5.18 |
-| 2027Q3 | 4.84 | 4.57-5.11 | 4.32-5.35 | 3.97-5.71 |
-| 2028Q3 | 4.89 | 4.31-5.45 | 4.08-5.64 | 3.61-6.20 |
-| 2029Q3 | 4.92 | 4.01-5.78 | 3.89-5.94 | 3.35-6.61 |
+The table below is a fresh production run on 16 Nov, after the #30 Cholesky
+factor (473 accepted, ESS 209.0). Both band columns come from the same GDP
+paths. Its medians differ from the 6 Nov table above (4.88 and 4.89 at
+2028Q3 and 2029Q3) by Monte Carlo path noise only. Medians are the
+deterministic mapping of the GDP median, as before.
+
+| Quarter | Median | 68%, GDP only (before) | 68%, joint (now) | 90%, GDP only (before) | 90%, joint (now) |
+|---|---|---|---|---|---|
+| 2026Q3 | 4.87 | 4.85-4.90 | 4.71-5.05 | 4.83-4.91 | 4.59-5.16 |
+| 2027Q3 | 4.84 | 4.57-5.10 | 4.33-5.37 | 4.39-5.28 | 4.00-5.61 |
+| 2028Q3 | 4.89 | 4.32-5.44 | 4.18-5.68 | 3.93-5.81 | 3.68-6.15 |
+| 2029Q3 | 4.92 | 4.03-5.78 | 3.99-5.91 | 3.43-6.36 | 3.44-6.49 |
 
 Only 2026Q3 (one quarter ahead) is inside the validated four-quarter
 horizon. Rows from 2027Q3 on (h5 and beyond) are shown for comparison with

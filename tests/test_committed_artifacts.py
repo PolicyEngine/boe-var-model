@@ -306,10 +306,10 @@ class TestSatelliteValidationArtifact:
                 assert row["ratio_vs_rw"]["svar"] > 1.0
 
     def test_gdp_only_bands_under_cover_and_joint_bands_do_not_collapse(self):
-        """Measured 16 Nov 2026 (ex-Covid targets, 67 origins): the GDP-only
-        bands published before covered 22-46% at 68% and 30-61% at 90% over
-        h1-h4; the joint bands (residual + coefficient draws) cover 61-66%
-        and 72-88%. Pinned so a change that drops the satellite's own
+        """Measured 16 Nov 2026 (ex-Covid targets, n = 67 of 73 origins per
+        horizon): the GDP-only bands published before covered 22-48% at 68%
+        and 30-61% at 90% over h1-h4; the joint bands (residual + coefficient
+        draws) cover 60-66% and 70-87%. Pinned so a change that drops the satellite's own
         uncertainty again is caught."""
         bc = _load("unemployment_satellite_validation.json")["band_coverage"]
         ex = bc["ex_covid_targets"]

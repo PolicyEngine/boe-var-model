@@ -132,15 +132,16 @@ Read these before quoting a forecast, a band or an impulse response.
   between labelling and dropping the 90% band is issue #12. The evaluation
   uses 1,000 posterior draws per origin. The Cholesky shock factor gives
   the same cells on every machine tested (issue #26).
-- **Unemployment bands: the satellite's own uncertainty is now included,
-  and the 90% band is still short beyond two quarters.** Until 16 Nov 2026
-  the unemployment satellite mapped the GDP quantile paths through its
+- **Unemployment bands: the satellite's own uncertainty is now included;
+  the 90% band is still too narrow from two quarters on.** Until 16 Nov
+  2026 the unemployment satellite mapped the GDP quantile paths through its
   fitted equation and left out the equation's residual (0.17pp per quarter)
-  and estimation uncertainty. Over 67 rolling origins (ex-Covid targets)
-  those bands covered 22–46% of outturns at 68% and 30–61% at 90% (h1–h4).
-  `unemployment_predictive_bands` now simulates along every GDP path with
-  residual and coefficient draws. Those bands covered 61–66% at 68% and
-  72–88% at 90%, with the 90% band at 0.73 and 0.72 at h3–h4
+  and estimation uncertainty. Over 73 rolling origins (67 with a non-Covid
+  target at each horizon) those bands covered 22–48% of outturns at 68% and
+  30–61% at 90% (h1–h4). `unemployment_predictive_bands` now simulates
+  along every GDP path with residual and coefficient draws. Those bands
+  covered 60–66% at 68%, below nominal at every horizon, and 87%, 78%, 75%
+  and 70% at 90% for h1–h4
   (`results/unemployment_satellite_validation.json`, `band_coverage`).
   Only h1–h4 is validated; the point forecast is worse than no-change
   beyond four quarters.

@@ -101,6 +101,7 @@ def main() -> None:
     inside = {kind: {lv: [[] for _ in range(BAND_HORIZONS)] for lv in LEVELS}
               for kind in BAND_KINDS}
     half68 = {kind: [[] for _ in range(BAND_HORIZONS)] for kind in BAND_KINDS}
+    half68["_covid"] = []
 
     used = 0
     for origin in quarters:
@@ -133,8 +134,10 @@ def main() -> None:
             "svar": fit.forecast(g_svar, u_last, du_last),
         }
         # Predictive bands from simulated GDP paths (see module docstring).
-        rng = np.random.default_rng(BAND_SEED + t0)
+        # Separate streams for the posterior draws and for the shock /
+        # residual / coefficient draws.
         draws = model.sample_posterior(BAND_DRAWS, seed=BAND_SEED + t0)
+        rng = np.random.default_rng([BAND_SEED, t0, 1])
         gdp_tail = train[-4:, gdp_col]
         g_paths = np.empty((BAND_DRAWS, BAND_HORIZONS))
         for n_, d_ in enumerate(draws):
@@ -158,6 +161,9 @@ def main() -> None:
                     inside[kind][lv][h].append(
                         bool(b[lo][h] <= actual_b[h] <= b[hi][h]))
                 half68[kind][h].append(0.5 * (b["hi68"][h] - b["lo68"][h]))
+        half68_covid = [_qadd(origin, h + 1) in satellite.COVID_QUARTERS
+                        for h in range(BAND_HORIZONS)]
+        half68["_covid"].append(half68_covid)
 
         u_train = u[max(0, i0 - 60): i0 + 1][:, None]
         base = {"rw": np.full(HORIZONS, u_last),
@@ -204,8 +210,11 @@ def main() -> None:
                     row[f"h{h + 1}"] = {"coverage": round(float(hits.mean()), 4),
                                         "n": int(keep.sum())}
                 out[kind][str(lv)] = row
+            cov_ = np.asarray(half68["_covid"], dtype=bool)
             out[kind]["mean_half_width_68"] = {
-                f"h{h + 1}": round(float(np.mean(half68[kind][h])), 4)
+                f"h{h + 1}": round(float(np.mean(
+                    np.asarray(half68[kind][h])[
+                        ~cov_[:, h] if mask_covid else slice(None)])), 4)
                 for h in range(BAND_HORIZONS)}
         return out
 
@@ -230,11 +239,14 @@ def main() -> None:
                 "N(0, sigma) residual per step; joint also draws the "
                 "coefficients from N(coef, sigma^2 (X'X)^-1). Residual and "
                 "coefficient draws are independent of the GDP shock path. "
-                f"Seed {BAND_SEED} + origin index."
+                f"Posterior draws seeded {BAND_SEED} + origin index; shock, "
+                f"residual and coefficient draws from a separate stream "
+                f"[{BAND_SEED}, origin index, 1]."
             ),
             "caveat": (
-                "73 overlapping origins: binomial s.e. about 0.035 at 90% "
-                "and 0.055 at 68% before serial correlation, so the true "
+                "73 overlapping origins, 67 of them with a non-Covid target "
+                "at each horizon: binomial s.e. about 0.037 at 90% and 0.057 "
+                "at 68% (n = 67) before serial correlation, so the true "
                 "uncertainty is larger. The GDP paths come from a no-dummy "
                 "BVAR refit per origin, not the production specification, and "
                 "raw SVAR GDP bands themselves under-cover. Assumes a stable "

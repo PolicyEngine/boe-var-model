@@ -168,6 +168,7 @@ def main() -> None:
     # publish, so the comparison is not limited to the two headline series.
     print("--- Other comparable variables (production sample)")
     print(f"{'Quarter':<8} {'Unemp %':>9} {'Unemp 68%':>16} {'Unemp 90%':>16} "
+          f"{'GDP-only 68%':>16} {'GDP-only 90%':>16} "
           f"{'Energy pp':>10} {'Bank Rate':>10}")
     # forecast.yoy drops the first four rows, so the quarter labels shift by 4
     # and only the UK GDP column is the satellite's input.
@@ -182,8 +183,14 @@ def main() -> None:
     u_central = okun.forecast(agg["median"][:, I_GDP], u[-1], u[-1] - u[-2])
     u_bands = unemployment_satellite.unemployment_predictive_bands(
         okun, yoy_paths[:, :, I_GDP], u[-1], u[-1] - u[-2],
-        np.random.default_rng(args.seed), weights=path_w)
+        np.random.default_rng([args.seed, 1]), weights=path_w)
     u_bands["median"] = u_central
+    # The bands published before this change, from the same GDP paths, so
+    # the comparison is like for like.
+    u_old = unemployment_satellite.unemployment_bands(
+        okun, {k_: agg[k_][:, I_GDP] for k_ in
+              ("median", "lo68", "hi68", "lo90", "hi90")},
+        u_last=u[-1], du_last=u[-1] - u[-2])
     print(f"  (Okun satellite: beta {okun.beta:+.3f}, R2 {okun.r2:.2f}, "
           f"sigma {okun.sigma:.3f}pp, u_last {u[-1]:.1f}% at {uq[-1]}; "
           "bands add the satellite's residual and coefficient uncertainty "
@@ -194,6 +201,8 @@ def main() -> None:
         print(f"{q:<8} {u_bands['median'][h]:>9.2f} "
               f"{u_bands['lo68'][h]:>7.2f}-{u_bands['hi68'][h]:<8.2f} "
               f"{u_bands['lo90'][h]:>7.2f}-{u_bands['hi90'][h]:<8.2f} "
+              f"{u_old['lo68'][h]:>7.2f}-{u_old['hi68'][h]:<8.2f} "
+              f"{u_old['lo90'][h]:>7.2f}-{u_old['hi90'][h]:<8.2f} "
               f"{energy_pp:>10.2f} {levels_prod['median'][h, I_BANK_RATE]:>10.2f}")
     print("  Energy pp = model simple YoY energy-price inflation x "
           f"{ENERGY_CPI_WEIGHT:.3f} CPI weight, comparable to MPR Table 3.B row (g).")
