@@ -18,7 +18,279 @@
       "frozen",
       "svar"
     ],
-    "note": "svar = posterior-mean BVAR re-fit per origin (end-to-end). Bands in production carry GDP uncertainty only; satellite residual uncertainty is not sampled."
+    "note": "svar = posterior-mean BVAR re-fit per origin (end-to-end). See band_coverage for the measured coverage of GDP-only and joint predictive bands."
+  },
+  "band_coverage": {
+    "method": "h1-h4; per origin 1000 reduced-form posterior draws of the no-dummy BVAR(4) refit through the origin, one stochastic GDP path each (raw, not recalibrated); gdp_only maps the GDP quantile paths through the fitted equation (the bands published before); gdp_residual adds a N(0, sigma) residual per step; joint also draws the coefficients from N(coef, sigma^2 (X'X)^-1). Residual and coefficient draws are independent of the GDP shock path. Seed 20261116 + origin index.",
+    "caveat": "73 overlapping origins: binomial s.e. about 0.035 at 90% and 0.055 at 68% before serial correlation, so the true uncertainty is larger. The GDP paths come from a no-dummy BVAR refit per origin, not the production specification, and raw SVAR GDP bands themselves under-cover. Assumes a stable GDP-unemployment relation and a constant Gaussian residual variance (Covid quarters excluded from the fit). Latest-vintage data (pseudo-, not real-time).",
+    "ex_covid_targets": {
+      "gdp_only": {
+        "68": {
+          "h1": {
+            "coverage": 0.2239,
+            "n": 67
+          },
+          "h2": {
+            "coverage": 0.2985,
+            "n": 67
+          },
+          "h3": {
+            "coverage": 0.4328,
+            "n": 67
+          },
+          "h4": {
+            "coverage": 0.4627,
+            "n": 67
+          }
+        },
+        "90": {
+          "h1": {
+            "coverage": 0.2985,
+            "n": 67
+          },
+          "h2": {
+            "coverage": 0.3881,
+            "n": 67
+          },
+          "h3": {
+            "coverage": 0.5821,
+            "n": 67
+          },
+          "h4": {
+            "coverage": 0.6119,
+            "n": 67
+          }
+        },
+        "mean_half_width_68": {
+          "h1": 0.0475,
+          "h2": 0.1259,
+          "h3": 0.2289,
+          "h4": 0.3522
+        }
+      },
+      "gdp_residual": {
+        "68": {
+          "h1": {
+            "coverage": 0.6418,
+            "n": 67
+          },
+          "h2": {
+            "coverage": 0.6119,
+            "n": 67
+          },
+          "h3": {
+            "coverage": 0.6418,
+            "n": 67
+          },
+          "h4": {
+            "coverage": 0.6269,
+            "n": 67
+          }
+        },
+        "90": {
+          "h1": {
+            "coverage": 0.8806,
+            "n": 67
+          },
+          "h2": {
+            "coverage": 0.7761,
+            "n": 67
+          },
+          "h3": {
+            "coverage": 0.7313,
+            "n": 67
+          },
+          "h4": {
+            "coverage": 0.7015,
+            "n": 67
+          }
+        },
+        "mean_half_width_68": {
+          "h1": 0.1759,
+          "h2": 0.2892,
+          "h3": 0.3982,
+          "h4": 0.5154
+        }
+      },
+      "joint": {
+        "68": {
+          "h1": {
+            "coverage": 0.6567,
+            "n": 67
+          },
+          "h2": {
+            "coverage": 0.6119,
+            "n": 67
+          },
+          "h3": {
+            "coverage": 0.6567,
+            "n": 67
+          },
+          "h4": {
+            "coverage": 0.6119,
+            "n": 67
+          }
+        },
+        "90": {
+          "h1": {
+            "coverage": 0.8806,
+            "n": 67
+          },
+          "h2": {
+            "coverage": 0.791,
+            "n": 67
+          },
+          "h3": {
+            "coverage": 0.7313,
+            "n": 67
+          },
+          "h4": {
+            "coverage": 0.7164,
+            "n": 67
+          }
+        },
+        "mean_half_width_68": {
+          "h1": 0.1841,
+          "h2": 0.3029,
+          "h3": 0.4172,
+          "h4": 0.5349
+        }
+      }
+    },
+    "all_targets": {
+      "gdp_only": {
+        "68": {
+          "h1": {
+            "coverage": 0.2055,
+            "n": 73
+          },
+          "h2": {
+            "coverage": 0.2877,
+            "n": 73
+          },
+          "h3": {
+            "coverage": 0.3973,
+            "n": 73
+          },
+          "h4": {
+            "coverage": 0.4384,
+            "n": 73
+          }
+        },
+        "90": {
+          "h1": {
+            "coverage": 0.274,
+            "n": 73
+          },
+          "h2": {
+            "coverage": 0.3699,
+            "n": 73
+          },
+          "h3": {
+            "coverage": 0.5616,
+            "n": 73
+          },
+          "h4": {
+            "coverage": 0.589,
+            "n": 73
+          }
+        },
+        "mean_half_width_68": {
+          "h1": 0.0475,
+          "h2": 0.1259,
+          "h3": 0.2289,
+          "h4": 0.3522
+        }
+      },
+      "gdp_residual": {
+        "68": {
+          "h1": {
+            "coverage": 0.589,
+            "n": 73
+          },
+          "h2": {
+            "coverage": 0.589,
+            "n": 73
+          },
+          "h3": {
+            "coverage": 0.6164,
+            "n": 73
+          },
+          "h4": {
+            "coverage": 0.6027,
+            "n": 73
+          }
+        },
+        "90": {
+          "h1": {
+            "coverage": 0.8219,
+            "n": 73
+          },
+          "h2": {
+            "coverage": 0.7534,
+            "n": 73
+          },
+          "h3": {
+            "coverage": 0.726,
+            "n": 73
+          },
+          "h4": {
+            "coverage": 0.6849,
+            "n": 73
+          }
+        },
+        "mean_half_width_68": {
+          "h1": 0.1759,
+          "h2": 0.2892,
+          "h3": 0.3982,
+          "h4": 0.5154
+        }
+      },
+      "joint": {
+        "68": {
+          "h1": {
+            "coverage": 0.6027,
+            "n": 73
+          },
+          "h2": {
+            "coverage": 0.589,
+            "n": 73
+          },
+          "h3": {
+            "coverage": 0.6438,
+            "n": 73
+          },
+          "h4": {
+            "coverage": 0.589,
+            "n": 73
+          }
+        },
+        "90": {
+          "h1": {
+            "coverage": 0.8219,
+            "n": 73
+          },
+          "h2": {
+            "coverage": 0.7671,
+            "n": 73
+          },
+          "h3": {
+            "coverage": 0.726,
+            "n": 73
+          },
+          "h4": {
+            "coverage": 0.6986,
+            "n": 73
+          }
+        },
+        "mean_half_width_68": {
+          "h1": 0.1841,
+          "h2": 0.3029,
+          "h3": 0.4172,
+          "h4": 0.5349
+        }
+      }
+    }
   },
   "all_targets": [
     {
@@ -520,5 +792,5 @@
       }
     }
   ],
-  "code_version": "846086ce6af59a85d5e0f61b8d859d4179fd0e9b92bb4371f558d9e22986da38"
+  "code_version": "607fe0e14de1b07620fca700461abf04863d6d6f8784a2c38e08b149c6a99f8d"
 }

@@ -305,6 +305,23 @@ class TestSatelliteValidationArtifact:
             if row["horizon"] >= 5:
                 assert row["ratio_vs_rw"]["svar"] > 1.0
 
+    def test_gdp_only_bands_under_cover_and_joint_bands_do_not_collapse(self):
+        """Measured 16 Nov 2026 (ex-Covid targets, 67 origins): the GDP-only
+        bands published before covered 22-46% at 68% and 30-61% at 90% over
+        h1-h4; the joint bands (residual + coefficient draws) cover 61-66%
+        and 72-88%. Pinned so a change that drops the satellite's own
+        uncertainty again is caught."""
+        bc = _load("unemployment_satellite_validation.json")["band_coverage"]
+        ex = bc["ex_covid_targets"]
+        for h in range(1, 5):
+            old68 = ex["gdp_only"]["68"][f"h{h}"]["coverage"]
+            new68 = ex["joint"]["68"][f"h{h}"]["coverage"]
+            new90 = ex["joint"]["90"][f"h{h}"]["coverage"]
+            assert old68 < 0.5, f"h{h}: GDP-only 68% band covered {old68}"
+            assert 0.55 <= new68 <= 0.80, f"h{h}: joint 68% band {new68}"
+            assert 0.65 <= new90 <= 0.95, f"h{h}: joint 90% band {new90}"
+            assert new68 > old68
+
     def test_all_rmse_values_are_finite_and_positive(self):
         report = _load("unemployment_satellite_validation.json")
         for label in ("all_targets", "ex_covid_targets"):

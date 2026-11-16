@@ -99,7 +99,8 @@ def yoy_forecast(pairs, w, y_full, horizons: int, n_paths: int, rng):
             weights.append(w[i])
     weights = np.asarray(weights)
     return (analysis.aggregate(yoy_paths, weights=weights),
-            analysis.aggregate(level_paths, weights=weights))
+            analysis.aggregate(level_paths, weights=weights),
+            np.asarray(yoy_paths), weights)
 
 
 def main() -> None:
@@ -136,8 +137,8 @@ def main() -> None:
         pairs, w = fit(df_est, args.draws, args.lags, args.seed, rng)
         print(f"--- {label} (estimated to {est_end}): "
               f"{len(pairs)} accepted draws, ESS {ess(w):.1f}")
-        agg, levels = yoy_forecast(pairs, w, y_full, args.horizons,
-                                   args.paths, rng)
+        agg, levels, yoy_paths, path_w = yoy_forecast(
+            pairs, w, y_full, args.horizons, args.paths, rng)
         print(f"{'Quarter':<8} {'CPI med':>8} {'CPI 68%':>16} "
               f"{'GDP med':>8} {'GDP 68%':>16} {'Bank Rate':>10}")
         print(f"{'':8} {'YoY %':>8} {'':>16} {'YoY %':>8} {'':>16} {'level, %':>10}")
@@ -157,15 +158,16 @@ def main() -> None:
                           f"{agg['median'][at[q], I_GDP]:.2f}" for q in wanted)
               + ")")
         print()
-        return pairs, w, agg, levels
+        return pairs, w, agg, levels, yoy_paths, path_w
 
-    pairs, w, agg, levels_prod = report(args.est_end, "Production sample")
+    pairs, w, agg, levels_prod, yoy_paths, path_w = report(
+        args.est_end, "Production sample")
     report(args.precovid_end, "Pre-Covid sample")
 
     # ---- variables beyond CPI and GDP that the BoE MPR and the OBR EFO also
     # publish, so the comparison is not limited to the two headline series.
     print("--- Other comparable variables (production sample)")
-    print(f"{'Quarter':<8} {'Unemp %':>9} {'Unemp 68%':>16} "
+    print(f"{'Quarter':<8} {'Unemp %':>9} {'Unemp 68%':>16} {'Unemp 90%':>16} "
           f"{'Energy pp':>10} {'Bank Rate':>10}")
     # forecast.yoy drops the first four rows, so the quarter labels shift by 4
     # and only the UK GDP column is the satellite's input.
@@ -173,18 +175,25 @@ def main() -> None:
     okun = unemployment_satellite.fit_default(
         [str(q) for q in df.index[4:]], gdp_yoy_hist, end=args.est_end)
     uq, u = unemployment_satellite.load_unemployment()
-    u_bands = unemployment_satellite.unemployment_bands(
-        okun, {k_: agg[k_][:, I_GDP] for k_ in
-              ("median", "lo68", "hi68", "lo90", "hi90")},
-        u_last=u[-1], du_last=u[-1] - u[-2])
+    # Central path: the fitted equation applied to the GDP median (what the
+    # point-forecast validation scores). Bands: joint predictive simulation
+    # along every GDP path, adding the satellite's residual and coefficient
+    # uncertainty (unemployment_satellite.unemployment_predictive_bands).
+    u_central = okun.forecast(agg["median"][:, I_GDP], u[-1], u[-1] - u[-2])
+    u_bands = unemployment_satellite.unemployment_predictive_bands(
+        okun, yoy_paths[:, :, I_GDP], u[-1], u[-1] - u[-2],
+        np.random.default_rng(args.seed), weights=path_w)
+    u_bands["median"] = u_central
     print(f"  (Okun satellite: beta {okun.beta:+.3f}, R2 {okun.r2:.2f}, "
-          f"u_last {u[-1]:.1f}% at {uq[-1]}; bands carry GDP-path uncertainty "
-          "only -- a lower bound)")
+          f"sigma {okun.sigma:.3f}pp, u_last {u[-1]:.1f}% at {uq[-1]}; "
+          "bands add the satellite's residual and coefficient uncertainty "
+          "to the GDP paths; validated to h4 only)")
     for q in wanted:
         h = at[q]
         energy_pp = SIMPLE(agg["median"][h, I_CPI_ENERGY]) * ENERGY_CPI_WEIGHT
         print(f"{q:<8} {u_bands['median'][h]:>9.2f} "
               f"{u_bands['lo68'][h]:>7.2f}-{u_bands['hi68'][h]:<8.2f} "
+              f"{u_bands['lo90'][h]:>7.2f}-{u_bands['hi90'][h]:<8.2f} "
               f"{energy_pp:>10.2f} {levels_prod['median'][h, I_BANK_RATE]:>10.2f}")
     print("  Energy pp = model simple YoY energy-price inflation x "
           f"{ENERGY_CPI_WEIGHT:.3f} CPI weight, comparable to MPR Table 3.B row (g).")

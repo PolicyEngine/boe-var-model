@@ -57,3 +57,61 @@ def test_synthetic_recovery():
     fit = satellite.fit_satellite(g[1:], du[1:], du[:-1])
     assert abs(fit.beta - (-0.3)) < 0.02
     assert abs(fit.gamma - 0.4) < 0.05
+
+
+# --- joint predictive bands -------------------------------------------------
+
+def _gdp_paths(n=2000, seed=1):
+    rng = np.random.default_rng(seed)
+    return 1.5 + rng.standard_normal((n, 4)) * np.array([0.6, 0.9, 1.1, 1.2])
+
+
+def test_predictive_bands_are_reproducible_with_a_seed():
+    fit = _default_fit()
+    g = _gdp_paths()
+    a = satellite.unemployment_predictive_bands(
+        fit, g, 5.0, 0.0, np.random.default_rng(3))
+    b = satellite.unemployment_predictive_bands(
+        fit, g, 5.0, 0.0, np.random.default_rng(3))
+    for key in a:
+        np.testing.assert_array_equal(a[key], b[key])
+
+
+def test_no_residual_and_no_coefficient_draws_reproduce_the_forecast():
+    fit = _default_fit()
+    g = np.array([1.0, 0.5, -0.2, 2.0])
+    paths = satellite.simulate_unemployment_paths(
+        fit, g[None], 4.9, -0.1, np.random.default_rng(0),
+        residual=False, coefficients=False)
+    np.testing.assert_allclose(paths[0], fit.forecast(g, 4.9, -0.1),
+                               rtol=0, atol=1e-12)
+
+
+def test_h1_68_half_width_is_at_least_the_residual_sd():
+    """One quarter of satellite residual alone is +/- sigma at 68%; the old
+    GDP-only band at h1 was a fraction of that."""
+    fit = _default_fit()
+    g = np.full((4000, 4), 1.5)  # no GDP uncertainty at all
+    b = satellite.unemployment_predictive_bands(
+        fit, g, 5.0, 0.0, np.random.default_rng(0))
+    half = 0.5 * (b["hi68"][0] - b["lo68"][0])
+    assert half >= 0.95 * fit.sigma
+    assert half <= 1.2 * fit.sigma
+
+
+def test_joint_bands_are_no_narrower_than_gdp_only_bands():
+    fit = _default_fit()
+    g = _gdp_paths()
+    from boe_var.analysis import aggregate
+    old = satellite.unemployment_bands(fit, aggregate(list(g)), 5.0, 0.0)
+    new = satellite.unemployment_predictive_bands(
+        fit, g, 5.0, 0.0, np.random.default_rng(0))
+    assert ((new["hi68"] - new["lo68"]) >= (old["hi68"] - old["lo68"])).all()
+    assert ((new["hi90"] - new["lo90"]) >= (old["hi90"] - old["lo90"])).all()
+
+
+def test_coefficient_covariance_is_the_ols_one():
+    fit = _default_fit()
+    assert fit.coef_cov.shape == (3, 3)
+    np.testing.assert_allclose(fit.coef_cov, fit.coef_cov.T)
+    assert (np.linalg.eigvalsh(fit.coef_cov) > 0).all()

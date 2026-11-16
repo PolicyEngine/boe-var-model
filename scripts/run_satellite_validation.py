@@ -23,6 +23,14 @@ Design:
 * Baselines forecast the unemployment rate directly: random walk, drift,
   and the mean-deviation AR(1) from evaluation.py. Diebold-Mariano tests
   vs the random walk (HLN-corrected).
+* Band coverage (``band_coverage``), h1-h4 (the published horizon): at each
+  origin the same no-dummy BVAR(4) gives BAND_DRAWS reduced-form posterior
+  draws, one stochastic GDP path each (``forecast.sample_forecast``, raw,
+  not band-factor recalibrated). Three unemployment bands are scored
+  against the outturn: ``gdp_only`` (the GDP quantile paths mapped through
+  the fitted equation, ``unemployment_bands``, as published before),
+  ``gdp_residual`` (plus a N(0, sigma) residual per step) and ``joint``
+  (plus coefficient draws; ``unemployment_predictive_bands``).
 
 Writes ``unemployment_satellite_validation.json`` to the results directory.
 """
@@ -46,13 +54,23 @@ from boe_var.evaluation import (  # noqa: E402
     _rmse,
     evaluation_code_version,
 )
-from boe_var.forecast import unconditional_forecast, yoy  # noqa: E402
+from boe_var.analysis import aggregate  # noqa: E402
+from boe_var.forecast import (  # noqa: E402
+    sample_forecast,
+    unconditional_forecast,
+    yoy,
+)
 
 HORIZONS = 8
 FIRST_ORIGIN = "2005Q1"
 LAST_ORIGIN = "2023Q1"
 MODELS = ("realised", "frozen", "svar")
 BASELINES = ("rw", "drift", "ar1")
+BAND_HORIZONS = 4          # the published unemployment path is capped at 4
+BAND_DRAWS = 1000          # posterior draws (one GDP path each) per origin
+BAND_SEED = 20261116
+BAND_KINDS = ("gdp_only", "gdp_residual", "joint")
+LEVELS = {68: ("lo68", "hi68"), 90: ("lo90", "hi90")}
 
 
 def _qadd(q: str, h: int) -> str:
@@ -79,6 +97,10 @@ def main() -> None:
     keys = MODELS + BASELINES
     err = {kk: [[] for _ in range(HORIZONS)] for kk in keys}
     target_is_covid = [[] for _ in range(HORIZONS)]
+    # inside[kind][level][h] -> list of bools over origins
+    inside = {kind: {lv: [[] for _ in range(BAND_HORIZONS)] for lv in LEVELS}
+              for kind in BAND_KINDS}
+    half68 = {kind: [[] for _ in range(BAND_HORIZONS)] for kind in BAND_KINDS}
 
     used = 0
     for origin in quarters:
@@ -110,6 +132,33 @@ def main() -> None:
             "frozen": fit.forecast(np.full(HORIZONS, g[j0]), u_last, du_last),
             "svar": fit.forecast(g_svar, u_last, du_last),
         }
+        # Predictive bands from simulated GDP paths (see module docstring).
+        rng = np.random.default_rng(BAND_SEED + t0)
+        draws = model.sample_posterior(BAND_DRAWS, seed=BAND_SEED + t0)
+        gdp_tail = train[-4:, gdp_col]
+        g_paths = np.empty((BAND_DRAWS, BAND_HORIZONS))
+        for n_, d_ in enumerate(draws):
+            lv_ = sample_forecast(d_, train, horizons=BAND_HORIZONS,
+                                  rng=rng)[:, gdp_col]
+            ext = np.r_[gdp_tail, lv_]
+            g_paths[n_] = ext[4:] - ext[:-4]
+        gdp_q = aggregate(list(g_paths))
+        bands = {
+            "gdp_only": satellite.unemployment_bands(
+                fit, gdp_q, u_last, du_last),
+            "gdp_residual": satellite.unemployment_predictive_bands(
+                fit, g_paths, u_last, du_last, rng, coefficients=False),
+            "joint": satellite.unemployment_predictive_bands(
+                fit, g_paths, u_last, du_last, rng),
+        }
+        actual_b = u[i0 + 1: i0 + 1 + BAND_HORIZONS]
+        for kind, b in bands.items():
+            for h in range(BAND_HORIZONS):
+                for lv, (lo, hi) in LEVELS.items():
+                    inside[kind][lv][h].append(
+                        bool(b[lo][h] <= actual_b[h] <= b[hi][h]))
+                half68[kind][h].append(0.5 * (b["hi68"][h] - b["lo68"][h]))
+
         u_train = u[max(0, i0 - 60): i0 + 1][:, None]
         base = {"rw": np.full(HORIZONS, u_last),
                 "drift": _drift_forecast(u_train, HORIZONS)[:, 0],
@@ -142,6 +191,24 @@ def main() -> None:
             rows.append(row)
         return rows
 
+    def coverage(mask_covid: bool) -> dict:
+        out = {}
+        for kind in BAND_KINDS:
+            out[kind] = {}
+            for lv in LEVELS:
+                row = {}
+                for h in range(BAND_HORIZONS):
+                    keep = np.array([not (mask_covid and c)
+                                     for c in target_is_covid[h]])
+                    hits = np.asarray(inside[kind][lv][h])[keep]
+                    row[f"h{h + 1}"] = {"coverage": round(float(hits.mean()), 4),
+                                        "n": int(keep.sum())}
+                out[kind][str(lv)] = row
+            out[kind]["mean_half_width_68"] = {
+                f"h{h + 1}": round(float(np.mean(half68[kind][h])), 4)
+                for h in range(BAND_HORIZONS)}
+        return out
+
     results = {
         "design": {
             "first_origin": FIRST_ORIGIN, "last_origin": LAST_ORIGIN,
@@ -150,9 +217,33 @@ def main() -> None:
             "covid_quarters_dummied": sorted(satellite.COVID_QUARTERS),
             "gdp_inputs": list(MODELS),
             "note": "svar = posterior-mean BVAR re-fit per origin "
-                    "(end-to-end). Bands in production carry GDP "
-                    "uncertainty only; satellite residual uncertainty is "
-                    "not sampled.",
+                    "(end-to-end). See band_coverage for the measured "
+                    "coverage of GDP-only and joint predictive bands.",
+        },
+        "band_coverage": {
+            "method": (
+                f"h1-h{BAND_HORIZONS}; per origin {BAND_DRAWS} reduced-form "
+                "posterior draws of the no-dummy BVAR(4) refit through the "
+                "origin, one stochastic GDP path each (raw, not recalibrated); "
+                "gdp_only maps the GDP quantile paths through the fitted "
+                "equation (the bands published before); gdp_residual adds a "
+                "N(0, sigma) residual per step; joint also draws the "
+                "coefficients from N(coef, sigma^2 (X'X)^-1). Residual and "
+                "coefficient draws are independent of the GDP shock path. "
+                f"Seed {BAND_SEED} + origin index."
+            ),
+            "caveat": (
+                "73 overlapping origins: binomial s.e. about 0.035 at 90% "
+                "and 0.055 at 68% before serial correlation, so the true "
+                "uncertainty is larger. The GDP paths come from a no-dummy "
+                "BVAR refit per origin, not the production specification, and "
+                "raw SVAR GDP bands themselves under-cover. Assumes a stable "
+                "GDP-unemployment relation and a constant Gaussian residual "
+                "variance (Covid quarters excluded from the fit). Latest-"
+                "vintage data (pseudo-, not real-time)."
+            ),
+            "ex_covid_targets": coverage(mask_covid=True),
+            "all_targets": coverage(mask_covid=False),
         },
         "all_targets": score(mask_covid=False),
         "ex_covid_targets": score(mask_covid=True),
@@ -167,6 +258,14 @@ def main() -> None:
     out = results_path("unemployment_satellite_validation.json")
     out.write_text(json.dumps(results, indent=2))
     print(f"wrote {out} ({used} origins)")
+    bc = results["band_coverage"]["ex_covid_targets"]
+    print("--- band coverage, ex-Covid targets (68% / 90%)")
+    for kind in BAND_KINDS:
+        print(kind, " ".join(
+            f"h{h}: {bc[kind]['68'][f'h{h}']['coverage']:.2f}/"
+            f"{bc[kind]['90'][f'h{h}']['coverage']:.2f}"
+            for h in range(1, BAND_HORIZONS + 1)),
+            "half68", bc[kind]["mean_half_width_68"])
     for label in ("all_targets", "ex_covid_targets"):
         print(f"--- {label}")
         print("h  realised/rw  frozen/rw  svar/rw  ar1/rw  DM-p(svar)")

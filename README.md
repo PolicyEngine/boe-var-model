@@ -107,11 +107,16 @@ See `RESOURCES.md` for the full annotated list (method papers, data sources).
 
 Read these before quoting a forecast, a band or an impulse response.
 
-- **No forecast skill over simple benchmarks.** In the rolling-origin
-  evaluation (50 origins, 2026Q2 data), no variable × horizon is significantly more
-  accurate than a random walk, a random walk with drift or an AR(1) once the 64 tests per benchmark are
-  adjusted together (Benjamini–Hochberg q < 0.05 in 0 of 64;
-  `results/rolling_evaluation.json`, `multiplicity`).
+- **No forecast skill over a drifting random walk or an AR(1).** In the
+  rolling-origin evaluation (50 origins, 2026Q2 data), no variable × horizon
+  is significantly more accurate than a random walk with drift or an AR(1)
+  once the 64 tests per benchmark are adjusted together (Benjamini–Hochberg
+  q < 0.05 in 0 of 64, both specifications). Against a plain random walk
+  (no drift), the headline specification (no Covid dummies) also has 0 of
+  64. The published specification (with the Covid dummies) has 3 of 64, all
+  one quarter ahead: world GDP (relative RMSE 0.96), world CPI (0.74) and UK
+  CPI (0.62), each at q = 0.048 (`results/rolling_evaluation.json`,
+  `multiplicity` and `production_spec`).
 - **The 90% bands are too narrow.** Raw production-spec 90% bands for
   year-on-year UK GDP growth, the basis of the published fan, cover 88% of
   outturns one quarter ahead, falling to 74% at eight quarters
@@ -127,6 +132,18 @@ Read these before quoting a forecast, a band or an impulse response.
   between labelling and dropping the 90% band is issue #12. The evaluation
   uses 1,000 posterior draws per origin. The Cholesky shock factor gives
   the same cells on every machine tested (issue #26).
+- **Unemployment bands: the satellite's own uncertainty is now included,
+  and the 90% band is still short beyond two quarters.** Until 16 Nov 2026
+  the unemployment satellite mapped the GDP quantile paths through its
+  fitted equation and left out the equation's residual (0.17pp per quarter)
+  and estimation uncertainty. Over 67 rolling origins (ex-Covid targets)
+  those bands covered 22–46% of outturns at 68% and 30–61% at 90% (h1–h4).
+  `unemployment_predictive_bands` now simulates along every GDP path with
+  residual and coefficient draws. Those bands covered 61–66% at 68% and
+  72–88% at 90%, with the 90% band at 0.73 and 0.72 at h3–h4
+  (`results/unemployment_satellite_validation.json`, `band_coverage`).
+  Only h1–h4 is validated; the point forecast is worse than no-change
+  beyond four quarters.
 - **Monetary-policy level effects do not fade.** The posterior has a unit
   root: every draw checked on the test fixture has a largest companion
   eigenvalue above 1, and nothing truncates explosive draws. The GDP and
