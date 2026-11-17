@@ -167,6 +167,43 @@ def seasonal_adjust(q: pd.Series) -> pd.Series:
     return q / q.index.quarter.map(factors)
 
 
+def seasonal_adjust_tv(x: pd.Series, half_window: int = 3,
+                       iterations: int = 2) -> pd.Series:
+    """Time-varying additive seasonal adjustment of a 100*log quarterly level.
+
+    Works on the quarterly log change d_t = x_t - x_{t-1}. Each iteration
+    detrends d with a 2x4 centred moving average, estimates each quarter's
+    seasonal factor as the centred moving average of that quarter's
+    detrended values over 2*half_window + 1 years (truncated at the ends,
+    at least half_window + 1 years), recentres the factors so any four
+    consecutive quarters sum to about zero, and subtracts them. The level is
+    rebuilt from the adjusted changes starting at the first observation.
+
+    Used for world_cpi, whose euro-area (HICP) and German legs are not
+    seasonally adjusted at source and whose seasonal pattern drifts over
+    time, so constant factors (``seasonal_adjust``) do not remove it. The
+    filter is two-sided: end-point factors revise as data arrive.
+    """
+    d = x.diff()
+    q = d.index.quarter
+    sa = d.copy()
+    sf = pd.Series(0.0, index=d.index)
+    for _ in range(iterations):
+        trend = sa.rolling(4, center=True).mean()
+        trend = ((trend + trend.shift(-1)) / 2).bfill().ffill()
+        dev = d - trend
+        sf = pd.Series(np.nan, index=d.index)
+        for k in (1, 2, 3, 4):
+            m = (q == k) & dev.notna()
+            sf[m] = dev[m].rolling(2 * half_window + 1, center=True,
+                                   min_periods=half_window + 1).mean()
+        sf = sf.ffill().bfill()
+        c = sf.rolling(4, center=True).mean()
+        sf = sf - ((c + c.shift(-1)) / 2).bfill().ffill()
+        sa = d - sf
+    return x.iloc[0] + sa.fillna(0.0).cumsum()
+
+
 def chain_weighted(components: list[tuple[pd.Series, float]]) -> pd.Series:
     """Chain-linked weighted aggregate: index built from weighted log growth."""
     growth = None
@@ -355,9 +392,27 @@ def build() -> tuple[pd.DataFrame, pd.DataFrame]:
     return df, df_v1
 
 
+def finalise(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Seasonally adjust world_cpi on the final sample; return (df, nsa).
+
+    Applied to the exact rows written to data/boe_var_data.csv, so applying
+    it to the committed column reproduces a fresh build. The unadjusted
+    series is kept in data/boe_var_data_world_cpi_nsa.csv.
+    """
+    nsa = df[["world_cpi"]].copy()
+    df = df.copy()
+    df["world_cpi"] = seasonal_adjust_tv(df["world_cpi"])
+    return df, nsa
+
+
 def main() -> None:
     download_all()
     df, df_v1 = build()
+    df, nsa = finalise(df)
+    out_nsa = nsa.copy()
+    out_nsa.insert(0, "quarter", out_nsa.index.astype(str))
+    out_nsa.to_csv(OUT.parent / "boe_var_data_world_cpi_nsa.csv", index=False,
+                   float_format="%.6f")
     out = df.copy()
     out.insert(0, "quarter", out.index.astype(str))
     out.to_csv(OUT, index=False, float_format="%.6f")
