@@ -54,18 +54,10 @@ class TestRollingEvaluationArtifact:
     # RMSE). Regenerating on unchanged data reproduces these bit-for-bit;
     # the tolerance only absorbs BLAS-level float noise across machines.
     RTOL = 1e-3
-    H1_VS_RW = {"world_gdp": 1.0433, "world_cpi": 0.7334, "oil_price": 1.0276,
-                "bank_rate": 0.8814, "eri": 1.0379, "cpisa": 0.6286,
-                "cpi_energy": 0.9771, "uk_gdp": 1.0631}
-    H1_VS_DRIFT = {"world_gdp": 1.0716, "world_cpi": 0.9440,
-                   "oil_price": 1.0102, "bank_rate": 0.7950, "eri": 1.0287,
-                   "cpisa": 0.8313, "cpi_energy": 0.9730, "uk_gdp": 1.0634}
-    H1_VS_AR1 = {"world_gdp": 0.7223, "world_cpi": 0.9701,
-                 "oil_price": 1.0156, "bank_rate": 1.3789, "eri": 1.0675,
-                 "cpisa": 1.0289, "cpi_energy": 0.9813, "uk_gdp": 0.6987}
-    H8_VS_RW = {"world_gdp": 0.7003, "world_cpi": 0.6682, "oil_price": 1.0848,
-                "bank_rate": 1.0255, "eri": 1.4122, "cpisa": 0.6681,
-                "cpi_energy": 1.1342, "uk_gdp": 1.0471}
+    H1_VS_RW = {"world_gdp": 1.0453, "world_cpi": 0.6293, "oil_price": 1.0291, "bank_rate": 0.8837, "eri": 1.0392, "cpisa": 0.6259, "cpi_energy": 0.9700, "uk_gdp": 1.0647}
+    H1_VS_DRIFT = {"world_gdp": 1.0735, "world_cpi": 0.8624, "oil_price": 1.0117, "bank_rate": 0.7971, "eri": 1.0300, "cpisa": 0.8277, "cpi_energy": 0.9659, "uk_gdp": 1.0650}
+    H1_VS_AR1 = {"world_gdp": 0.7236, "world_cpi": 1.1906, "oil_price": 1.0171, "bank_rate": 1.3826, "eri": 1.0688, "cpisa": 1.0245, "cpi_energy": 0.9742, "uk_gdp": 0.6998}
+    H8_VS_RW = {"world_gdp": 0.7009, "world_cpi": 0.6636, "oil_price": 1.0852, "bank_rate": 1.0252, "eri": 1.4124, "cpisa": 0.6673, "cpi_energy": 1.1360, "uk_gdp": 1.0483}
 
     def test_design_matches_the_published_evaluation(self):
         report = _load("rolling_evaluation.json")
@@ -126,8 +118,8 @@ class TestProductionSpecEvaluationArtifact:
     RTOL = 1e-3
     # UK GDP / CPI / Bank Rate against the random walk WITH DRIFT, the
     # benchmark the model has to beat to be worth running.
-    H1_VS_DRIFT = {"uk_gdp": 0.9874, "cpisa": 0.8237, "bank_rate": 0.7835}
-    H8_VS_DRIFT = {"uk_gdp": 0.9461, "cpisa": 1.0113, "bank_rate": 0.8319}
+    H1_VS_DRIFT = {"uk_gdp": 0.9874, "cpisa": 0.8173, "bank_rate": 0.7817}
+    H8_VS_DRIFT = {"uk_gdp": 0.9460, "cpisa": 1.0084, "bank_rate": 0.8292}
 
     def test_block_is_present_and_shares_the_headline_design(self):
         report = _load("rolling_evaluation.json")
@@ -210,13 +202,14 @@ class TestCoverageEvaluationArtifact:
         """The site quotes ~57-71% empirical coverage for the 68% band
         (mean across the eight variables, per horizon). On the 2026Q2 data,
         1,000 draws per origin and the Cholesky shock factor (#26) it is
-        0.5700-0.7050. Before #26 the eigen factor made this machine-dependent
+        0.5700-0.7050; with the world CPI seasonal adjustment (17 Nov 2026)
+        it is 0.5725-0.7150. Before #26 the eigen factor made this machine-dependent
         (0.5675-0.7075 on one Mac, 0.5800-0.7125 on a Linux runner); the
         Cholesky factor gives the same cells on every machine tested."""
         cov = _load("coverage_evaluation.json")["coverage"]["68"]
         means = [np.mean(list(cov[f"h{h}"].values())) for h in range(1, 9)]
-        assert min(means) == pytest.approx(0.5700, abs=0.01)
-        assert max(means) == pytest.approx(0.7050, abs=0.01)
+        assert min(means) == pytest.approx(0.5725, abs=0.01)
+        assert max(means) == pytest.approx(0.7150, abs=0.01)
         for h, m in enumerate(means, start=1):
             assert 0.55 <= m <= 0.72, f"68% band mean coverage at h{h}: {m}"
 
