@@ -138,12 +138,13 @@ orthogonal matrices is invariant to column permutations and sign flips, all
 orderings of the columns of B are searched for one satisfying the sign
 restrictions before rejecting, materially reducing the cost of reaching
 10,000 accepted draws. (With zero restrictions, permutations are only valid
-among columns sharing the same zero pattern — here within {WD, WS, U1... }
-blocks; the replication permutes only within restriction-equivalent groups.)
+among columns sharing the same zero pattern — here {WD, WE, U1} and
+{UD, US, MP, U2}, with WS on its own; `identification.BLOCKS`.)
 
 The paper uses **10,000 accepted draws**. The committed figures here use 765
-accepted out of 10,000 posterior draws (ESS 368, `results/summary.md`); the
-`run_replication.py` default is 200 accepted (`--accepted`, configurable).
+accepted out of 10,000 posterior draws (ESS 368, `results/summary.md`).
+One rotation is tried per posterior draw, so the accepted count follows
+from `--draws`; `--accepted` only sets a floor on the posterior draws.
 
 ## 6. Outputs and what they mean
 
@@ -183,15 +184,21 @@ Explicit deviations of this replication:
    deflated by UK CPI; the paper does not fully specify its construction.
 3. **Lag length assumed p = 4.** The paper does not state p; 4 is standard
    for quarterly data and is a parameter in this code.
-4. **Simplified pandemic prior.** We include the six Covid dummies as
-   exogenous regressors in the VAR rather than implementing the full
-   dummy-observation Minnesota-prior extension of Cascaldi-Garcia (2022);
-   this is the same conditioning idea but not identical posterior algebra.
+4. **Pandemic prior.** The six Covid dummies enter as exogenous regressors
+   with a loose prior (precision `eps_const` = 0.001). That is the
+   Cascaldi-Garcia (2022) pandemic prior at its own uninformative default
+   φ = 0.001 (`docs/improvements.md` item 6); a separate φ for the dummy
+   columns is not exposed.
 5. **Prior hyperparameters.** GLP (2015) treat prior tightness
-   hierarchically; the paper does not report the chosen values. We use
-   standard defaults (configurable) rather than hierarchically optimised
-   hyperparameters.
-6. **Fewer accepted draws.** Target 1,000+ accepted identification draws
+   hierarchically; the paper does not report the chosen values. The
+   committed run uses λ = 0.2, μ = 1 (sum-of-coefficients) and θ = 1
+   (dummy-initial-observation prior), set in `run_replication.py`;
+   `--optimize-hyper` selects them by marginal likelihood instead, but is
+   not used for the committed figures. The forecast, coverage, rolling and
+   external-comparison scripts use the `BVAR` defaults, which leave the
+   dummy-initial-observation prior off (θ = None); forecast medians differ
+   by 0.02pp or less between the two.
+6. **Fewer accepted draws.** 765 accepted identification draws (ESS 368)
    versus the paper's 10,000; credible bands are correspondingly noisier.
 7. **Column-permutation search** is implemented only within groups of
    shocks sharing identical zero-restriction patterns (see Section 5),
