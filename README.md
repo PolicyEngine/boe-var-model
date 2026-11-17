@@ -123,10 +123,10 @@ Read these before quoting a forecast, a band or an impulse response.
   is significantly more accurate than a random walk with drift or an AR(1)
   once the 64 tests per benchmark are adjusted together (Benjamini–Hochberg
   q < 0.05 in 0 of 64, both specifications). Against a plain random walk
-  (no drift), the headline specification (no Covid dummies) also has 0 of
-  64. The published specification (with the Covid dummies) has 3 of 64, all
-  one quarter ahead: world GDP (relative RMSE 0.96), world CPI (0.74) and UK
-  CPI (0.62), each at q = 0.048 (`results/rolling_evaluation.json`,
+  (no drift), each specification has 1 of 64, world CPI one quarter ahead
+  (relative RMSE 0.63, q = 0.049 headline and 0.048 published). UK CPI
+  (0.62–0.63) and, in the published specification, world GDP (0.96) are
+  just above the line at q = 0.05–0.06 (`results/rolling_evaluation.json`,
   `multiplicity` and `production_spec`).
 - **The 90% bands are too narrow.** Raw production-spec 90% bands for
   year-on-year UK GDP growth, the basis of the published fan, cover 88% of
@@ -138,7 +138,7 @@ Read these before quoting a forecast, a band or an impulse response.
   `band_scale_factors_yoy`; the UK GDP 68% factor at eight quarters is 1.13
   on that basis and 1.41 on levels. Rescaling the bands to measured
   coverage, scored on held-out origins, lifts the 90% band from 77% to 83%
-  across all variables and horizons on levels, and from 78% to 83% year on
+  across all variables and horizons on levels, and from 77% to 83% year on
   year (`calibration_holdout`, production spec, rolling origin). The choice
   between labelling and dropping the 90% band is issue #12. The evaluation
   uses 1,000 posterior draws per origin. The Cholesky shock factor gives
