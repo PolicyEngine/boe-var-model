@@ -93,7 +93,8 @@ deterministic mapping of the GDP median, as before.
 Only 2026Q3 (one quarter ahead) is inside the validated four-quarter
 horizon. Rows from 2027Q3 on (h5 and beyond) are shown for comparison with
 the BoE and the OBR; the satellite's point forecast is worse than no-change
-beyond four quarters.
+beyond four quarters excluding Covid targets, and from two quarters on all
+targets.
 
 Pre-Covid sample (1992Q1-2019Q4) CPI medians: 2.22/1.99/2.02/2.01 ->
 2.64/2.13/1.93/1.91; GDP medians 1.57/0.97/1.16/1.45 (not recorded before).

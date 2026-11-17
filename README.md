@@ -143,8 +143,10 @@ Read these before quoting a forecast, a band or an impulse response.
   covered 60–66% at 68%, below nominal at every horizon, and 87%, 78%, 75%
   and 70% at 90% for h1–h4
   (`results/unemployment_satellite_validation.json`, `band_coverage`).
-  Only h1–h4 is validated; the point forecast is worse than no-change
-  beyond four quarters.
+  Only h1–h4 is validated. The point forecast's RMSE relative to no-change
+  is 0.82–0.99 at h1–h4 excluding Covid targets and about 1.4 beyond, and
+  on all targets it is worse than no-change from two quarters on (1.13,
+  1.31, 1.35 at h2–h4).
 - **Monetary-policy level effects do not fade.** The posterior has a unit
   root: every draw checked on the test fixture has a largest companion
   eigenvalue above 1, and nothing truncates explosive draws. The GDP and
