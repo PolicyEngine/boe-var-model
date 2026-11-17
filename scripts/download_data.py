@@ -167,7 +167,7 @@ def seasonal_adjust(q: pd.Series) -> pd.Series:
     return q / q.index.quarter.map(factors)
 
 
-def seasonal_adjust_tv(x: pd.Series, half_window: int = 3,
+def seasonal_adjust_tv(x: pd.Series, half_window: int = 5,
                        iterations: int = 2) -> pd.Series:
     """Time-varying additive seasonal adjustment of a 100*log quarterly level.
 
@@ -182,7 +182,10 @@ def seasonal_adjust_tv(x: pd.Series, half_window: int = 3,
     Used for world_cpi, whose euro-area (HICP) and German legs are not
     seasonally adjusted at source and whose seasonal pattern drifts over
     time, so constant factors (``seasonal_adjust``) do not remove it. The
-    filter is two-sided: end-point factors revise as data arrive.
+    filter is two-sided: end-point factors revise as data arrive. The
+    default 11-year window (half_window 5) was chosen over 7 years because
+    both remove the seasonality in every era and the longer one changes
+    year-on-year world CPI inflation least (max 0.09pp vs 0.15pp).
     """
     d = x.diff()
     q = d.index.quarter
