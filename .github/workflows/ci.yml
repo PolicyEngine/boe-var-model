@@ -131,8 +131,10 @@ jobs:
         run: uv run python scripts/run_replication.py --draws 10000 --accepted 10000
       - name: Regenerate the forecast-revision summary
         run: uv run python scripts/run_forecast_revision.py --draws 6000
+      # The adding-up identity's float residual (~1e-12) depends on the BLAS
+      # build, so that one line is ignored; every other line must match.
       - name: Compare with the committed files
-        run: git diff --exit-code -- results/summary.md results/forecast_summary.md src/boe_var/_results/
+        run: git diff --exit-code -I 'max abs error across all draws' -- results/summary.md results/forecast_summary.md src/boe_var/_results/
       - name: Upload the regenerated summaries
         if: always()
         uses: actions/upload-artifact@v4
