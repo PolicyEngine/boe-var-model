@@ -1,6 +1,6 @@
 # Decision note: why the 90% bands under-cover (#12)
 
-Written 10 November 2026 on 49 origins; refreshed 15 November 2026 on main's 50 origins (2012Q1–2024Q2, data to 2026Q2), after #30 (Cholesky shock factor, 1,000 draws per origin); refreshed again 18 November 2026 on the seasonally adjusted world CPI proxy (#34). The #34 refresh moved no figure by more than 0.03 and changed no verdict; the 15 November values are listed at the end. Nothing here changes the model or any published number.
+Written 10 November 2026 on 49 origins; refreshed 15 November 2026 on main's 50 origins (2012Q1–2024Q2, data to 2026Q2), after #30 (Cholesky shock factor, 1,000 draws per origin); refreshed again 18 November 2026 on the seasonally adjusted world CPI proxy (#34). The #34 refresh changed no verdict. The pooled coverage figures moved by under 0.01; the largest single move is world CPI coverage in 2014Q3–2016Q4 (0.59 to 0.43). The 15 November values are listed at the end. Nothing here changes the model or any published number.
 
 ## Verdict
 
