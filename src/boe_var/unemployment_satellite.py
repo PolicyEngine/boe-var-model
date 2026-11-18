@@ -29,12 +29,25 @@ low unemployment). This transforms pointwise quantiles of the GDP path, not
 the joint predictive distribution, and adds no satellite residual uncertainty --
 the reported bands are therefore a lower bound on the true unemployment
 uncertainty, and results must say so.
+
+Joint predictive bands (``unemployment_predictive_bands``): iterate the
+equation along each simulated GDP growth PATH (the same posterior-draw x
+shock paths the SVAR fan is built from) with a Gaussian residual
+eps ~ N(0, sigma) at every step and the coefficients drawn once per path from
+their OLS sampling distribution N(coef, sigma^2 (X'X)^-1), then take
+pointwise quantiles. This adds the satellite's own residual and estimation
+uncertainty to the GDP uncertainty. The residual and coefficient draws are
+independent of the GDP shock path, which is what a single-equation OLS
+satellite assumes. The central (median) path published alongside stays the
+deterministic mapping of the GDP median, so the point-forecast validation
+still describes it. Measured coverage of both kinds of band is in
+``results/unemployment_satellite_validation.json`` (``band_coverage``).
 """
 
 from __future__ import annotations
 
 import csv
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 import numpy as np
@@ -73,6 +86,14 @@ class SatelliteFit:
     nobs: int
     sample: tuple[str, str]
     r2: float
+    # OLS covariance of (alpha, beta, gamma): sigma^2 (X'X)^-1. Used only to
+    # draw coefficient uncertainty in unemployment_predictive_bands.
+    coef_cov: np.ndarray | None = field(default=None, repr=False,
+                                        compare=False)
+
+    @property
+    def coef(self) -> np.ndarray:
+        return np.array([self.alpha, self.beta, self.gamma])
 
     def forecast(self, g_path: np.ndarray, u_last: float,
                  du_last: float) -> np.ndarray:
@@ -105,10 +126,11 @@ def fit_satellite(g: np.ndarray, du: np.ndarray, du_lag: np.ndarray,
     dof = max(len(du) - 3, 1)
     ss_tot = float(((du - du.mean()) ** 2).sum())
     r2 = 1.0 - float((resid ** 2).sum()) / ss_tot if ss_tot > 0 else 0.0
+    sigma = float(np.sqrt((resid ** 2).sum() / dof))
     return SatelliteFit(alpha=float(coef[0]), beta=float(coef[1]),
-                   gamma=float(coef[2]),
-                   sigma=float(np.sqrt((resid ** 2).sum() / dof)),
-                   nobs=len(du), sample=sample_label, r2=r2)
+                   gamma=float(coef[2]), sigma=sigma,
+                   nobs=len(du), sample=sample_label, r2=r2,
+                   coef_cov=sigma ** 2 * np.linalg.inv(X.T @ X))
 
 
 def align_satellite_inputs(u_quarters: list[str], u: np.ndarray,
@@ -165,3 +187,65 @@ def unemployment_bands(fit: SatelliteFit, gdp_bands: dict,
         "lo90": f(gdp_bands["hi90"]),
         "hi90": f(gdp_bands["lo90"]),
     }
+
+
+def simulate_unemployment_paths(fit: SatelliteFit, gdp_paths: np.ndarray,
+                                u_last: float, du_last: float,
+                                rng: np.random.Generator, *,
+                                residual: bool = True,
+                                coefficients: bool = True) -> np.ndarray:
+    """Unemployment-rate paths, one per GDP growth path.
+
+    ``gdp_paths``: (n, H) year-on-year GDP growth paths in percent. For each
+    path the coefficients are drawn once from N(coef, coef_cov) (if
+    ``coefficients``) and a residual N(0, sigma) is added at every step (if
+    ``residual``). With both off this is ``fit.forecast`` applied to each
+    path. Returns (n, H).
+
+    Coefficient draws are not truncated: a draw with gamma near or above 1
+    makes the path explosive. Over the validated four quarters this has no
+    visible effect; it is one more reason not to read the bands beyond h4.
+    """
+    g = np.atleast_2d(np.asarray(gdp_paths, dtype=float))
+    n, H = g.shape
+    if coefficients:
+        if fit.coef_cov is None:
+            raise ValueError("fit has no coefficient covariance; refit with "
+                             "fit_satellite")
+        C = rng.multivariate_normal(fit.coef, fit.coef_cov, size=n,
+                                    method="cholesky")
+    else:
+        C = np.broadcast_to(fit.coef, (n, 3))
+    eps = (rng.standard_normal((n, H)) * fit.sigma if residual
+           else np.zeros((n, H)))
+    out = np.empty((n, H))
+    u = np.full(n, float(u_last))
+    du = np.full(n, float(du_last))
+    for h in range(H):
+        du = C[:, 0] + C[:, 1] * g[:, h] + C[:, 2] * du + eps[:, h]
+        u = u + du
+        out[:, h] = u
+    return out
+
+
+def unemployment_predictive_bands(fit: SatelliteFit, gdp_paths: np.ndarray,
+                                  u_last: float, du_last: float,
+                                  rng: np.random.Generator, *,
+                                  weights: np.ndarray | None = None,
+                                  residual: bool = True,
+                                  coefficients: bool = True) -> dict:
+    """Pointwise 5/16/50/84/95% quantiles of the joint predictive paths.
+
+    Carries GDP-path, satellite-residual and coefficient uncertainty (see the
+    module docstring). ``weights``: one importance weight per GDP path, as
+    for the SVAR fan. ``median`` here is the median of the simulated paths;
+    the published central path is ``fit.forecast`` of the GDP median.
+    """
+    from .analysis import aggregate
+
+    if fit.beta >= 0:
+        raise ValueError("mapping assumes a negative growth coefficient")
+    paths = simulate_unemployment_paths(
+        fit, gdp_paths, u_last, du_last, rng,
+        residual=residual, coefficients=coefficients)
+    return aggregate(list(paths), weights=weights)
