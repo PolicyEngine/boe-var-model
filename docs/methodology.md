@@ -42,7 +42,9 @@ of restricting the set of admissible Q.
 Quarterly data; estimation sample **1992Q1–2025Q1** (originally **1992Q1–2023Q2**) (start of UK inflation
 targeting; last year of data reserved because recent data are revision-
 prone). Data through 2026Q2 are kept for the paper's forecast-revision
-exercises. Ordering is fixed — the zero restrictions below reference it.
+exercises. With data to 2026Q2 the paper's rule gives 2025Q2; the sample
+end was set on the 2026Q1 vintage and stays at 2025Q1 until the next data
+refresh, when it moves with the data (`docs/decisions.md`, decision 2). Ordering is fixed — the zero restrictions below reference it.
 
 | # | Variable | Enters model | Shown in figures |
 |---|----------|--------------|------------------|
@@ -141,8 +143,8 @@ restrictions before rejecting, materially reducing the cost of reaching
 among columns sharing the same zero pattern — here {WD, WE, U1} and
 {UD, US, MP, U2}, with WS on its own; `identification.BLOCKS`.)
 
-The paper uses **10,000 accepted draws**. The committed figures here use 765
-accepted out of 10,000 posterior draws (ESS 368, `results/summary.md`).
+The paper uses **10,000 accepted draws**. The committed figures here use 731
+accepted out of 10,000 posterior draws (ESS 333, `results/summary.md`).
 One rotation is tried per posterior draw, so the accepted count follows
 from `--draws`; `--accepted` only sets a floor on the posterior draws.
 
@@ -198,7 +200,7 @@ Explicit deviations of this replication:
    external-comparison scripts use the `BVAR` defaults, which leave the
    dummy-initial-observation prior off (θ = None); forecast medians differ
    by 0.02pp or less between the two.
-6. **Fewer accepted draws.** 765 accepted identification draws (ESS 368)
+6. **Fewer accepted draws.** 731 accepted identification draws (ESS 333)
    versus the paper's 10,000; credible bands are correspondingly noisier.
 7. **Column-permutation search** is implemented only within groups of
    shocks sharing identical zero-restriction patterns (see Section 5),

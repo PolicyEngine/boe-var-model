@@ -1,42 +1,42 @@
-# Final sense-check vs the BoE paper (post-identification-fix figures)
+# Sense-check against the BoE paper
 
-Independent panel-by-panel comparison of `results/fig2..fig6` and
-`summary.md` against Figures 2–6 and the quantitative claims of the paper
-(pp. 10–18).
+17 November 2026, at the committed run (`results/summary.md`: 10,000
+posterior draws, 731 accepted, ESS 333.3; data to 2026Q2, estimation
+1992Q1–2025Q1; world CPI seasonally adjusted, see `data/README.md`).
+Replaces the 13 July 2026 version, which described a 186-draw run.
 
-## Verdicts
+Comparison is qualitative: the paper publishes figures, not tables, so
+paper values below are approximate read-offs from its Figures 2–6
+(PDF pp. 10–18).
 
-| Figure | Verdict |
+## What matches
+
+| Check | Result |
 |---|---|
-| Fig 2 (world IRFs) | PASS with caveats |
-| Fig 3 (UK IRFs) | PASS |
-| Fig 4 (FEVD) | PASS with caveats |
-| Fig 5 (estimated shocks) | PASS |
-| Fig 6 (historical decomposition) | CAVEAT (presentation) |
-| summary.md internal consistency | PASS (rows sum to ~100; headline = detailed sums) |
+| Identification (Table 2) | `identification.py` matches every zero and sign; exchange rate unrestricted |
+| Fig 2–3 signs | All restricted signs hold; oil price rises after a world supply shock (the paper's unrestricted check) |
+| Fig 2–3 magnitudes | Same order as the paper: monetary-policy shock moves Bank Rate about 10bp on impact (paper about 8–10bp); UK supply raises GDP about 0.2 (paper 0.2–0.3); world energy moves UK GDP about 0.45 at h20 (paper about 0.5). Medians of the weighted IRFs, checked 17 Nov |
+| Fig 5 episodes | 2008–09 world demand collapse, 2022 contractionary energy shocks, monetary loosening in 2022 then tightening in 2023, muted 2020–21 shocks (Covid dummies) |
+| Fig 6 | Dated axis; Covid-dummy contribution shown as its own (black) component, as in the paper |
+| UK GDP global share, 1 year | 37.6% (posterior mean; 68% band 23–50%) against the paper's about 40% |
 
-Matches: all Table 2 sign/zero patterns visible in the IRFs; world-energy row
-of Fig 2 clean across all 8 panels; oil price rises after a world supply shock
-(the paper's key unrestricted check); explained variance ~80% domestic / ~90%
-global; global share of UK variance at 1y 42.5% GDP / 52.2% CPI vs paper
-~40%/~50%; Fig 5 reproduces the paper's narrative episodes (2008 world-demand
-collapse, 2022 contractionary energy, post-2022 UK monetary loosening then
-2023 tightening, muted shocks 2020–21 from Covid dummies).
+## What does not match (open)
 
-## Caveats / open items
+| Item | Here | Paper | Note |
+|---|---|---|---|
+| UK CPI global share, 1 year | 52.0% (68% band 34–68%) | about 50% | Close on the mean after the world CPI seasonal adjustment (was 41.5%); the band is wide |
+| UK CPI domestic share, 1 year | 24.8% | about 40% | Further from the paper than before the adjustment (36.8%) |
+| Monetary policy share of UK GDP, 1 year | 11.2% | about 20% (largest domestic) | The clearest open discrepancy; here UK supply (14.9%) and UK demand (12.9%) are larger |
+| Monetary-policy shock, GDP response (trough) | about −0.16 | about −0.07 | Larger here; the level effect does not fade (unit root, `README.md` Known failures) |
+| Monetary-policy shock, CPI at h20 | about −0.21 | about −0.4 | Smaller here |
+| World supply → UK GDP median | +0.12 to +0.14 early, crosses zero around h12 | stays positive (+0.1 to +0.2) | Not a low-draw artefact any more (731 accepted draws); bands cover the paper's path |
 
-1. Fig 2: UK GDP medians to world demand and world supply shocks decay
-   through zero at long horizons (paper: persistently positive; bands cover
-   the paper's path). Likely low-draw / proxy-world-data artifact.
-2. Fig 4: within the world supply side, energy > supply for World GDP and oil
-   price here, while the paper's figure suggests supply is the larger
-   long-horizon contributor. The paper's claims are about the combined
-   supply side, which we match.
-3. Known, disclosed: UK monetary policy is not the largest domestic
-   contributor to CPI variance (UK supply 15.6% > mon. pol. 7.4%).
-4. Fig 6 presentation: bare quarter-index x-axis (should be dates), and Covid
-   dummies folded into the deterministic component instead of shown as the
-   paper's separate black bars — understates the structural-shock share of
-   the 2021–23 inflation surge visually. See docs/improvements.md item 8.
-5. Bands are wider than the paper's (186 accepted draws, ESS 91, vs the
-   paper's 10,000 accepted). Raise --draws for production-quality figures.
+Candidate explanations, none tested: the proxy world GDP and CPI series
+(the Bank's UK-trade-weighted series are unpublished), the 2026Q2 data
+vintage against the paper's August 2024 one, and the prior settings
+(`docs/methodology.md` section 7).
+
+## Bands
+
+The paper uses 10,000 accepted draws; this run has 731 (ESS 333), so the
+plotted bands carry more Monte Carlo noise than the paper's.

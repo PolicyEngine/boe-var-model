@@ -173,8 +173,19 @@ def main() -> None:
 
     # 5. FEVD (fig 4)
     fevd_b = analysis.fevd_bands(pairs, args.horizons, weights=weights)
-    analysis.plot_fevd(fevd_b, os.path.join(RESULTS, "fig4_fevd.png"),
-                       title="Figure 4: FEVD (median shares)")
+    # The paper's Figure 4 plots the MEAN of the per-draw decompositions,
+    # which sums to one across shocks without rescaling. Medians do not, so
+    # the figure and the detailed table use the (importance-weighted) mean.
+    fevd_stack = np.stack([analysis.fevd(d, B, args.horizons)
+                           for d, B in pairs])
+    w_norm = (np.ones(len(pairs)) if weights is None
+              else np.asarray(weights, dtype=float))
+    w_norm = w_norm / w_norm.sum()
+    fevd_mean = np.tensordot(w_norm, fevd_stack, axes=1)   # (k, k, H)
+    analysis.plot_fevd({"median": fevd_mean},
+                       os.path.join(RESULTS, "fig4_fevd.png"),
+                       title="Figure 4: FEVD (posterior-mean shares, "
+                             "as in the paper)")
 
     # 6. Estimated shocks (fig 5)
     shocks_b = analysis.shock_bands(pairs, resid_fn, weights=weights)
@@ -194,6 +205,8 @@ def main() -> None:
     covid_yoy = covid[4:] - covid[:-4]
     idx_yoy = idx[4:]
     i_cpi, i_gdp = 5, 7
+    i_ud, i_us, i_mp = (SHOCK_NAMES.index(n) for n in
+                        ("UK demand", "UK supply", "UK mon. pol."))
     analysis.plot_hist_decomp(
         c_yoy, d_yoy, [i_cpi, i_gdp],
         os.path.join(RESULTS, "fig6_hist_decomp.png"),
@@ -295,19 +308,32 @@ def main() -> None:
         "table closes that gap arithmetically rather than economically.",
         "",
         "Note on the domestic ranking: the paper's prose says UK monetary "
-        "policy is the largest domestic contributor, but it publishes no "
-        "FEVD table and its Figure 4 does not obviously show that for CPI. "
-        "This replication finds UK demand and UK supply larger than monetary "
-        "policy for CPI. Treat as unresolved rather than as a known defect; "
-        "proxy world aggregates remain a candidate explanation.",
+        "policy is the largest domestic contributor, and it publishes no "
+        "FEVD table. Read approximately off its Figure 4 at one year, "
+        "monetary policy explains about 20% of UK GDP (UK supply about 10%, "
+        "UK demand about 9%) and about 9% of UK CPI (UK demand about 14%, UK "
+        "supply about 5%). Here (posterior means, table below) monetary "
+        f"policy explains {100 * fevd_mean[i_gdp, i_mp, h1]:.1f}% of UK GDP "
+        f"(UK supply {100 * fevd_mean[i_gdp, i_us, h1]:.1f}%, UK demand "
+        f"{100 * fevd_mean[i_gdp, i_ud, h1]:.1f}%) and "
+        f"{100 * fevd_mean[i_cpi, i_mp, h1]:.1f}% of UK CPI (UK demand "
+        f"{100 * fevd_mean[i_cpi, i_ud, h1]:.1f}%, UK supply "
+        f"{100 * fevd_mean[i_cpi, i_us, h1]:.1f}%). The clearest open "
+        "discrepancy is the monetary-policy share of UK GDP, well below the "
+        "paper's; the read-offs are visual, so treat this as unresolved "
+        "rather than as a known defect.",
         "",
-        "## Detailed 1-year FEVD (median, %)",
+        "## Detailed 1-year FEVD (posterior mean, %)",
+        "",
+        "Per-draw shares averaged over the accepted draws (importance-"
+        "weighted). Rows sum to 100 without rescaling; this is the statistic "
+        "the paper's Figure 4 plots.",
         "",
         "| Variable | " + " | ".join(SHOCK_NAMES) + " |",
         "|" + "---|" * (len(SHOCK_NAMES) + 1),
     ]
     for i, vname in enumerate(VARIABLE_NAMES):
-        cells = " | ".join(f"{100 * med[i, j, h1]:.1f}"
+        cells = " | ".join(f"{100 * fevd_mean[i, j, h1]:.1f}"
                            for j in range(len(SHOCK_NAMES)))
         lines.append(f"| {vname} | {cells} |")
     lines += [

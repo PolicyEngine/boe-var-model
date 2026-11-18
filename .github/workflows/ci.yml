@@ -106,3 +106,40 @@ jobs:
         with:
           name: coverage-${{ matrix.os }}-${{ matrix.run }}
           path: out/coverage_evaluation.json
+
+  artefacts-reproduce:
+    name: Replication and forecast-revision artefacts reproduce (${{ matrix.os }})
+    # Manual only. Regenerates results/summary.md (10,000 draws) and
+    # results/forecast_summary.md (6,000 draws) at the committed settings and
+    # fails if either differs from the committed file. Figures are not
+    # compared (PNG bytes depend on the matplotlib build).
+    if: github.event_name == 'workflow_dispatch'
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 40
+    env:
+      MPLBACKEND: Agg
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - name: Install
+        run: uv sync
+      - name: Regenerate the replication summary
+        run: uv run python scripts/run_replication.py --draws 10000 --accepted 10000
+      - name: Regenerate the forecast-revision summary
+        run: uv run python scripts/run_forecast_revision.py --draws 6000
+      # The adding-up identity's float residual (~1e-12) depends on the BLAS
+      # build, so that one line is ignored; every other line must match.
+      - name: Compare with the committed files
+        run: git diff --exit-code -I 'max abs error across all draws' -- results/summary.md results/forecast_summary.md src/boe_var/_results/
+      - name: Upload the regenerated summaries
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: summaries-${{ matrix.os }}
+          path: |
+            results/summary.md
+            results/forecast_summary.md
