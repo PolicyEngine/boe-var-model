@@ -21,30 +21,38 @@ writeup of the method and of where this replication deviates from the paper.
 ## Repository layout
 
 ```
-├── SPEC.md                 # replication spec (model, restrictions, API)
+├── SPEC.md                 # original replication spec (July 2026; see docs/methodology.md for current)
 ├── docs/
 │   ├── a-structural-var-model-for-the-uk-economy.pdf   # the paper
 │   ├── methodology.md      # method writeup + differences from the paper
-│   └── improvements.md     # ranked list of fidelity gaps
+│   ├── band_decision.md    # why the 90% bands under-cover (#12)
+│   └── improvements.md     # fidelity gaps from the toolbox review, with status
 ├── src/boe_var/            # package (src layout)
 │   ├── data.py             # load_data() -> transformed quarterly DataFrame
-│   ├── bvar.py             # BVAR class: NIW posterior sampling
-│   ├── identification.py   # zero/sign restrictions, draw_Q, identify
+│   ├── bvar.py             # BVAR class: NIW posterior sampling, marginal likelihood
+│   ├── identification.py   # zero/sign restrictions, draw_Q, identify, importance weights
 │   ├── analysis.py         # IRFs, FEVDs, shocks, historical decompositions
 │   ├── forecast.py         # forecasts, fan bands, forecast revisions
-│   ├── evaluation.py       # rolling-origin point and band evaluation
-│   └── unemployment_satellite.py  # GDP growth -> unemployment mapping
+│   ├── evaluation.py       # rolling-origin point evaluation, code-version hash
+│   ├── covid_volatility.py # opt-in Lenza-Primiceri Covid volatility scaling
+│   ├── unemployment_satellite.py  # GDP growth -> unemployment mapping
+│   ├── _data/, _results/   # packaged copies of data/ and results/*.md
 ├── scripts/
 │   ├── download_data.py    # fetch raw series -> data/boe_var_data.csv
 │   ├── run_replication.py  # estimate, identify, write fig2-fig6 + summary.md
 │   ├── run_forecast_revision.py   # paper section 5: fig1, fig7-fig9, forecast_summary.md
 │   ├── run_rolling_evaluation.py  # results/rolling_evaluation.json
 │   ├── run_coverage_evaluation.py # results/coverage_evaluation.json
-│   ├── run_satellite_validation.py
-│   └── run_external_comparison.py # numbers in results/forecast_vs_boe_obr.md
-├── data/                   # raw + assembled data (raw data git-ignored)
+│   ├── run_covid_volatility_evaluation.py # results/covid_volatility_evaluation.json
+│   ├── run_satellite_validation.py # results/unemployment_satellite_validation.json
+│   ├── run_external_comparison.py # numbers in results/forecast_vs_boe_obr.md
+│   ├── check_coverage_determinism.py # rerun coverage, compare with the committed file (CI, manual)
+│   └── band_decision_tables.py    # tables in docs/band_decision.md
+├── data/                   # assembled data + data/README.md (vintages); raw data git-ignored
 ├── results/                # figures, summaries and evaluation JSON
-├── tests/
+├── tests/                  # fast suite; slow/calibration markers (see pyproject.toml)
+├── .github/workflows/      # ci.yml (lint, tests, nightly slow job, manual determinism job);
+│                           # notify-macromod.yml (tells PolicyEngine/macro on push to main)
 ├── RESOURCES.md            # annotated links: paper, code, methods, data
 └── pyproject.toml          # package boe_var
 ```
@@ -98,9 +106,12 @@ See `RESOURCES.md` for the full annotated list (method papers, data sources).
 - The paper does not state the lag length; we assume p = 4 (a parameter).
 - Fewer accepted identification draws: the committed figures use 765
   accepted draws out of 10,000 posterior draws (importance-weight ESS 368,
-  `results/summary.md`), and the script default is 200 (`--accepted`),
-  against the paper's 10,000 accepted. The pandemic-prior treatment is
-  simplified (Covid dummies as exogenous regressors). See
+  `results/summary.md`, `--draws 10000`), against the paper's 10,000
+  accepted. One rotation is tried per posterior draw, so `--accepted` only
+  sets a floor on the number of posterior draws, not the number accepted.
+  The Covid quarters enter as six exogenous dummies with a loose prior,
+  which matches the Cascaldi-Garcia pandemic prior at its uninformative
+  default (`docs/improvements.md` item 6). See
   `docs/methodology.md` for the full list of differences.
 
 ## Known failures
@@ -148,8 +159,12 @@ Read these before quoting a forecast, a band or an impulse response.
   on all targets it is worse than no-change from two quarters on (1.12,
   1.31, 1.35 at h2–h4).
 - **Monetary-policy level effects do not fade.** The posterior has a unit
-  root: every draw checked on the test fixture has a largest companion
-  eigenvalue above 1, and nothing truncates explosive draws. The GDP and
+  root: 99.3% of 10,000 posterior draws of the published specification have
+  a largest companion eigenvalue above 1 (median 1.004;
+  `results/covid_volatility_evaluation.json`, `explosive_draws`), and
+  nothing truncates explosive draws. For the same reason the medium-term
+  CPI forecast carries recent inflation forward (about 3%) instead of
+  returning to 2%: the model has no inflation anchor. The GDP and
   CPI level responses to a monetary-policy shock stay away from zero out to
   80 quarters (PR #17 and its verification comment). Impulse-response
   magnitudes are not yet checked against the paper's Figures 2–3 (issue #11).
@@ -157,5 +172,5 @@ Read these before quoting a forecast, a band or an impulse response.
   a difference of 100·log levels, about x²/200 below the simple rates the
   BoE and OBR publish (0.04pp at 2.8%). The external comparison
   (`results/forecast_vs_boe_obr.md`) converts to the simple basis with
-  `forecast.yoy_pct` (PR #18); `forecast_summary.md` and `fig9` remain log
-  basis.
+  `forecast.yoy_pct` (PR #18); `forecast_summary.md`, `fig1` and `fig9`
+  remain log basis.

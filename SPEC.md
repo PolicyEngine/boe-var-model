@@ -1,4 +1,8 @@
 # Replication spec — BoE Macro Technical Paper No. 3
+
+> Original build spec (July 2026), kept for reference. The sample and data
+> lines are maintained; for the method as implemented and its deviations
+> from the paper, see `docs/methodology.md`.
 "A structural VAR model for the UK economy", Brignone & Piffer (July 2025).
 PDF: `docs/a-structural-var-model-for-the-uk-economy.pdf`
 

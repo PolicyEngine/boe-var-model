@@ -5,6 +5,21 @@ Findings from reviewing bsvarSIGNs, Chan–Matthes–Yu (2025), Arias et al.
 pandemic_priors, and GLP (2015) against this replication. Ranked by impact on
 replication fidelity.
 
+## Status (17 Nov 2026)
+
+| Item | Status | Where |
+|---|---|---|
+| 1. Zero-restriction importance weights | Done | `identification.identify` returns (draw, B, w); weighted quantiles in `analysis.py`; `tests/test_arrw_weight.py` |
+| 2. One Q per posterior draw | Done | `identification.identify` (`max_tries_per_draw` ignored) |
+| 3. Chan–Matthes–Yu permutation search | Done | `identification.BLOCKS`, `_block_T` |
+| 4. Dummy-initial-observation prior | Done | `BVAR(theta=...)`; θ = 1 in `run_replication.py` |
+| 5. Marginal-likelihood hyperparameters | Available, not used for the committed run | `bvar.optimize_hyperparameters`, `run_replication.py --optimize-hyper` |
+| 6. Separate φ for the Covid dummies | Open (equivalent at the default φ = 0.001) | `BVAR(eps_const=...)` covers constant and dummies together |
+| 7. Lag-decay exponent as a parameter | Open (1/l² hard-coded) | `bvar.py` |
+| 8. Covid component in the historical decomposition | Done | `analysis.hd_median(..., dummies=)`; black bars in `fig6` |
+
+The text below is the original review (July 2026), kept as written.
+
 ## Correctness (biases in the current identification step)
 
 1. **Missing importance weights for zero restrictions (highest priority).**
