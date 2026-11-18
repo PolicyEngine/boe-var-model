@@ -26,6 +26,7 @@ writeup of the method and of where this replication deviates from the paper.
 │   ├── a-structural-var-model-for-the-uk-economy.pdf   # the paper
 │   ├── methodology.md      # method writeup + differences from the paper
 │   ├── band_decision.md    # why the 90% bands under-cover (#12)
+│   ├── decisions.md        # dated modelling decisions and the evidence for each
 │   └── improvements.md     # fidelity gaps from the toolbox review, with status
 ├── src/boe_var/            # package (src layout)
 │   ├── data.py             # load_data() -> transformed quarterly DataFrame
@@ -104,8 +105,8 @@ See `RESOURCES.md` for the full annotated list (method papers, data sources).
   description and standard references, and can only be validated
   qualitatively against the published figures.
 - The paper does not state the lag length; we assume p = 4 (a parameter).
-- Fewer accepted identification draws: the committed figures use 765
-  accepted draws out of 10,000 posterior draws (importance-weight ESS 368,
+- Fewer accepted identification draws: the committed figures use 731
+  accepted draws out of 10,000 posterior draws (importance-weight ESS 333,
   `results/summary.md`, `--draws 10000`), against the paper's 10,000
   accepted. One rotation is tried per posterior draw, so `--accepted` only
   sets a floor on the number of posterior draws, not the number accepted.
@@ -132,7 +133,10 @@ Read these before quoting a forecast, a band or an impulse response.
   year-on-year UK GDP growth, the basis of the published fan, cover 88% of
   outturns one quarter ahead, falling to 74% at eight quarters
   (`results/coverage_evaluation.json`, `coverage_yoy`). The 68% band covers
-  62% of year-on-year GDP outturns at eight quarters. On the GDP level the
+  62% of year-on-year GDP outturns at eight quarters. UK CPI is worse: the
+  raw 90% band for year-on-year UK CPI inflation covers 76% of outturns one
+  quarter ahead and 56% at eight quarters, and the 68% band covers 56% and
+  46% (same file, `production_spec.coverage_yoy`, `cpisa`). On the GDP level the
   same bands cover 70% and 52%. The two bases differ beyond four quarters
   (issue #27). A fan drawn in year-on-year growth should use
   `band_scale_factors_yoy`; the UK GDP 68% factor at eight quarters is 1.13
