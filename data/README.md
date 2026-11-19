@@ -147,3 +147,11 @@ moved through FRED revisions (largest growth change 0.14 log points). All
 other columns move by at most 0.003 log points in growth. As before, Japan
 drops out of world CPI after 2025Q4 (annual WB inflation ends in 2025) and
 China drops out of world CPI after 2025Q2; weights are renormalised.
+
+## External records (19 Nov 2026)
+
+`data/external/` holds append-only records used for comparison and scoring,
+not for estimation: the November 2026 MPR Table 3.B, the first 2026Q3 UK
+outturns, the ECB's seasonally adjusted euro-area HICP with its unadjusted
+counterpart, and the stored 2026Q3 forecasts. Sources, release dates and file
+hashes are in `data/external/README.md`.

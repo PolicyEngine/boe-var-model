@@ -1,0 +1,5 @@
+round,data_edge,archived_utc,source,quarter,variable,median,lo68,hi68,lo90,hi90
+2026-07-29,2026Q1,2026-07-29T09:40:52Z,PolicyEngine/macro@e30720a05390:forecasts/rounds/2026-07-29/boe-svar.json,2026Q3,cpi,2.539,1.826,3.29,1.403,3.849
+2026-07-29,2026Q1,2026-07-29T09:40:52Z,PolicyEngine/macro@e30720a05390:forecasts/rounds/2026-07-29/boe-svar.json,2026Q3,gdp,1.462,0.611,2.265,0.111,2.799
+2026-11-12,2026Q2,2026-11-12T05:13:50Z,PolicyEngine/macro@1dc259223f40:forecasts/rounds/2026-11-12/boe-svar.json,2026Q3,cpi,2.971,2.51,3.471,2.199,3.754
+2026-11-12,2026Q2,2026-11-12T05:13:50Z,PolicyEngine/macro@1dc259223f40:forecasts/rounds/2026-11-12/boe-svar.json,2026Q3,gdp,1.567,1.008,2.144,0.592,2.524

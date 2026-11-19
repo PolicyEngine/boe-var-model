@@ -1,0 +1,13 @@
+series,code,source_dataset,release_date,period,value,unit
+uk_gdp,ABMI,ONS PN2 (GDP first quarterly estimate),2026-11-12,2025Q3,735710,GBP m chained volume SA
+uk_gdp,ABMI,ONS PN2 (GDP first quarterly estimate),2026-11-12,2026Q3,749999,GBP m chained volume SA
+uk_cpi,D7BT,ONS MM23,2026-11-18,2025-07,139.0,index 2015=100 NSA
+uk_cpi,D7BT,ONS MM23,2026-11-18,2025-08,139.3,index 2015=100 NSA
+uk_cpi,D7BT,ONS MM23,2026-11-18,2025-09,139.3,index 2015=100 NSA
+uk_cpi,D7BT,ONS MM23,2026-11-18,2026-07,142.9,index 2015=100 NSA
+uk_cpi,D7BT,ONS MM23,2026-11-18,2026-08,143.6,index 2015=100 NSA
+uk_cpi,D7BT,ONS MM23,2026-11-18,2026-09,144.1,index 2015=100 NSA
+uk_unemployed,MGSC,ONS LMS,2026-11-17,2026Q3,1684,000s SA aged 16+
+uk_employed,MGRZ,ONS LMS,2026-11-17,2026Q3,34625,000s SA aged 16+
+uk_unemployment_rate,MGSX,ONS LMS,2026-11-17,2026Q3,4.6,% SA aged 16+ (published to 1dp)
+bank_rate,IUQABEDR,BoE IADB,retrieved 2026-11-19,2026Q3,3.75,% quarterly average
