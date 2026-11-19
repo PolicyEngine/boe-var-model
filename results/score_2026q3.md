@@ -24,7 +24,7 @@ Both rounds are out of sample: the 29 Jul round's data end in 2026Q1, the 12 Nov
 
 ## Not archived before the outturns (reported separately)
 
-- Unemployment, 17 Nov 2026 run (Okun satellite, data to 2026Q2): median 4.87%, 68% 4.69-5.05, 90% 4.59-5.18. Outturn 4.64%: outside 68%, inside 90%, +0.05pp from the 90% lower edge. The site rounds store no unemployment forecast.
+- Unemployment, 17 Nov 2026 run (Okun satellite, data to 2026Q2): median 4.87%, 68% 4.69-5.05, 90% 4.59-5.18. Outturn 4.64%: outside 68%, inside 90%, +0.05pp from the 90% lower edge. The archived 28 Jul 2026 round (PolicyEngine/macro forecasts/rounds/2026-07-28/okun-unemployment.json) forecast 2026Q3 unemployment at 4.96% (68% 4.89-5.03, 90% 4.85-5.08); the outturn is outside its 90% band, 0.21pp below the lower edge.
 
 ## BoE July 2026 MPR, same quarter (benchmark)
 

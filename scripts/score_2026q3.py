@@ -87,7 +87,7 @@ def main() -> None:
           f"- Unemployment, 17 Nov 2026 run (Okun satellite, data to 2026Q2): median {u['median']:.2f}%, "
           f"68% {u['lo68']:.2f}-{u['hi68']:.2f}, 90% {u['lo90']:.2f}-{u['hi90']:.2f}. Outturn {o['unemployment']:.2f}%: "
           f"{where(o['unemployment'], u)}, {o['unemployment'] - u['lo90']:+.2f}pp from the 90% lower edge. "
-          "The site rounds store no unemployment forecast.", "",
+          "The archived 28 Jul 2026 round (PolicyEngine/macro forecasts/rounds/2026-07-28/okun-unemployment.json) forecast 2026Q3 unemployment at 4.96% (68% 4.89-5.03, 90% 4.85-5.08); the outturn is outside its 90% band, 0.21pp below the lower edge.", "",
           "## BoE July 2026 MPR, same quarter (benchmark)", "",
           "A modal projection conditioned on the market Bank Rate curve, made in July on the pre-Blue Book 2026 "
           "vintage of GDP history, so its GDP error mixes a forecast miss with a data revision. Context, not a race.", "",
