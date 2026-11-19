@@ -5,9 +5,9 @@ Written 22 September 2026 against the 2026Q1 data vintage; updated
 seasonal adjustment). **The current numbers are in the next section.** Every
 later section records an earlier run and is kept for the history of the
 comparison; where its SVAR numbers differ from the current table, the
-current table holds. The BoE and OBR columns throughout are the July 2026
-MPR and the March 2026 EFO; the vintage-aligned comparator is now the
-November 2026 MPR, not yet transcribed.
+current table holds. The BoE and OBR columns in the older sections are the
+July 2026 MPR and the March 2026 EFO. The November 2026 MPR comparison
+(19 Nov 2026) is the section after the current run.
 
 ## Current run (17 November 2026)
 
@@ -53,6 +53,48 @@ x^2/200 (0.03-0.05pp on CPI near 3%). The regenerated run reproduces the
 September log-basis medians exactly (449 accepted, ESS 210.9), so every change
 below is the units correction, not Monte Carlo noise. Unemployment, Bank Rate,
 the energy contribution (to two decimals) and the MP-shock scaling are unchanged.
+
+## vs the BoE November 2026 MPR central projection (19 November 2026)
+
+BoE: November 2026 MPR (published 5 Nov 2026), Table 3.B, central projection,
+conditioned on the market (OIS) Bank Rate curve; transcribed in
+`data/external/boe_mpr_2026_11_table_3b.csv` and checked against a rendering of
+the page. The November MPR publishes Q4 quarters, so the SVAR is read at Q4:
+`scripts/run_external_comparison.py --quarters
+2026Q3,2026Q4,2027Q3,2027Q4,2028Q3,2028Q4,2029Q3,2029Q4` at the defaults
+(seed 20260812, 6,000 draws, data to 2026Q2, coefficients to 2025Q1, world CPI
+seasonally adjusted). It reproduces the current run's Q3 rows exactly (413
+accepted, ESS 194.5; CPI 2.95 / 3.50 / 3.09 / 3.10), so the Q4 rows are the
+same run. Simple four-quarter rates on both sides (CPI D7BT, GDP ABMI,
+unemployment MGSX).
+
+**Information sets differ.** The SVAR's data end in 2026Q2; the MPR had the
+September CPI print (3.5%) and conditions on the market curve for Bank Rate.
+The near-term CPI gap is mostly that.
+
+| Quarter | CPI SVAR (68%) | CPI BoE | GDP SVAR (68%) | GDP BoE | Unemp. SVAR (68%) | Unemp. BoE | Bank Rate SVAR | Bank Rate BoE curve | Energy pp SVAR | Energy pp BoE |
+|---|---|---|---|---|---|---|---|---|---|---|
+| 2026Q4 | 3.52 (2.78-4.25) | 3.8 | 1.87 (1.05-2.67) | 2.2 | 4.84 (4.55-5.10) | 4.8 | 3.90 | 3.9 | 0.63 | 1.1 |
+| 2027Q4 | 3.33 (1.99-4.76) | 4.0 | 1.01 (-0.18-2.30) | 1.0 | 4.87 (4.27-5.42) | 5.0 | 3.93 | 4.9 | 0.07 | 0.3 |
+| 2028Q4 | 3.17 (1.74-4.58) | 2.0 | 1.32 (0.06-2.55) | 1.4 | 4.92 (4.09-5.69) | 5.1 | 3.97 | 4.9 | 0.04 | -0.5 |
+| 2029Q4 | 3.13 (1.49-4.68) | 1.8 | 1.38 (0.02-2.71) | 1.6 | 4.92 (3.93-5.92) | 5.0 | 3.94 | 4.7 | 0.03 | 0.0 |
+
+- **Every BoE central figure for CPI, GDP and unemployment is inside the SVAR's 68% band.** At these
+  horizons the bands are wide enough that this says little about either forecast.
+- **CPI:** the BoE is higher in 2026-27 (by 0.3 and 0.7pp; it has the September print and a 1.1pp
+  direct energy contribution in 2026Q4 against the SVAR's 0.63) and lower from 2028 (by 1.2 and
+  1.3pp), back near target. The SVAR has no target anchor and a unit root (largest companion
+  eigenvalue 1.004), so it carries recent inflation forward, as in the July comparison.
+- **Bank Rate:** the market curve the MPR conditions on rises to 4.9% by 2027Q4; the SVAR's median
+  path stays near 3.9-4.0%, about 1pp lower from 2027. Scaling the identified monetary-policy shock
+  as in the current run (-0.05 to -0.07pp of CPI per 35bp, partial equilibrium) puts the effect of
+  a 1pp shortfall at roughly -0.14 to -0.20pp of CPI at h8-h13: a small part of the 1.2-1.3pp gap
+  in 2028-29.
+- **GDP:** within 0.35pp at every quarter; the BoE is higher in 2026Q4 (2.2 against 1.87).
+- **Unemployment:** the satellite's median is flat near 4.9%; the BoE rises to 5.1% in 2028Q4. Only
+  2026Q4 is inside the satellite's validated four-quarter horizon.
+- Pre-Covid sample, same run, Q4 CPI medians 2.86 / 2.10 / 2.08 / 2.02, GDP 1.81 / 0.94 / 1.06 / 1.36.
+- The 2026Q3 outturns against the stored forecasts are in `results/score_2026q3.md`.
 
 ## 2026Q2 data refresh (6 November 2026): the SVAR side, old -> new
 

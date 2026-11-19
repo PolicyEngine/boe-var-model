@@ -108,6 +108,9 @@ def main() -> None:
     p.add_argument("--draws", type=int, default=6000)
     p.add_argument("--lags", type=int, default=4)
     p.add_argument("--horizons", type=int, default=14)
+    p.add_argument("--quarters", default=",".join(COMPARISON_QUARTERS),
+                   help="comma-separated quarters to report (default: the July MPR / March EFO "
+                        "Q3 quarters; the November MPR publishes Q4: 2026Q4,2027Q4,2028Q4,2029Q4)")
     p.add_argument("--paths", type=int, default=5)
     p.add_argument("--seed", type=int, default=20260812)
     p.add_argument("--est-start", default="1992Q1")
@@ -121,11 +124,12 @@ def main() -> None:
     origin = df.index[-1]
     quarters = pd.period_range(origin + 1, periods=args.horizons, freq="Q")
     at = {str(q): h for h, q in enumerate(quarters)}
-    wanted = [q for q in COMPARISON_QUARTERS if q in at]
+    comparison = tuple(q.strip() for q in args.quarters.split(",") if q.strip())
+    wanted = [q for q in comparison if q in at]
     if not wanted:
         raise SystemExit(
             f"forecast origin {origin} reaches {quarters[-1]}, which covers none of "
-            f"{COMPARISON_QUARTERS}; pass a longer --horizons")
+            f"{comparison}; pass a longer --horizons")
 
     print(f"Forecast origin T = {origin} (last quarter in the data).")
     print(f"Sample {df.index[0]}-{args.est_end}; lags {args.lags}; "

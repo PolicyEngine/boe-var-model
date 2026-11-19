@@ -47,9 +47,12 @@ writeup of the method and of where this replication deviates from the paper.
 │   ├── run_covid_volatility_evaluation.py # results/covid_volatility_evaluation.json
 │   ├── run_satellite_validation.py # results/unemployment_satellite_validation.json
 │   ├── run_external_comparison.py # numbers in results/forecast_vs_boe_obr.md
+│   ├── score_2026q3.py     # stored 2026Q3 forecasts vs first outturns -> results/score_2026q3.md
+│   ├── compare_ecb_seasonal.py # world CPI adjustment vs the ECB's -> results/ecb_seasonal_check.md
 │   ├── check_coverage_determinism.py # rerun coverage, compare with the committed file (CI, manual)
 │   └── band_decision_tables.py    # tables in docs/band_decision.md
 ├── data/                   # assembled data + data/README.md (vintages); raw data git-ignored
+│   └── external/           # append-only comparators and outturns (MPR, ONS, BoE, ECB), with provenance
 ├── results/                # figures, summaries and evaluation JSON
 ├── tests/                  # fast suite; slow/calibration markers (see pyproject.toml)
 ├── .github/workflows/      # ci.yml (lint, tests, nightly slow job, manual determinism job);
