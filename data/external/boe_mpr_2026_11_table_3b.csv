@@ -1,0 +1,9 @@
+variable,basis,2026Q4,2027Q4,2028Q4,2029Q4,july_2026Q4,july_2027Q4,july_2028Q4
+cpi_inflation,four-quarter % (D7BT),3.8,4.0,2.0,1.8,3.2,2.1,1.9
+gdp_growth,four-quarter % (ABMI),2.2,1.0,1.4,1.6,1.2,1.4,1.7
+excess_supply,% of potential GDP,-1.0,-1.2,-1.3,-1.1,-1.3,-0.9,-0.7
+unemployment_rate,% ILO (MGSX),4.8,5.0,5.1,5.0,5.1,5.3,5.2
+private_regular_awe,four-quarter % (KAJ2),3.2,3.5,3.4,3.1,3.0,3.1,3.1
+energy_contribution_cpi,pp of four-quarter CPI inflation,1.1,0.3,-0.5,0.0,0.4,-0.1,-0.2
+world_export_prices,four-quarter % ex oil,8.0,1.2,-0.7,-0.7,4.3,0.5,-0.2
+bank_rate,% market (OIS) curve,3.9,4.9,4.9,4.7,3.9,4.2,4.1

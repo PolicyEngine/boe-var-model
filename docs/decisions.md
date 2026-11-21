@@ -66,6 +66,17 @@ before.
 **Not done.** Seasonally adjusted euro-area and German CPI at source would
 be the cleaner fix. It needs a new download, which this round did not make.
 
+**Update, 19 Nov 2026 (Opus 5.5 (Fable limit)).** The ECB's working-day and
+seasonally adjusted euro-area HICP was downloaded (`data/external/`). Over
+1997Q2-2025Q2 the seasonal component it removes from the euro-area leg
+correlates 0.95 with what this filter removes from the proxy, and a variant
+built on it also passes the seasonal gate in every era
+(`results/ecb_seasonal_check.md`). The production column stays as it is: the
+two differ by at most 0.16pp in year-on-year world CPI inflation, a switch
+would also need the pre-1997 German backcast and the China leg adjusted at
+source, and Destatis's adjusted CPI was not obtainable without a GENESIS
+login. Revisit at the next data refresh.
+
 ### 2. Estimation sample end: stays 2025Q1 until the next data refresh
 
 **Decision.** Keep `--est-end 2025Q1` for the committed artefacts. Move it
@@ -103,11 +114,26 @@ compares against the July 2026 MPR and the March 2026 EFO, transcribed by
 hand at the time. Transcribing the November MPR means fetching it, which
 this round did not do. The comparison document says which vintage it uses.
 
+**Update, 19 Nov 2026 (Opus 5.5 (Fable limit)): done.** Table 3.B of the
+November MPR is in `data/external/boe_mpr_2026_11_table_3b.csv`, and the
+comparison at its Q4 quarters is a new dated section of
+`results/forecast_vs_boe_obr.md`. The older July sections are kept as they
+were.
+
 ### 4. Scoring the 2026Q3 forecasts: not done
 
 `data/boe_var_data.csv` ends in 2026Q2, so the 2026Q3 outturn is not in the
 repo. Scoring needs a data download. When it is made, append the score as
 a new record; do not rewrite the stored forecasts.
+
+**Update, 19 Nov 2026 (Opus 5.5 (Fable limit)): done.** The first outturns
+(ONS 12, 17 and 18 Nov; BoE IADB) are in `data/external/uk_outturns_2026q3.csv`,
+and `results/score_2026q3.md` scores the two archived site rounds that
+forecast 2026Q3, without changing them. GDP 1.94% and CPI 3.11% fall inside
+the 68% band of both rounds; unemployment, 4.64%, is just inside the 90% band
+of the 17 Nov run, which no round archived. One quarter is not evidence of
+skill. `data/boe_var_data.csv` still ends in 2026Q2; the 2026Q3 data refresh
+is a separate step.
 
 ### 5. UK CPI band coverage is quoted in the README
 
