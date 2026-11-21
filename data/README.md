@@ -86,7 +86,20 @@ Coverage: 1992Q1–2026Q2, 138 quarters, no NaNs (the estimation window
   `FPCPITOTLZGJPN` — an approximation with a flat within-year profile) and
   China CPI (`CHNCPIALLMINMEI`, monthly, starts 1993M1; China drops out of
   the CPI aggregate, weights renormalised, before 1993Q2). The EA/DE legs
-  are not seasonally adjusted (HICP quarterly seasonality is mild).
+  are not seasonally adjusted at source, and their seasonal pattern is not
+  mild: quarterly log growth of the aggregate had seasonal means of about
+  -0.2/+0.4/-0.3/0.0 points, the Q2 effect rose from about +0.1 (1993-2004)
+  to +0.6 (since 2015), and the VAR did not absorb it (world CPI residuals
+  F about 12, p < 0.001). Since 17 Nov 2026 the aggregate is therefore
+  seasonally adjusted with time-varying factors (`seasonal_adjust_tv` in
+  `scripts/download_data.py`: centred 11-year moving averages of each
+  quarter's detrended log growth, applied to the final sample). It changes
+  year-on-year world CPI inflation by at most 0.09pp (RMS 0.02pp). The
+  unadjusted aggregate is kept in `data/boe_var_data_world_cpi_nsa.csv`.
+  The filter is two-sided, so end-point factors revise as data arrive and
+  the rolling evaluations see a little look-ahead in this series. Adjusting
+  the EA and German legs at source (SA HICP) would replace this at the next
+  data refresh.
 - **Aggregation method**: the aggregate index is built as exp(cumulative sum
   of weight-averaged quarterly log growth rates), i.e. a Divisia-style chain
   index with era-varying weights renormalised each quarter over available

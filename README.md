@@ -26,6 +26,7 @@ writeup of the method and of where this replication deviates from the paper.
 │   ├── a-structural-var-model-for-the-uk-economy.pdf   # the paper
 │   ├── methodology.md      # method writeup + differences from the paper
 │   ├── band_decision.md    # why the 90% bands under-cover (#12)
+│   ├── decisions.md        # dated modelling decisions and the evidence for each
 │   └── improvements.md     # fidelity gaps from the toolbox review, with status
 ├── src/boe_var/            # package (src layout)
 │   ├── data.py             # load_data() -> transformed quarterly DataFrame
@@ -104,8 +105,8 @@ See `RESOURCES.md` for the full annotated list (method papers, data sources).
   description and standard references, and can only be validated
   qualitatively against the published figures.
 - The paper does not state the lag length; we assume p = 4 (a parameter).
-- Fewer accepted identification draws: the committed figures use 765
-  accepted draws out of 10,000 posterior draws (importance-weight ESS 368,
+- Fewer accepted identification draws: the committed figures use 731
+  accepted draws out of 10,000 posterior draws (importance-weight ESS 333,
   `results/summary.md`, `--draws 10000`), against the paper's 10,000
   accepted. One rotation is tried per posterior draw, so `--accepted` only
   sets a floor on the number of posterior draws, not the number accepted.
@@ -123,22 +124,25 @@ Read these before quoting a forecast, a band or an impulse response.
   is significantly more accurate than a random walk with drift or an AR(1)
   once the 64 tests per benchmark are adjusted together (Benjamini–Hochberg
   q < 0.05 in 0 of 64, both specifications). Against a plain random walk
-  (no drift), the headline specification (no Covid dummies) also has 0 of
-  64. The published specification (with the Covid dummies) has 3 of 64, all
-  one quarter ahead: world GDP (relative RMSE 0.96), world CPI (0.74) and UK
-  CPI (0.62), each at q = 0.048 (`results/rolling_evaluation.json`,
+  (no drift), each specification has 1 of 64, world CPI one quarter ahead
+  (relative RMSE 0.63, q = 0.049 headline and 0.048 published). UK CPI
+  (0.62–0.63) and, in the published specification, world GDP (0.96) are
+  just above the line at q = 0.05–0.06 (`results/rolling_evaluation.json`,
   `multiplicity` and `production_spec`).
 - **The 90% bands are too narrow.** Raw production-spec 90% bands for
   year-on-year UK GDP growth, the basis of the published fan, cover 88% of
   outturns one quarter ahead, falling to 74% at eight quarters
   (`results/coverage_evaluation.json`, `coverage_yoy`). The 68% band covers
-  62% of year-on-year GDP outturns at eight quarters. On the GDP level the
+  62% of year-on-year GDP outturns at eight quarters. UK CPI is worse: the
+  raw 90% band for year-on-year UK CPI inflation covers 76% of outturns one
+  quarter ahead and 56% at eight quarters, and the 68% band covers 56% and
+  46% (same file, `production_spec.coverage_yoy`, `cpisa`). On the GDP level the
   same bands cover 70% and 52%. The two bases differ beyond four quarters
   (issue #27). A fan drawn in year-on-year growth should use
   `band_scale_factors_yoy`; the UK GDP 68% factor at eight quarters is 1.13
   on that basis and 1.41 on levels. Rescaling the bands to measured
   coverage, scored on held-out origins, lifts the 90% band from 77% to 83%
-  across all variables and horizons on levels, and from 78% to 83% year on
+  across all variables and horizons on levels, and from 77% to 83% year on
   year (`calibration_holdout`, production spec, rolling origin). The choice
   between labelling and dropping the 90% band is issue #12. The evaluation
   uses 1,000 posterior draws per origin. The Cholesky shock factor gives
