@@ -169,3 +169,180 @@ class TestPaperMedians:
             mod._scale(rows, ["0", "1", "2"], 100.0, "t")        # lost a sign
         with pytest.raises(mod.ExtractionError, match="label rows"):
             mod._scale(rows, ["0", "1"], 100.0, "t")
+
+
+# --------------------------------------------------------------------------
+# 2. This replication's pinned impulse responses
+# --------------------------------------------------------------------------
+
+class TestReference:
+    """results/irf_reference.json -- the published run's impulse responses.
+
+    Two operating systems reproduced the file to 3e-6 (the manual
+    ``irf-reference`` job in ci.yml); the tolerance below absorbs that."""
+
+    ATOL = 2e-3
+
+    def test_run_is_the_published_replication(self, reference):
+        assert reference["draws"] == 10_000
+        assert reference["seed"] == 20260812
+        assert reference["sample"] == {"start": "1992Q1", "end": "2025Q1"}
+        assert reference["hyperparameters"] == {
+            "lam": 0.2, "mu": 1.0, "theta": 1.0}
+        # the counts results/summary.md reports for the same run
+        summary = (REPO / "results" / "summary.md").read_text()
+        assert f"accepted identified draws: {reference['accepted']} " in summary
+        assert f"(ESS): {reference['ess']}." in summary
+
+    def test_is_not_stale(self, reference):
+        mod = _script("run_irf_reference")
+        assert reference["code_version"] == mod.code_version(), (
+            "impulse-response code, data or the paper CSV changed without "
+            "regenerating results/irf_reference.json: dispatch the CI "
+            "workflow (job irf-reference), or run "
+            "scripts/run_irf_reference.py, and commit the result")
+
+    def test_shape_and_ordering_of_the_sets(self, reference):
+        assert reference["shocks"] == SHOCKS
+        assert reference["variables"] == VARIABLES
+        for shock in SHOCKS:
+            for var in VARIABLES:
+                cell = reference["irf"][shock][var]
+                arr = {k: np.asarray(v) for k, v in cell.items()}
+                assert all(a.shape == (21,) for a in arr.values())
+                assert (arr["lo90"] <= arr["lo68"] + 1e-9).all()
+                assert (arr["lo68"] <= arr["median"] + 1e-9).all()
+                assert (arr["median"] <= arr["hi68"] + 1e-9).all()
+                assert (arr["hi68"] <= arr["hi90"] + 1e-9).all()
+
+    def test_table_2_holds_on_impact_for_the_whole_90_set(self, reference):
+        """Restrictions hold on every draw, so on impact the 90% set is on
+        the restricted side of zero, and is zero where a zero is imposed."""
+        for shock in SHOCKS:
+            for i in ZERO_RESTRICTIONS[shock]:
+                cell = reference["irf"][shock][VARIABLES[i]]
+                assert abs(cell["lo90"][0]) < 1e-6 > abs(cell["hi90"][0])
+            for i, sign in SIGN_RESTRICTIONS[shock]:
+                cell = reference["irf"][shock][VARIABLES[i]]
+                assert sign * cell["lo90"][0] > 0 < sign * cell["hi90"][0]
+
+    def test_monetary_policy_shock_magnitudes(self, reference):
+        """One standard deviation, medians: Bank Rate +9.1bp on impact and
+        still +5.0bp after five years; UK GDP -0.14% on impact and -0.17%
+        after five years; UK CPI -0.09% on impact and -0.20% after five
+        years. The README quotes these."""
+        mp = reference["irf"]["uk_monpol"]
+        pins = {("bank_rate", 0): 9.09, ("bank_rate", 20): 4.97,
+                ("uk_gdp", 0): -0.140, ("uk_gdp", 20): -0.170,
+                ("cpisa", 0): -0.094, ("cpisa", 20): -0.200}
+        for (var, h), value in pins.items():
+            tol = 0.02 if var == "bank_rate" else self.ATOL
+            assert mp[var]["median"][h] == pytest.approx(value, abs=tol), (
+                var, h)
+
+    def test_reduced_scale_run_is_well_formed(self):
+        """The runner end to end on the packaged data, at 300 draws."""
+        mod = _script("run_irf_reference")
+        report = mod.build_report(n_draws=300)
+        assert report["accepted"] >= 5
+        cmp_ = report["paper_comparison"]
+        assert cmp_["points"] == 48 * 21
+        assert 0.0 <= cmp_["share_inside_68"] <= cmp_["share_inside_90"] <= 1.0
+        assert len(cmp_["impact_ratio_sign_restricted"]["by_response"]) == 23
+        text = mod.markdown(report)
+        assert text.count("\n| ") >= 48
+        assert mod.max_difference(report, report) == 0.0
+        other = json.loads(json.dumps(report))
+        other["irf"]["uk_monpol"]["uk_gdp"]["median"][3] += 0.01
+        assert mod.max_difference(report, other) == pytest.approx(0.01)
+        other["accepted"] += 1
+        assert mod.max_difference(report, other) == float("inf")
+
+
+# --------------------------------------------------------------------------
+# 3. This replication against the paper
+# --------------------------------------------------------------------------
+
+class TestAgainstPaper:
+    """Floors on the measured agreement (results/irf_vs_paper.md). Each
+    bound is the committed value with a margin, so the test fails when a
+    change moves the replication away from the paper, and the committed
+    value itself is pinned so the report cannot drift unnoticed."""
+
+    def test_comparison_block_matches_the_two_committed_sources(
+            self, reference, paper):
+        """Recompute the summary shares from the CSV and the pinned
+        responses, independently of the script."""
+        inside68 = inside90 = agree = compared = 0
+        for (shock, var), cell in paper.items():
+            ours = reference["irf"][shock][var]
+            pm = cell["median"]
+            inside68 += ((np.asarray(ours["lo68"]) <= pm)
+                         & (pm <= np.asarray(ours["hi68"]))).sum()
+            inside90 += ((np.asarray(ours["lo90"]) <= pm)
+                         & (pm <= np.asarray(ours["hi90"]))).sum()
+            clear = np.abs(pm) > 3 * cell["resolution"]
+            compared += clear.sum()
+            agree += (np.sign(pm) == np.sign(ours["median"]))[clear].sum()
+        cmp_ = reference["paper_comparison"]
+        assert cmp_["share_inside_68"] == pytest.approx(inside68 / 1008, abs=1e-4)
+        assert cmp_["share_inside_90"] == pytest.approx(inside90 / 1008, abs=1e-4)
+        assert cmp_["sign_points_compared"] == compared
+        assert cmp_["share_sign_agrees"] == pytest.approx(agree / compared,
+                                                          abs=1e-4)
+
+    def test_paper_median_is_mostly_inside_the_credible_sets(self, reference):
+        cmp_ = reference["paper_comparison"]
+        assert cmp_["share_inside_90"] == pytest.approx(0.929, abs=0.005)
+        assert cmp_["share_inside_68"] == pytest.approx(0.765, abs=0.005)
+        assert cmp_["share_inside_90"] > 0.90
+        assert cmp_["share_inside_68"] > 0.70
+        assert cmp_["panels_fully_inside_90"] == 41
+        assert cmp_["panels_fully_outside_90"] == 0
+
+    def test_medians_mostly_share_a_sign(self, reference):
+        cmp_ = reference["paper_comparison"]
+        assert cmp_["share_sign_agrees"] == pytest.approx(0.840, abs=0.005)
+        assert cmp_["share_sign_agrees"] > 0.80
+
+    def test_impact_magnitudes_of_sign_restricted_responses(self, reference):
+        """On impact, where Table 2 fixes the sign, this replication's
+        median is 0.94 to 1.57 times the paper's (median 1.21) for 22 of 23
+        responses. World supply -> UK CPI is the exception at 3.2 (-0.13%
+        against the paper's -0.04%)."""
+        imp = reference["paper_comparison"]["impact_ratio_sign_restricted"]
+        by = dict(imp["by_response"])
+        outlier = by.pop("world_supply:cpisa")
+        assert len(by) == 22
+        assert min(by.values()) > 0.8
+        assert max(by.values()) < 1.8
+        assert imp["median"] == pytest.approx(1.21, abs=0.03)
+        assert outlier == pytest.approx(3.24, abs=0.1)
+
+    def test_known_differences_from_the_paper_are_still_the_recorded_ones(
+            self, reference):
+        """The panels where the paper's median leaves this replication's 90%
+        set at some quarter. Recorded so that a change which adds a panel,
+        or removes one, is noticed and the README updated."""
+        outside = {(c["shock"], c["variable"])
+                   for c in reference["paper_comparison"]["cells"]
+                   if c["inside_90"] < 21}
+        assert outside == {
+            ("world_demand", "world_cpi"), ("world_supply", "world_cpi"),
+            ("uk_demand", "oil_price"), ("uk_supply", "world_gdp"),
+            ("uk_supply", "world_cpi"), ("uk_monpol", "world_cpi"),
+            ("uk_monpol", "cpisa"),
+        }
+
+    def test_monetary_policy_persistence_gap(self, reference, paper):
+        """The clearest economic difference. In the paper a monetary-policy
+        shock's Bank Rate response is back to 1bp after five years; here it
+        is still 5bp. The paper's UK CPI response is about twice as large
+        at five years (-0.42% against -0.20%)."""
+        ours = reference["irf"]["uk_monpol"]
+        theirs_rate = paper[("uk_monpol", "bank_rate")]["median"]
+        assert theirs_rate[20] / theirs_rate[0] < 0.15
+        assert ours["bank_rate"]["median"][20] / ours["bank_rate"]["median"][0] > 0.4
+        ratio = (ours["cpisa"]["median"][20]
+                 / paper[("uk_monpol", "cpisa")]["median"][20])
+        assert ratio == pytest.approx(0.47, abs=0.05)

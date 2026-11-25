@@ -211,5 +211,14 @@ Explicit deviations of this replication:
 9. The forecast-revision exercise of Section 5 of the paper (structural
    narrative for round-to-round forecast revisions) is implemented in
    `scripts/run_forecast_revision.py` (Figures 1 and 7–9,
-   `results/forecast_summary.md`). Like Figures 2–6, it is compared with the
-   paper qualitatively only.
+   `results/forecast_summary.md`). It is compared with the paper
+   qualitatively only, as are Figures 4–6.
+10. **Impulse-response magnitudes (Figures 2–3)** are compared numerically
+   in `results/irf_vs_paper.md`. The paper's medians are read from the
+   vector drawing in the PDF, because the paper publishes no table
+   (`data/external/README.md` gives the method, its checks and its limits).
+   Impact responses agree to within about a fifth on average. At longer
+   horizons this replication's Bank Rate responses are more persistent and
+   its price responses smaller than the paper's; the gap narrows a good deal
+   at the marginal-likelihood-optimal λ (item 5; `docs/decisions.md`,
+   25 November 2026).
