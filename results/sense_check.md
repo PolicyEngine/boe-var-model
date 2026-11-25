@@ -27,7 +27,7 @@ paper values below are approximate read-offs from its Figures 2–6
 | UK CPI global share, 1 year | 52.0% (68% band 34–68%) | about 50% | Close on the mean after the world CPI seasonal adjustment (was 41.5%); the band is wide |
 | UK CPI domestic share, 1 year | 24.8% | about 40% | Further from the paper than before the adjustment (36.8%) |
 | Monetary policy share of UK GDP, 1 year | 11.2% | about 20% (largest domestic) | The clearest open discrepancy; here UK supply (14.9%) and UK demand (12.9%) are larger |
-| Monetary-policy shock, GDP response (trough) | about −0.16 | about −0.07 | Larger here; the level effect does not fade (unit root, `README.md` Known failures) |
+| Monetary-policy shock, GDP response | −0.14 on impact, persisting: about −0.16 at h8 and −0.17 at h20 | −0.12 on impact, fading to −0.07 by h20 | Close on impact; the paper's response fades and the level effect here does not (unit root, `README.md` Known failures). Medians from `results/irf_vs_paper.md` |
 | Monetary-policy shock, CPI at h20 | about −0.21 | about −0.4 | Smaller here |
 | World supply → UK GDP median | +0.12 to +0.14 early, crosses zero around h12 | stays positive (+0.1 to +0.2) | Not a low-draw artefact any more (731 accepted draws); bands cover the paper's path |
 

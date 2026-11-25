@@ -76,6 +76,46 @@ jobs:
         continue-on-error: true
         run: uv run pytest -q --runslow -m "slow and calibration"
 
+  irf-reference:
+    name: Impulse-response reference reproduces (issue #11, ${{ matrix.os }})
+    # Manual only. Reruns scripts/run_irf_reference.py at the committed
+    # settings (10,000 posterior draws) and fails if any median or band edge
+    # in results/irf_reference.json differs by more than 1e-4. Each run
+    # uploads its regenerated files.
+    if: github.event_name == 'workflow_dispatch'
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - name: Install
+        run: uv sync
+      - name: Rerun the reference and compare with the committed file
+        run: |
+          mkdir -p out
+          uv run python scripts/run_irf_reference.py --check --out-json out/irf_reference.json --out-md out/irf_vs_paper.md
+      # Report only: the same run with one setting changed at a time, to
+      # show what does and does not explain the gap to the paper's figures:
+      # the paper's own sample end, a looser Minnesota prior (the marginal-
+      # likelihood optimum) and two lags. Nothing is compared; the files are
+      # uploaded.
+      - name: Sensitivity runs
+        if: always()
+        run: |
+          uv run python scripts/run_irf_reference.py --est-end 2023Q2 --out-json out/irf_reference_2023Q2.json --out-md out/irf_vs_paper_2023Q2.md
+          uv run python scripts/run_irf_reference.py --lam 1.04 --out-json out/irf_reference_lam104.json --out-md out/irf_vs_paper_lam104.md
+          uv run python scripts/run_irf_reference.py --lags 2 --out-json out/irf_reference_lags2.json --out-md out/irf_vs_paper_lags2.md
+      - name: Upload the regenerated files
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: irf-reference-${{ matrix.os }}
+          path: out/
+
   coverage-determinism:
     name: Coverage artefact reproduces at the committed seed (issue #26, ${{ matrix.os }} run ${{ matrix.run }})
     # Manual only. Reruns scripts/run_coverage_evaluation.py at the committed

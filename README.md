@@ -47,6 +47,8 @@ writeup of the method and of where this replication deviates from the paper.
 │   ├── run_covid_volatility_evaluation.py # results/covid_volatility_evaluation.json
 │   ├── run_satellite_validation.py # results/unemployment_satellite_validation.json
 │   ├── run_external_comparison.py # numbers in results/forecast_vs_boe_obr.md
+│   ├── extract_paper_irf_medians.py # paper Figs 2-3 medians from the PDF's vector drawing (needs PyMuPDF)
+│   ├── run_irf_reference.py # results/irf_reference.json, results/irf_vs_paper.md (issue #11)
 │   ├── score_2026q3.py     # stored 2026Q3 forecasts vs first outturns -> results/score_2026q3.md
 │   ├── compare_ecb_seasonal.py # world CPI adjustment vs the ECB's -> results/ecb_seasonal_check.md
 │   ├── check_coverage_determinism.py # rerun coverage, compare with the committed file (CI, manual)
@@ -55,7 +57,7 @@ writeup of the method and of where this replication deviates from the paper.
 │   └── external/           # append-only comparators and outturns (MPR, ONS, BoE, ECB), with provenance
 ├── results/                # figures, summaries and evaluation JSON
 ├── tests/                  # fast suite; slow/calibration markers (see pyproject.toml)
-├── .github/workflows/      # ci.yml (lint, tests, nightly slow job, manual determinism job);
+├── .github/workflows/      # ci.yml (lint, tests, nightly slow job, manual determinism and reproduction jobs);
 │                           # notify-macromod.yml (tells PolicyEngine/macro on push to main)
 ├── RESOURCES.md            # annotated links: paper, code, methods, data
 └── pyproject.toml          # package boe_var
@@ -173,8 +175,29 @@ Read these before quoting a forecast, a band or an impulse response.
   CPI forecast carries recent inflation forward (about 3%) instead of
   returning to 2%: the model has no inflation anchor. The GDP and
   CPI level responses to a monetary-policy shock stay away from zero out to
-  80 quarters (PR #17 and its verification comment). Impulse-response
-  magnitudes are not yet checked against the paper's Figures 2–3 (issue #11).
+  80 quarters (PR #17 and its verification comment).
+- **Impulse responses are more persistent in the policy rate, and smaller
+  in prices, than the paper's.** The paper gives its impulse responses only
+  as figures; their medians were read from the vector drawing in the PDF
+  (`data/external/README.md`) and set against the published run
+  (`results/irf_vs_paper.md`, `results/irf_reference.json`, issue #11). On
+  impact the two agree: for the 23 responses Table 2 restricts in sign,
+  this replication's median is 0.94 to 1.57 times the paper's (median 1.21)
+  for 22 of them. The paper's median is inside this replication's 90%
+  credible set at 93% of 1,008 points and inside the 68% set at 76%, and
+  the two medians share a sign at 84%. The differences are at longer
+  horizons. After a one-standard-deviation monetary-policy shock, Bank
+  Rate is 8bp higher on impact in the paper and 9bp here, but after five
+  years it is 1bp higher in the paper and still 5bp here; UK CPI is 0.20% lower here and
+  0.42% lower in the paper. Five of the seven panels where the paper's
+  median leaves the 90% set involve a world series that is a proxy here
+  (four world CPI, one world GDP).
+  Re-running with the paper's own sample end (2023Q2) or with two lags
+  does not close the gap. Loosening the Minnesota prior from λ = 0.2 to
+  the marginal-likelihood optimum (λ = 1.04) does close much of it: Bank
+  Rate is 1.1bp higher after five years and UK CPI 0.35% lower
+  (`docs/decisions.md`, 25 November 2026). It does not forecast better
+  on average, though (PR #39). The published run still uses λ = 0.2.
 - **Year-on-year rates are log differences.** `forecast.py` computes YoY as
   a difference of 100·log levels, about x²/200 below the simple rates the
   BoE and OBR publish (0.04pp at 2.8%). The external comparison

@@ -4,6 +4,104 @@ Dated modelling decisions, the evidence behind each, and what was left out.
 Newest first. `docs/band_decision.md` is the longer note for the 90% band
 (issue #12); `docs/improvements.md` tracks the toolbox-review items.
 
+## 25 November 2026 (Fable 5.2 validity round; issue #11)
+
+### Impulse responses against the paper's Figures 2–3: measured, and one open decision
+
+**What was done.** The paper publishes its impulse responses only as
+figures. Their medians were read from the vector drawing in the PDF
+(`scripts/extract_paper_irf_medians.py`,
+`data/external/brignone_piffer_2025_fig2_fig3_irf_medians.csv`; method,
+checks and limits in `data/external/README.md`). The published run's
+impulse responses are pinned in `results/irf_reference.json` and compared
+in `results/irf_vs_paper.md`. The gates are in
+`tests/test_irf_benchmark.py`.
+
+**Provenance is a decision for Vahid.** Issue #11 says reference numbers
+must not be read off figure pixels. These were not read off pixels: the
+medians are path coordinates in the file, good to half a 0.12 pt grid step.
+But the y-axis tick values are transcribed by hand from a rendering, and
+the authors have not confirmed anything. The transcription is checked four
+ways against the drawing and three ways against the paper (Table 2 zeros,
+Table 2 signs, the prose of section 3.1), and all pass. If that is not
+acceptable as a reference, delete the CSV and the `paper_comparison` block;
+the pinned `irf` block and its tests stand on their own.
+
+**What the comparison shows** (published run, 731 accepted draws):
+
+- On impact the two agree. For 22 of the 23 responses Table 2 restricts in
+  sign, this replication's median is 0.94–1.57 times the paper's (median
+  1.21). The exception is world supply → UK CPI (−0.13% here, −0.04% in the
+  paper).
+- The paper's median is inside this replication's 90% set at 93% of 1,008
+  points, inside the 68% set at 76%, and the medians share a sign at 84%.
+- Seven of 48 panels have the paper's median outside the 90% set at some
+  quarter. Five involve a world series that is a proxy here (four world
+  CPI, one world GDP); the other two are UK demand → oil price and UK
+  monetary policy → UK CPI.
+- The largest economic difference is persistence. After a monetary-policy
+  shock the paper's Bank Rate response is 8bp on impact and 1bp after five
+  years; here it is 9bp and 5bp. The paper's UK CPI response is −0.42%
+  after five years; here −0.20%.
+
+**What explains the gap.** The same run with one setting changed at a time
+(10,000 draws, seed 20260812; GitHub Actions run 45517819776, macOS leg;
+`scripts/run_irf_reference.py --est-end 2023Q2`, `--lam 1.04`, `--lags 2`,
+each with `--out-json` and `--out-md` pointing away from `results/`):
+
+| Run | Accepted / ESS | Paper median inside 68% / 90% set | Same sign | Distance between medians, median / mean panel | Impact ratio (median) | MP → Bank Rate, h0 / h20 (bp) | MP → UK CPI, h20 (%) | World supply → UK GDP, h20 (%) |
+|---|---|---|---|---|---|---|---|---|
+| Paper (read from the figures) | 10,000 accepted | | | | | 8.1 / 0.8 | −0.42 | 0.13 |
+| Published: to 2025Q1, λ 0.2, 4 lags | 731 / 333 | 76% / 93% | 84% | 33% / 46% | 1.21 | 9.1 / 5.0 | −0.20 | −0.11 |
+| Sample to 2023Q2 (the paper's) | 709 / 349 | 80% / 95% | 83% | 36% / 45% | 1.25 | 9.3 / 5.2 | −0.18 | −0.10 |
+| λ = 1.04 (marginal-likelihood optimum) | 607 / 251 | 98% / 100% | 90% | 25% / 35% | 1.05 | 6.5 / 1.1 | −0.35 | 0.01 |
+| 2 lags | 763 / 371 | 73% / 88% | 82% | 38% / 48% | 1.28 | 12.5 / 5.7 | −0.18 | −0.12 |
+
+"Distance between medians" is the mean absolute difference over the 21
+quarters as a share of the paper's largest response in the panel. Unlike
+the "inside" shares it does not improve just because a looser prior widens
+the sets.
+
+- The longer sample is not the cause, and nor is the lag length.
+- The prior tightness is the one setting tried that moves the replication
+  towards the paper, and it does so on every measure: sign agreement, the
+  distance between medians, impact magnitudes, and the persistence of the
+  monetary-policy responses.
+- This is consistent with what the paper says about its prior, though the
+  paper does not say how it set the tightness. It cites Giannone, Lenza
+  and Primiceri (2015), whose method chooses the tightness from the data.
+  λ = 0.2 is a conventional fixed value. On the current data the marginal
+  likelihood is highest at λ = 1.02 for the replication specification
+  (log marginal likelihood −1696.2, against −1766.0 at λ = 0.2, a gap of
+  70) and at about 0.97 for the forecast specification (−1786.4 against
+  −1856.8). Recomputed 25 Nov with `bvar.optimize_hyperparameters` and
+  `BVAR.log_marginal_likelihood`; the 1.04 used in the runs above is the
+  value found before the world CPI adjustment, and the likelihood there
+  is within 0.1 of the maximum.
+- It does not close the gap entirely, and the world series are still
+  proxies.
+
+**Decision needed (not taken here).** Whether to move the published
+replication, and the forecasts built on the same prior, from λ = 0.2 to the
+marginal-likelihood optimum. For: consistent with the method the paper
+cites, closer to its figures, and a higher marginal likelihood. Against: it changes every
+published impulse response, FEVD share and forecast, and fewer draws are
+accepted (607 against 731).
+
+The effect on the forecasts was measured separately (PR #39,
+`results/lambda_sensitivity.md`: the committed coverage and rolling
+evaluations re-run with λ as the only change). At λ = 1.04 the raw 90%
+bands are 17% wider and cover 0.795 of year-on-year outturns against 0.771,
+so a looser prior does not fix the bands. Accuracy moves in both
+directions: UK CPI improves (CRPS 8% lower), Bank Rate is 37% worse, world
+GDP 19%, the exchange rate 17%, UK GDP 3%, and the average over the eight
+variables is 10% worse. At λ = 0.5 UK CPI improves by 7%, UK GDP is
+unchanged and the average is 2% worse. So the setting closest to the
+paper's impulse responses is not the one that forecasts best on average.
+The structural replication and the forecasts could carry different priors
+(they already differ in θ); that is the choice to make. Nothing published
+changes in this round.
+
 ## 18 November 2026 (Fable 5.2 review round; PR #34)
 
 ### 1. World CPI: seasonally adjust the proxy (adopted)
