@@ -1,0 +1,1858 @@
+{
+ "method": "the committed coverage and rolling-origin evaluations on the published specification (six Covid dummies), re-run with the Minnesota tightness lam as the only change",
+ "note": "Report only. The published model uses lam = 0.2. Coverage is of raw model bands, before any band_scale_factors. width90, crps and point_rmse ratios are to the lam = 0.2 run, averaged over horizons h1-h8 (below 1 = narrower / better).",
+ "lambdas": [
+  0.2,
+  0.5,
+  1.04
+ ],
+ "base": "0.2",
+ "draws_per_origin": 1000,
+ "paths_per_draw": 5,
+ "seed": 20260729,
+ "lags": 4,
+ "horizons": 8,
+ "first_origin": 80,
+ "origins": 50,
+ "sample": {
+  "start": "1992Q1",
+  "end": "2026Q2"
+ },
+ "covid_dummies": "2020Q1-2021Q2",
+ "code_version": "ac83a674123b617350c9ace6b72da0a12f8059576fa57fb33ceeabc466b2768e",
+ "runs": {
+  "0.2": {
+   "lam": 0.2,
+   "coverage": {
+    "68": {
+     "h1": {
+      "world_gdp": 0.86,
+      "world_cpi": 0.66,
+      "oil_price": 0.68,
+      "bank_rate": 0.86,
+      "eri": 0.78,
+      "cpisa": 0.56,
+      "cpi_energy": 0.46,
+      "uk_gdp": 0.74
+     },
+     "h2": {
+      "world_gdp": 0.82,
+      "world_cpi": 0.58,
+      "oil_price": 0.7,
+      "bank_rate": 0.84,
+      "eri": 0.68,
+      "cpisa": 0.56,
+      "cpi_energy": 0.44,
+      "uk_gdp": 0.72
+     },
+     "h3": {
+      "world_gdp": 0.8,
+      "world_cpi": 0.56,
+      "oil_price": 0.6,
+      "bank_rate": 0.86,
+      "eri": 0.68,
+      "cpisa": 0.52,
+      "cpi_energy": 0.38,
+      "uk_gdp": 0.6
+     },
+     "h4": {
+      "world_gdp": 0.8,
+      "world_cpi": 0.52,
+      "oil_price": 0.58,
+      "bank_rate": 0.86,
+      "eri": 0.74,
+      "cpisa": 0.46,
+      "cpi_energy": 0.3,
+      "uk_gdp": 0.64
+     },
+     "h5": {
+      "world_gdp": 0.78,
+      "world_cpi": 0.52,
+      "oil_price": 0.58,
+      "bank_rate": 0.84,
+      "eri": 0.68,
+      "cpisa": 0.4,
+      "cpi_energy": 0.3,
+      "uk_gdp": 0.58
+     },
+     "h6": {
+      "world_gdp": 0.76,
+      "world_cpi": 0.5,
+      "oil_price": 0.64,
+      "bank_rate": 0.84,
+      "eri": 0.64,
+      "cpisa": 0.42,
+      "cpi_energy": 0.38,
+      "uk_gdp": 0.62
+     },
+     "h7": {
+      "world_gdp": 0.76,
+      "world_cpi": 0.5,
+      "oil_price": 0.58,
+      "bank_rate": 0.82,
+      "eri": 0.64,
+      "cpisa": 0.42,
+      "cpi_energy": 0.36,
+      "uk_gdp": 0.58
+     },
+     "h8": {
+      "world_gdp": 0.74,
+      "world_cpi": 0.48,
+      "oil_price": 0.58,
+      "bank_rate": 0.82,
+      "eri": 0.62,
+      "cpisa": 0.36,
+      "cpi_energy": 0.38,
+      "uk_gdp": 0.52
+     }
+    },
+    "90": {
+     "h1": {
+      "world_gdp": 0.9,
+      "world_cpi": 0.78,
+      "oil_price": 0.88,
+      "bank_rate": 0.96,
+      "eri": 0.92,
+      "cpisa": 0.76,
+      "cpi_energy": 0.78,
+      "uk_gdp": 0.88
+     },
+     "h2": {
+      "world_gdp": 0.88,
+      "world_cpi": 0.78,
+      "oil_price": 0.88,
+      "bank_rate": 0.9,
+      "eri": 0.9,
+      "cpisa": 0.7,
+      "cpi_energy": 0.62,
+      "uk_gdp": 0.86
+     },
+     "h3": {
+      "world_gdp": 0.86,
+      "world_cpi": 0.76,
+      "oil_price": 0.82,
+      "bank_rate": 0.9,
+      "eri": 0.86,
+      "cpisa": 0.66,
+      "cpi_energy": 0.66,
+      "uk_gdp": 0.82
+     },
+     "h4": {
+      "world_gdp": 0.84,
+      "world_cpi": 0.72,
+      "oil_price": 0.78,
+      "bank_rate": 0.88,
+      "eri": 0.82,
+      "cpisa": 0.6,
+      "cpi_energy": 0.6,
+      "uk_gdp": 0.78
+     },
+     "h5": {
+      "world_gdp": 0.82,
+      "world_cpi": 0.7,
+      "oil_price": 0.8,
+      "bank_rate": 0.88,
+      "eri": 0.84,
+      "cpisa": 0.64,
+      "cpi_energy": 0.6,
+      "uk_gdp": 0.8
+     },
+     "h6": {
+      "world_gdp": 0.8,
+      "world_cpi": 0.66,
+      "oil_price": 0.78,
+      "bank_rate": 0.86,
+      "eri": 0.8,
+      "cpisa": 0.58,
+      "cpi_energy": 0.52,
+      "uk_gdp": 0.74
+     },
+     "h7": {
+      "world_gdp": 0.82,
+      "world_cpi": 0.64,
+      "oil_price": 0.78,
+      "bank_rate": 0.84,
+      "eri": 0.78,
+      "cpisa": 0.64,
+      "cpi_energy": 0.52,
+      "uk_gdp": 0.74
+     },
+     "h8": {
+      "world_gdp": 0.84,
+      "world_cpi": 0.66,
+      "oil_price": 0.78,
+      "bank_rate": 0.84,
+      "eri": 0.76,
+      "cpisa": 0.6,
+      "cpi_energy": 0.52,
+      "uk_gdp": 0.7
+     }
+    }
+   },
+   "coverage_yoy": {
+    "68": {
+     "h1": {
+      "world_gdp": 0.86,
+      "world_cpi": 0.66,
+      "oil_price": 0.68,
+      "bank_rate": 0.86,
+      "eri": 0.78,
+      "cpisa": 0.56,
+      "cpi_energy": 0.46,
+      "uk_gdp": 0.74
+     },
+     "h2": {
+      "world_gdp": 0.82,
+      "world_cpi": 0.58,
+      "oil_price": 0.7,
+      "bank_rate": 0.84,
+      "eri": 0.68,
+      "cpisa": 0.56,
+      "cpi_energy": 0.44,
+      "uk_gdp": 0.72
+     },
+     "h3": {
+      "world_gdp": 0.8,
+      "world_cpi": 0.56,
+      "oil_price": 0.6,
+      "bank_rate": 0.86,
+      "eri": 0.68,
+      "cpisa": 0.52,
+      "cpi_energy": 0.38,
+      "uk_gdp": 0.6
+     },
+     "h4": {
+      "world_gdp": 0.8,
+      "world_cpi": 0.52,
+      "oil_price": 0.58,
+      "bank_rate": 0.86,
+      "eri": 0.74,
+      "cpisa": 0.46,
+      "cpi_energy": 0.3,
+      "uk_gdp": 0.64
+     },
+     "h5": {
+      "world_gdp": 0.82,
+      "world_cpi": 0.48,
+      "oil_price": 0.6,
+      "bank_rate": 0.86,
+      "eri": 0.7,
+      "cpisa": 0.42,
+      "cpi_energy": 0.34,
+      "uk_gdp": 0.64
+     },
+     "h6": {
+      "world_gdp": 0.78,
+      "world_cpi": 0.48,
+      "oil_price": 0.58,
+      "bank_rate": 0.84,
+      "eri": 0.56,
+      "cpisa": 0.42,
+      "cpi_energy": 0.34,
+      "uk_gdp": 0.62
+     },
+     "h7": {
+      "world_gdp": 0.78,
+      "world_cpi": 0.5,
+      "oil_price": 0.54,
+      "bank_rate": 0.84,
+      "eri": 0.56,
+      "cpisa": 0.42,
+      "cpi_energy": 0.38,
+      "uk_gdp": 0.6
+     },
+     "h8": {
+      "world_gdp": 0.76,
+      "world_cpi": 0.5,
+      "oil_price": 0.5,
+      "bank_rate": 0.84,
+      "eri": 0.56,
+      "cpisa": 0.46,
+      "cpi_energy": 0.4,
+      "uk_gdp": 0.62
+     }
+    },
+    "90": {
+     "h1": {
+      "world_gdp": 0.9,
+      "world_cpi": 0.78,
+      "oil_price": 0.88,
+      "bank_rate": 0.96,
+      "eri": 0.92,
+      "cpisa": 0.76,
+      "cpi_energy": 0.78,
+      "uk_gdp": 0.88
+     },
+     "h2": {
+      "world_gdp": 0.88,
+      "world_cpi": 0.78,
+      "oil_price": 0.88,
+      "bank_rate": 0.9,
+      "eri": 0.9,
+      "cpisa": 0.7,
+      "cpi_energy": 0.62,
+      "uk_gdp": 0.86
+     },
+     "h3": {
+      "world_gdp": 0.86,
+      "world_cpi": 0.76,
+      "oil_price": 0.82,
+      "bank_rate": 0.9,
+      "eri": 0.86,
+      "cpisa": 0.66,
+      "cpi_energy": 0.66,
+      "uk_gdp": 0.82
+     },
+     "h4": {
+      "world_gdp": 0.84,
+      "world_cpi": 0.72,
+      "oil_price": 0.78,
+      "bank_rate": 0.88,
+      "eri": 0.82,
+      "cpisa": 0.6,
+      "cpi_energy": 0.6,
+      "uk_gdp": 0.78
+     },
+     "h5": {
+      "world_gdp": 0.84,
+      "world_cpi": 0.7,
+      "oil_price": 0.76,
+      "bank_rate": 0.88,
+      "eri": 0.84,
+      "cpisa": 0.58,
+      "cpi_energy": 0.6,
+      "uk_gdp": 0.76
+     },
+     "h6": {
+      "world_gdp": 0.84,
+      "world_cpi": 0.66,
+      "oil_price": 0.78,
+      "bank_rate": 0.86,
+      "eri": 0.88,
+      "cpisa": 0.58,
+      "cpi_energy": 0.56,
+      "uk_gdp": 0.78
+     },
+     "h7": {
+      "world_gdp": 0.84,
+      "world_cpi": 0.66,
+      "oil_price": 0.78,
+      "bank_rate": 0.86,
+      "eri": 0.9,
+      "cpisa": 0.58,
+      "cpi_energy": 0.54,
+      "uk_gdp": 0.74
+     },
+     "h8": {
+      "world_gdp": 0.84,
+      "world_cpi": 0.64,
+      "oil_price": 0.76,
+      "bank_rate": 0.86,
+      "eri": 0.86,
+      "cpisa": 0.56,
+      "cpi_energy": 0.52,
+      "uk_gdp": 0.74
+     }
+    }
+   },
+   "mean_coverage": {
+    "levels": {
+     "68": 0.6169,
+     "90": 0.7659
+    },
+    "yoy": {
+     "68": 0.6184,
+     "90": 0.7706
+    }
+   },
+   "relative_rmse_vs_random_walk": {
+    "h1": {
+     "world_gdp": 0.9633214221131465,
+     "world_cpi": 0.6248874285565127,
+     "oil_price": 1.007875238484235,
+     "bank_rate": 0.8666467796800104,
+     "eri": 1.0359437287606004,
+     "cpisa": 0.617992763410755,
+     "cpi_energy": 0.9700073257399029,
+     "uk_gdp": 0.9871191895610553
+    },
+    "h2": {
+     "world_gdp": 0.9243963218212137,
+     "world_cpi": 0.6394129594076557,
+     "oil_price": 1.0226784696861206,
+     "bank_rate": 0.9351311719963181,
+     "eri": 1.1038400822484162,
+     "cpisa": 0.6021058296008982,
+     "cpi_energy": 0.974258533726308,
+     "uk_gdp": 0.9829146295445056
+    },
+    "h3": {
+     "world_gdp": 0.859012016081084,
+     "world_cpi": 0.6552989311980549,
+     "oil_price": 1.0336910751920865,
+     "bank_rate": 0.9673093814743966,
+     "eri": 1.1603292018899352,
+     "cpisa": 0.6291911320119907,
+     "cpi_energy": 1.0078766139652215,
+     "uk_gdp": 0.9608455598315868
+    },
+    "h4": {
+     "world_gdp": 0.803757774944706,
+     "world_cpi": 0.6653390871849182,
+     "oil_price": 1.0341179571169945,
+     "bank_rate": 0.9897029971075666,
+     "eri": 1.2168231518689916,
+     "cpisa": 0.6448720835044037,
+     "cpi_energy": 1.0343295845064058,
+     "uk_gdp": 0.9499542549776806
+    },
+    "h5": {
+     "world_gdp": 0.750947403927023,
+     "world_cpi": 0.6673318328777736,
+     "oil_price": 1.0377068915549865,
+     "bank_rate": 0.9996567925301711,
+     "eri": 1.2676515736467842,
+     "cpisa": 0.6575370294330549,
+     "cpi_energy": 1.0579096592438633,
+     "uk_gdp": 0.9395202814027053
+    },
+    "h6": {
+     "world_gdp": 0.686769635275133,
+     "world_cpi": 0.6647337860311833,
+     "oil_price": 1.0367403428620345,
+     "bank_rate": 0.9998209781139541,
+     "eri": 1.3191981827256827,
+     "cpisa": 0.6612651802925851,
+     "cpi_energy": 1.0785334145975554,
+     "uk_gdp": 0.9166741816812235
+    },
+    "h7": {
+     "world_gdp": 0.6287589694630751,
+     "world_cpi": 0.6593414382158375,
+     "oil_price": 1.044762570244573,
+     "bank_rate": 0.997413187416984,
+     "eri": 1.3705043969040003,
+     "cpisa": 0.6587496319240357,
+     "cpi_energy": 1.0978103858649537,
+     "uk_gdp": 0.8962019303692628
+    },
+    "h8": {
+     "world_gdp": 0.5866762407306338,
+     "world_cpi": 0.6506443269201823,
+     "oil_price": 1.0636003487681271,
+     "bank_rate": 0.9947751912791165,
+     "eri": 1.4115458225944983,
+     "cpisa": 0.6534223824736513,
+     "cpi_energy": 1.119938917830447,
+     "uk_gdp": 0.8816615966483773
+    }
+   },
+   "point_rmse": {
+    "h1": {
+     "world_gdp": 1.936622179276646,
+     "world_cpi": 0.4830676600151353,
+     "oil_price": 13.75395304829211,
+     "bank_rate": 0.26240619970871304,
+     "eri": 2.401506217574721,
+     "cpisa": 0.6304334686972016,
+     "cpi_energy": 5.0884804234257,
+     "uk_gdp": 3.9786871331174267
+    },
+    "h2": {
+     "world_gdp": 2.3610882657445234,
+     "world_cpi": 0.9544692693909821,
+     "oil_price": 21.379443542293902,
+     "bank_rate": 0.5426432499369738,
+     "eri": 4.04894131957578,
+     "cpisa": 1.1703916271290524,
+     "cpi_energy": 7.895485926817949,
+     "uk_gdp": 4.68163714472066
+    },
+    "h3": {
+     "world_gdp": 2.574782696879602,
+     "world_cpi": 1.438412195285936,
+     "oil_price": 27.92159598453361,
+     "bank_rate": 0.8143822887187738,
+     "eri": 5.434139227326311,
+     "cpisa": 1.8111898735126528,
+     "cpi_energy": 11.307201945135056,
+     "uk_gdp": 4.937858799789503
+    },
+    "h4": {
+     "world_gdp": 2.7890211580609203,
+     "world_cpi": 1.9111364716075192,
+     "oil_price": 32.8366774838439,
+     "bank_rate": 1.0750811165802447,
+     "eri": 6.705064995125989,
+     "cpisa": 2.435891877402002,
+     "cpi_energy": 14.21362996387658,
+     "uk_gdp": 5.6485626111984555
+    },
+    "h5": {
+     "world_gdp": 2.936657328210608,
+     "world_cpi": 2.3572608906933166,
+     "oil_price": 37.05026661653528,
+     "bank_rate": 1.3055922341667892,
+     "eri": 7.8091008602341665,
+     "cpisa": 3.0601348685061254,
+     "cpi_energy": 16.931161434465597,
+     "uk_gdp": 5.9541020844282375
+    },
+    "h6": {
+     "world_gdp": 2.955468980083162,
+     "world_cpi": 2.7782330360901,
+     "oil_price": 40.88690581324739,
+     "bank_rate": 1.4998454045745298,
+     "eri": 8.760789690221394,
+     "cpisa": 3.6326755166028892,
+     "cpi_energy": 19.28758035454248,
+     "uk_gdp": 6.050610324934665
+    },
+    "h7": {
+     "world_gdp": 2.9466182285159253,
+     "world_cpi": 3.1706150269207645,
+     "oil_price": 44.50168377061076,
+     "bank_rate": 1.6673664563620556,
+     "eri": 9.536523743667662,
+     "cpisa": 4.149117114522637,
+     "cpi_energy": 21.11710046613374,
+     "uk_gdp": 6.123215391340753
+    },
+    "h8": {
+     "world_gdp": 2.989580868871133,
+     "world_cpi": 3.536961607715833,
+     "oil_price": 47.52691030111022,
+     "bank_rate": 1.8066156586127606,
+     "eri": 10.212319720778936,
+     "cpisa": 4.626633046087577,
+     "cpi_energy": 22.812455266802495,
+     "uk_gdp": 6.202844613942735
+    }
+   },
+   "width90_ratio_to_base": {
+    "world_gdp": 1.0,
+    "world_cpi": 1.0,
+    "oil_price": 1.0,
+    "bank_rate": 1.0,
+    "eri": 1.0,
+    "cpisa": 1.0,
+    "cpi_energy": 1.0,
+    "uk_gdp": 1.0
+   },
+   "crps_ratio_to_base": {
+    "world_gdp": 1.0,
+    "world_cpi": 1.0,
+    "oil_price": 1.0,
+    "bank_rate": 1.0,
+    "eri": 1.0,
+    "cpisa": 1.0,
+    "cpi_energy": 1.0,
+    "uk_gdp": 1.0
+   },
+   "point_rmse_ratio_to_base": {
+    "h1": {
+     "world_gdp": 1.0,
+     "world_cpi": 1.0,
+     "oil_price": 1.0,
+     "bank_rate": 1.0,
+     "eri": 1.0,
+     "cpisa": 1.0,
+     "cpi_energy": 1.0,
+     "uk_gdp": 1.0
+    },
+    "h2": {
+     "world_gdp": 1.0,
+     "world_cpi": 1.0,
+     "oil_price": 1.0,
+     "bank_rate": 1.0,
+     "eri": 1.0,
+     "cpisa": 1.0,
+     "cpi_energy": 1.0,
+     "uk_gdp": 1.0
+    },
+    "h3": {
+     "world_gdp": 1.0,
+     "world_cpi": 1.0,
+     "oil_price": 1.0,
+     "bank_rate": 1.0,
+     "eri": 1.0,
+     "cpisa": 1.0,
+     "cpi_energy": 1.0,
+     "uk_gdp": 1.0
+    },
+    "h4": {
+     "world_gdp": 1.0,
+     "world_cpi": 1.0,
+     "oil_price": 1.0,
+     "bank_rate": 1.0,
+     "eri": 1.0,
+     "cpisa": 1.0,
+     "cpi_energy": 1.0,
+     "uk_gdp": 1.0
+    },
+    "h5": {
+     "world_gdp": 1.0,
+     "world_cpi": 1.0,
+     "oil_price": 1.0,
+     "bank_rate": 1.0,
+     "eri": 1.0,
+     "cpisa": 1.0,
+     "cpi_energy": 1.0,
+     "uk_gdp": 1.0
+    },
+    "h6": {
+     "world_gdp": 1.0,
+     "world_cpi": 1.0,
+     "oil_price": 1.0,
+     "bank_rate": 1.0,
+     "eri": 1.0,
+     "cpisa": 1.0,
+     "cpi_energy": 1.0,
+     "uk_gdp": 1.0
+    },
+    "h7": {
+     "world_gdp": 1.0,
+     "world_cpi": 1.0,
+     "oil_price": 1.0,
+     "bank_rate": 1.0,
+     "eri": 1.0,
+     "cpisa": 1.0,
+     "cpi_energy": 1.0,
+     "uk_gdp": 1.0
+    },
+    "h8": {
+     "world_gdp": 1.0,
+     "world_cpi": 1.0,
+     "oil_price": 1.0,
+     "bank_rate": 1.0,
+     "eri": 1.0,
+     "cpisa": 1.0,
+     "cpi_energy": 1.0,
+     "uk_gdp": 1.0
+    }
+   }
+  },
+  "0.5": {
+   "lam": 0.5,
+   "coverage": {
+    "68": {
+     "h1": {
+      "world_gdp": 0.78,
+      "world_cpi": 0.58,
+      "oil_price": 0.66,
+      "bank_rate": 0.82,
+      "eri": 0.76,
+      "cpisa": 0.62,
+      "cpi_energy": 0.46,
+      "uk_gdp": 0.66
+     },
+     "h2": {
+      "world_gdp": 0.78,
+      "world_cpi": 0.56,
+      "oil_price": 0.7,
+      "bank_rate": 0.74,
+      "eri": 0.74,
+      "cpisa": 0.58,
+      "cpi_energy": 0.44,
+      "uk_gdp": 0.66
+     },
+     "h3": {
+      "world_gdp": 0.8,
+      "world_cpi": 0.58,
+      "oil_price": 0.62,
+      "bank_rate": 0.76,
+      "eri": 0.72,
+      "cpisa": 0.52,
+      "cpi_energy": 0.38,
+      "uk_gdp": 0.68
+     },
+     "h4": {
+      "world_gdp": 0.82,
+      "world_cpi": 0.5,
+      "oil_price": 0.58,
+      "bank_rate": 0.8,
+      "eri": 0.68,
+      "cpisa": 0.54,
+      "cpi_energy": 0.42,
+      "uk_gdp": 0.68
+     },
+     "h5": {
+      "world_gdp": 0.74,
+      "world_cpi": 0.48,
+      "oil_price": 0.66,
+      "bank_rate": 0.8,
+      "eri": 0.7,
+      "cpisa": 0.46,
+      "cpi_energy": 0.38,
+      "uk_gdp": 0.68
+     },
+     "h6": {
+      "world_gdp": 0.74,
+      "world_cpi": 0.54,
+      "oil_price": 0.64,
+      "bank_rate": 0.8,
+      "eri": 0.68,
+      "cpisa": 0.48,
+      "cpi_energy": 0.4,
+      "uk_gdp": 0.68
+     },
+     "h7": {
+      "world_gdp": 0.76,
+      "world_cpi": 0.52,
+      "oil_price": 0.62,
+      "bank_rate": 0.78,
+      "eri": 0.68,
+      "cpisa": 0.44,
+      "cpi_energy": 0.38,
+      "uk_gdp": 0.66
+     },
+     "h8": {
+      "world_gdp": 0.78,
+      "world_cpi": 0.5,
+      "oil_price": 0.6,
+      "bank_rate": 0.78,
+      "eri": 0.64,
+      "cpisa": 0.46,
+      "cpi_energy": 0.4,
+      "uk_gdp": 0.62
+     }
+    },
+    "90": {
+     "h1": {
+      "world_gdp": 0.92,
+      "world_cpi": 0.84,
+      "oil_price": 0.88,
+      "bank_rate": 0.92,
+      "eri": 0.92,
+      "cpisa": 0.8,
+      "cpi_energy": 0.72,
+      "uk_gdp": 0.88
+     },
+     "h2": {
+      "world_gdp": 0.9,
+      "world_cpi": 0.76,
+      "oil_price": 0.9,
+      "bank_rate": 0.9,
+      "eri": 0.86,
+      "cpisa": 0.8,
+      "cpi_energy": 0.66,
+      "uk_gdp": 0.82
+     },
+     "h3": {
+      "world_gdp": 0.88,
+      "world_cpi": 0.76,
+      "oil_price": 0.86,
+      "bank_rate": 0.88,
+      "eri": 0.86,
+      "cpisa": 0.72,
+      "cpi_energy": 0.66,
+      "uk_gdp": 0.82
+     },
+     "h4": {
+      "world_gdp": 0.86,
+      "world_cpi": 0.7,
+      "oil_price": 0.82,
+      "bank_rate": 0.9,
+      "eri": 0.84,
+      "cpisa": 0.68,
+      "cpi_energy": 0.58,
+      "uk_gdp": 0.8
+     },
+     "h5": {
+      "world_gdp": 0.84,
+      "world_cpi": 0.68,
+      "oil_price": 0.8,
+      "bank_rate": 0.9,
+      "eri": 0.82,
+      "cpisa": 0.68,
+      "cpi_energy": 0.58,
+      "uk_gdp": 0.8
+     },
+     "h6": {
+      "world_gdp": 0.86,
+      "world_cpi": 0.68,
+      "oil_price": 0.8,
+      "bank_rate": 0.88,
+      "eri": 0.84,
+      "cpisa": 0.62,
+      "cpi_energy": 0.52,
+      "uk_gdp": 0.78
+     },
+     "h7": {
+      "world_gdp": 0.84,
+      "world_cpi": 0.64,
+      "oil_price": 0.82,
+      "bank_rate": 0.88,
+      "eri": 0.84,
+      "cpisa": 0.64,
+      "cpi_energy": 0.56,
+      "uk_gdp": 0.74
+     },
+     "h8": {
+      "world_gdp": 0.86,
+      "world_cpi": 0.62,
+      "oil_price": 0.8,
+      "bank_rate": 0.86,
+      "eri": 0.82,
+      "cpisa": 0.64,
+      "cpi_energy": 0.54,
+      "uk_gdp": 0.74
+     }
+    }
+   },
+   "coverage_yoy": {
+    "68": {
+     "h1": {
+      "world_gdp": 0.78,
+      "world_cpi": 0.58,
+      "oil_price": 0.66,
+      "bank_rate": 0.82,
+      "eri": 0.76,
+      "cpisa": 0.62,
+      "cpi_energy": 0.46,
+      "uk_gdp": 0.66
+     },
+     "h2": {
+      "world_gdp": 0.78,
+      "world_cpi": 0.56,
+      "oil_price": 0.7,
+      "bank_rate": 0.74,
+      "eri": 0.74,
+      "cpisa": 0.58,
+      "cpi_energy": 0.44,
+      "uk_gdp": 0.66
+     },
+     "h3": {
+      "world_gdp": 0.8,
+      "world_cpi": 0.58,
+      "oil_price": 0.62,
+      "bank_rate": 0.76,
+      "eri": 0.72,
+      "cpisa": 0.52,
+      "cpi_energy": 0.38,
+      "uk_gdp": 0.68
+     },
+     "h4": {
+      "world_gdp": 0.82,
+      "world_cpi": 0.5,
+      "oil_price": 0.58,
+      "bank_rate": 0.8,
+      "eri": 0.68,
+      "cpisa": 0.54,
+      "cpi_energy": 0.42,
+      "uk_gdp": 0.68
+     },
+     "h5": {
+      "world_gdp": 0.8,
+      "world_cpi": 0.5,
+      "oil_price": 0.62,
+      "bank_rate": 0.82,
+      "eri": 0.74,
+      "cpisa": 0.48,
+      "cpi_energy": 0.38,
+      "uk_gdp": 0.7
+     },
+     "h6": {
+      "world_gdp": 0.84,
+      "world_cpi": 0.48,
+      "oil_price": 0.62,
+      "bank_rate": 0.84,
+      "eri": 0.68,
+      "cpisa": 0.44,
+      "cpi_energy": 0.38,
+      "uk_gdp": 0.7
+     },
+     "h7": {
+      "world_gdp": 0.84,
+      "world_cpi": 0.52,
+      "oil_price": 0.6,
+      "bank_rate": 0.84,
+      "eri": 0.58,
+      "cpisa": 0.46,
+      "cpi_energy": 0.4,
+      "uk_gdp": 0.62
+     },
+     "h8": {
+      "world_gdp": 0.82,
+      "world_cpi": 0.52,
+      "oil_price": 0.56,
+      "bank_rate": 0.84,
+      "eri": 0.64,
+      "cpisa": 0.46,
+      "cpi_energy": 0.44,
+      "uk_gdp": 0.68
+     }
+    },
+    "90": {
+     "h1": {
+      "world_gdp": 0.92,
+      "world_cpi": 0.84,
+      "oil_price": 0.88,
+      "bank_rate": 0.92,
+      "eri": 0.92,
+      "cpisa": 0.8,
+      "cpi_energy": 0.72,
+      "uk_gdp": 0.88
+     },
+     "h2": {
+      "world_gdp": 0.9,
+      "world_cpi": 0.76,
+      "oil_price": 0.9,
+      "bank_rate": 0.9,
+      "eri": 0.86,
+      "cpisa": 0.8,
+      "cpi_energy": 0.66,
+      "uk_gdp": 0.82
+     },
+     "h3": {
+      "world_gdp": 0.88,
+      "world_cpi": 0.76,
+      "oil_price": 0.86,
+      "bank_rate": 0.88,
+      "eri": 0.86,
+      "cpisa": 0.72,
+      "cpi_energy": 0.66,
+      "uk_gdp": 0.82
+     },
+     "h4": {
+      "world_gdp": 0.86,
+      "world_cpi": 0.7,
+      "oil_price": 0.82,
+      "bank_rate": 0.9,
+      "eri": 0.84,
+      "cpisa": 0.68,
+      "cpi_energy": 0.58,
+      "uk_gdp": 0.8
+     },
+     "h5": {
+      "world_gdp": 0.84,
+      "world_cpi": 0.64,
+      "oil_price": 0.82,
+      "bank_rate": 0.9,
+      "eri": 0.86,
+      "cpisa": 0.62,
+      "cpi_energy": 0.62,
+      "uk_gdp": 0.78
+     },
+     "h6": {
+      "world_gdp": 0.84,
+      "world_cpi": 0.68,
+      "oil_price": 0.78,
+      "bank_rate": 0.88,
+      "eri": 0.88,
+      "cpisa": 0.66,
+      "cpi_energy": 0.58,
+      "uk_gdp": 0.82
+     },
+     "h7": {
+      "world_gdp": 0.86,
+      "world_cpi": 0.66,
+      "oil_price": 0.78,
+      "bank_rate": 0.88,
+      "eri": 0.92,
+      "cpisa": 0.64,
+      "cpi_energy": 0.58,
+      "uk_gdp": 0.82
+     },
+     "h8": {
+      "world_gdp": 0.86,
+      "world_cpi": 0.64,
+      "oil_price": 0.78,
+      "bank_rate": 0.88,
+      "eri": 0.92,
+      "cpisa": 0.62,
+      "cpi_energy": 0.54,
+      "uk_gdp": 0.82
+     }
+    }
+   },
+   "mean_coverage": {
+    "levels": {
+     "68": 0.6266,
+     "90": 0.7816
+    },
+    "yoy": {
+     "68": 0.6322,
+     "90": 0.7891
+    }
+   },
+   "relative_rmse_vs_random_walk": {
+    "h1": {
+     "world_gdp": 1.0029600698359051,
+     "world_cpi": 0.5721954155387384,
+     "oil_price": 1.047649637136554,
+     "bank_rate": 1.0339674396865037,
+     "eri": 1.0777598582281815,
+     "cpisa": 0.5487777484757006,
+     "cpi_energy": 0.9625912406629571,
+     "uk_gdp": 0.9987057040581698
+    },
+    "h2": {
+     "world_gdp": 0.9906226202153298,
+     "world_cpi": 0.5914075848367837,
+     "oil_price": 1.067408502381553,
+     "bank_rate": 1.1310272064255815,
+     "eri": 1.1593774114463429,
+     "cpisa": 0.5206238009760955,
+     "cpi_energy": 0.9633231423956147,
+     "uk_gdp": 1.0094343168557847
+    },
+    "h3": {
+     "world_gdp": 0.9198845329872667,
+     "world_cpi": 0.6238876979317526,
+     "oil_price": 1.086347839059599,
+     "bank_rate": 1.1455643466001633,
+     "eri": 1.2254337051419386,
+     "cpisa": 0.5670807845049612,
+     "cpi_energy": 1.0141448037181262,
+     "uk_gdp": 0.9765742442756936
+    },
+    "h4": {
+     "world_gdp": 0.8595079881784153,
+     "world_cpi": 0.6447343528932783,
+     "oil_price": 1.0776609626788198,
+     "bank_rate": 1.1449227743344985,
+     "eri": 1.2882353429975588,
+     "cpisa": 0.5978728117564626,
+     "cpi_energy": 1.0558682936394406,
+     "uk_gdp": 0.9666483098299572
+    },
+    "h5": {
+     "world_gdp": 0.8049600559083427,
+     "world_cpi": 0.6526418817269432,
+     "oil_price": 1.071931741745931,
+     "bank_rate": 1.1305819041479614,
+     "eri": 1.3352856126288795,
+     "cpisa": 0.6248606140231269,
+     "cpi_energy": 1.0851072518026392,
+     "uk_gdp": 0.9626508755263747
+    },
+    "h6": {
+     "world_gdp": 0.7259938179922398,
+     "world_cpi": 0.6542828274349594,
+     "oil_price": 1.0580157936946994,
+     "bank_rate": 1.0993930101417975,
+     "eri": 1.3829792215715002,
+     "cpisa": 0.6389757548078336,
+     "cpi_energy": 1.108799871299414,
+     "uk_gdp": 0.9307794174697281
+    },
+    "h7": {
+     "world_gdp": 0.6580931937693415,
+     "world_cpi": 0.6530071245434826,
+     "oil_price": 1.052681698769613,
+     "bank_rate": 1.0715159356060242,
+     "eri": 1.4319977047706705,
+     "cpisa": 0.6424921978179201,
+     "cpi_energy": 1.1279849051743365,
+     "uk_gdp": 0.9058227455874179
+    },
+    "h8": {
+     "world_gdp": 0.6108925662188884,
+     "world_cpi": 0.6477650757090841,
+     "oil_price": 1.0600631251364987,
+     "bank_rate": 1.0491066309146826,
+     "eri": 1.4605641651001993,
+     "cpisa": 0.6414395397968705,
+     "cpi_energy": 1.157862177852946,
+     "uk_gdp": 0.8904696224307354
+    }
+   },
+   "point_rmse": {
+    "h1": {
+     "world_gdp": 2.0163101033425677,
+     "world_cpi": 0.4423342314537999,
+     "oil_price": 14.296733732547015,
+     "bank_rate": 0.31306810667531926,
+     "eri": 2.4984436207592062,
+     "cpisa": 0.5598250982842422,
+     "cpi_energy": 5.049577002048224,
+     "uk_gdp": 4.025387791593985
+    },
+    "h2": {
+     "world_gdp": 2.5302431318240157,
+     "world_cpi": 0.8828103295472425,
+     "oil_price": 22.314540189972874,
+     "bank_rate": 0.6563189180740203,
+     "eri": 4.252655055455287,
+     "cpisa": 1.0120043812736659,
+     "cpi_energy": 7.806864451750643,
+     "uk_gdp": 4.807950813732175
+    },
+    "h3": {
+     "world_gdp": 2.7572405674465204,
+     "world_cpi": 1.369463050326069,
+     "oil_price": 29.343936683652505,
+     "bank_rate": 0.9644559768839179,
+     "eri": 5.739041434752496,
+     "cpisa": 1.6323989994496984,
+     "cpi_energy": 11.377523734910174,
+     "uk_gdp": 5.018689711788574
+    },
+    "h4": {
+     "world_gdp": 2.982473127201648,
+     "world_cpi": 1.8519509225378754,
+     "oil_price": 34.21931243420974,
+     "bank_rate": 1.2436911459568962,
+     "eri": 7.0985678490336825,
+     "cpisa": 2.2583603215739423,
+     "cpi_energy": 14.509612256273853,
+     "uk_gdp": 5.747827826943062
+    },
+    "h5": {
+     "world_gdp": 3.147879378420194,
+     "world_cpi": 2.305370593201109,
+     "oil_price": 38.2722300002277,
+     "bank_rate": 1.4765857293972515,
+     "eri": 8.225746130098642,
+     "cpisa": 2.9080609415670913,
+     "cpi_energy": 17.366441352951817,
+     "uk_gdp": 6.100689573183866
+    },
+    "h6": {
+     "world_gdp": 3.124267729088833,
+     "world_cpi": 2.734553597732987,
+     "oil_price": 41.72596581541546,
+     "bank_rate": 1.6492147996264583,
+     "eri": 9.1843593061206,
+     "cpisa": 3.510228043711946,
+     "cpi_energy": 19.828840094651884,
+     "uk_gdp": 6.143713509253696
+    },
+    "h7": {
+     "world_gdp": 3.084090239665177,
+     "world_cpi": 3.1401548298957698,
+     "oil_price": 44.83899921758131,
+     "bank_rate": 1.7912433392962241,
+     "eri": 9.964419044019802,
+     "cpisa": 4.046720096264133,
+     "cpi_energy": 21.69752707165495,
+     "uk_gdp": 6.188948706372534
+    },
+    "h8": {
+     "world_gdp": 3.112982258543708,
+     "world_cpi": 3.521309736837579,
+     "oil_price": 47.368849700199284,
+     "bank_rate": 1.905287228291107,
+     "eri": 10.566959986676045,
+     "cpisa": 4.5417871372214265,
+     "cpi_energy": 23.58492835355842,
+     "uk_gdp": 6.264812624675267
+    }
+   },
+   "width90_ratio_to_base": {
+    "world_gdp": 1.0918,
+    "world_cpi": 1.0794,
+    "oil_price": 1.0588,
+    "bank_rate": 1.0641,
+    "eri": 1.107,
+    "cpisa": 1.1042,
+    "cpi_energy": 1.0636,
+    "uk_gdp": 1.1168
+   },
+   "crps_ratio_to_base": {
+    "world_gdp": 1.042,
+    "world_cpi": 0.9828,
+    "oil_price": 1.0219,
+    "bank_rate": 1.1355,
+    "eri": 1.0459,
+    "cpisa": 0.9264,
+    "cpi_energy": 1.0061,
+    "uk_gdp": 0.9931
+   },
+   "point_rmse_ratio_to_base": {
+    "h1": {
+     "world_gdp": 1.0411,
+     "world_cpi": 0.9157,
+     "oil_price": 1.0395,
+     "bank_rate": 1.1931,
+     "eri": 1.0404,
+     "cpisa": 0.888,
+     "cpi_energy": 0.9924,
+     "uk_gdp": 1.0117
+    },
+    "h2": {
+     "world_gdp": 1.0716,
+     "world_cpi": 0.9249,
+     "oil_price": 1.0437,
+     "bank_rate": 1.2095,
+     "eri": 1.0503,
+     "cpisa": 0.8647,
+     "cpi_energy": 0.9888,
+     "uk_gdp": 1.027
+    },
+    "h3": {
+     "world_gdp": 1.0709,
+     "world_cpi": 0.9521,
+     "oil_price": 1.0509,
+     "bank_rate": 1.1843,
+     "eri": 1.0561,
+     "cpisa": 0.9013,
+     "cpi_energy": 1.0062,
+     "uk_gdp": 1.0164
+    },
+    "h4": {
+     "world_gdp": 1.0694,
+     "world_cpi": 0.969,
+     "oil_price": 1.0421,
+     "bank_rate": 1.1568,
+     "eri": 1.0587,
+     "cpisa": 0.9271,
+     "cpi_energy": 1.0208,
+     "uk_gdp": 1.0176
+    },
+    "h5": {
+     "world_gdp": 1.0719,
+     "world_cpi": 0.978,
+     "oil_price": 1.033,
+     "bank_rate": 1.131,
+     "eri": 1.0534,
+     "cpisa": 0.9503,
+     "cpi_energy": 1.0257,
+     "uk_gdp": 1.0246
+    },
+    "h6": {
+     "world_gdp": 1.0571,
+     "world_cpi": 0.9843,
+     "oil_price": 1.0205,
+     "bank_rate": 1.0996,
+     "eri": 1.0483,
+     "cpisa": 0.9663,
+     "cpi_energy": 1.0281,
+     "uk_gdp": 1.0154
+    },
+    "h7": {
+     "world_gdp": 1.0467,
+     "world_cpi": 0.9904,
+     "oil_price": 1.0076,
+     "bank_rate": 1.0743,
+     "eri": 1.0449,
+     "cpisa": 0.9753,
+     "cpi_energy": 1.0275,
+     "uk_gdp": 1.0107
+    },
+    "h8": {
+     "world_gdp": 1.0413,
+     "world_cpi": 0.9956,
+     "oil_price": 0.9967,
+     "bank_rate": 1.0546,
+     "eri": 1.0347,
+     "cpisa": 0.9817,
+     "cpi_energy": 1.0339,
+     "uk_gdp": 1.01
+    }
+   }
+  },
+  "1.04": {
+   "lam": 1.04,
+   "coverage": {
+    "68": {
+     "h1": {
+      "world_gdp": 0.74,
+      "world_cpi": 0.6,
+      "oil_price": 0.68,
+      "bank_rate": 0.76,
+      "eri": 0.7,
+      "cpisa": 0.6,
+      "cpi_energy": 0.52,
+      "uk_gdp": 0.6
+     },
+     "h2": {
+      "world_gdp": 0.66,
+      "world_cpi": 0.56,
+      "oil_price": 0.68,
+      "bank_rate": 0.7,
+      "eri": 0.68,
+      "cpisa": 0.6,
+      "cpi_energy": 0.42,
+      "uk_gdp": 0.62
+     },
+     "h3": {
+      "world_gdp": 0.62,
+      "world_cpi": 0.54,
+      "oil_price": 0.62,
+      "bank_rate": 0.72,
+      "eri": 0.7,
+      "cpisa": 0.54,
+      "cpi_energy": 0.4,
+      "uk_gdp": 0.68
+     },
+     "h4": {
+      "world_gdp": 0.68,
+      "world_cpi": 0.46,
+      "oil_price": 0.6,
+      "bank_rate": 0.72,
+      "eri": 0.68,
+      "cpisa": 0.56,
+      "cpi_energy": 0.44,
+      "uk_gdp": 0.66
+     },
+     "h5": {
+      "world_gdp": 0.68,
+      "world_cpi": 0.46,
+      "oil_price": 0.66,
+      "bank_rate": 0.76,
+      "eri": 0.68,
+      "cpisa": 0.48,
+      "cpi_energy": 0.4,
+      "uk_gdp": 0.68
+     },
+     "h6": {
+      "world_gdp": 0.68,
+      "world_cpi": 0.48,
+      "oil_price": 0.66,
+      "bank_rate": 0.74,
+      "eri": 0.66,
+      "cpisa": 0.48,
+      "cpi_energy": 0.38,
+      "uk_gdp": 0.66
+     },
+     "h7": {
+      "world_gdp": 0.72,
+      "world_cpi": 0.5,
+      "oil_price": 0.7,
+      "bank_rate": 0.8,
+      "eri": 0.66,
+      "cpisa": 0.44,
+      "cpi_energy": 0.38,
+      "uk_gdp": 0.64
+     },
+     "h8": {
+      "world_gdp": 0.74,
+      "world_cpi": 0.52,
+      "oil_price": 0.72,
+      "bank_rate": 0.82,
+      "eri": 0.64,
+      "cpisa": 0.44,
+      "cpi_energy": 0.4,
+      "uk_gdp": 0.62
+     }
+    },
+    "90": {
+     "h1": {
+      "world_gdp": 0.86,
+      "world_cpi": 0.82,
+      "oil_price": 0.88,
+      "bank_rate": 0.94,
+      "eri": 0.9,
+      "cpisa": 0.78,
+      "cpi_energy": 0.78,
+      "uk_gdp": 0.82
+     },
+     "h2": {
+      "world_gdp": 0.86,
+      "world_cpi": 0.74,
+      "oil_price": 0.88,
+      "bank_rate": 0.9,
+      "eri": 0.82,
+      "cpisa": 0.8,
+      "cpi_energy": 0.7,
+      "uk_gdp": 0.84
+     },
+     "h3": {
+      "world_gdp": 0.86,
+      "world_cpi": 0.74,
+      "oil_price": 0.84,
+      "bank_rate": 0.86,
+      "eri": 0.86,
+      "cpisa": 0.78,
+      "cpi_energy": 0.68,
+      "uk_gdp": 0.86
+     },
+     "h4": {
+      "world_gdp": 0.86,
+      "world_cpi": 0.7,
+      "oil_price": 0.84,
+      "bank_rate": 0.88,
+      "eri": 0.86,
+      "cpisa": 0.68,
+      "cpi_energy": 0.58,
+      "uk_gdp": 0.84
+     },
+     "h5": {
+      "world_gdp": 0.84,
+      "world_cpi": 0.68,
+      "oil_price": 0.82,
+      "bank_rate": 0.86,
+      "eri": 0.86,
+      "cpisa": 0.68,
+      "cpi_energy": 0.58,
+      "uk_gdp": 0.82
+     },
+     "h6": {
+      "world_gdp": 0.86,
+      "world_cpi": 0.64,
+      "oil_price": 0.82,
+      "bank_rate": 0.88,
+      "eri": 0.84,
+      "cpisa": 0.68,
+      "cpi_energy": 0.54,
+      "uk_gdp": 0.82
+     },
+     "h7": {
+      "world_gdp": 0.88,
+      "world_cpi": 0.62,
+      "oil_price": 0.84,
+      "bank_rate": 0.86,
+      "eri": 0.88,
+      "cpisa": 0.66,
+      "cpi_energy": 0.56,
+      "uk_gdp": 0.8
+     },
+     "h8": {
+      "world_gdp": 0.88,
+      "world_cpi": 0.62,
+      "oil_price": 0.84,
+      "bank_rate": 0.84,
+      "eri": 0.84,
+      "cpisa": 0.64,
+      "cpi_energy": 0.5,
+      "uk_gdp": 0.84
+     }
+    }
+   },
+   "coverage_yoy": {
+    "68": {
+     "h1": {
+      "world_gdp": 0.74,
+      "world_cpi": 0.6,
+      "oil_price": 0.68,
+      "bank_rate": 0.76,
+      "eri": 0.7,
+      "cpisa": 0.6,
+      "cpi_energy": 0.52,
+      "uk_gdp": 0.6
+     },
+     "h2": {
+      "world_gdp": 0.66,
+      "world_cpi": 0.56,
+      "oil_price": 0.68,
+      "bank_rate": 0.7,
+      "eri": 0.68,
+      "cpisa": 0.6,
+      "cpi_energy": 0.42,
+      "uk_gdp": 0.62
+     },
+     "h3": {
+      "world_gdp": 0.62,
+      "world_cpi": 0.54,
+      "oil_price": 0.62,
+      "bank_rate": 0.72,
+      "eri": 0.7,
+      "cpisa": 0.54,
+      "cpi_energy": 0.4,
+      "uk_gdp": 0.68
+     },
+     "h4": {
+      "world_gdp": 0.68,
+      "world_cpi": 0.46,
+      "oil_price": 0.6,
+      "bank_rate": 0.72,
+      "eri": 0.68,
+      "cpisa": 0.56,
+      "cpi_energy": 0.44,
+      "uk_gdp": 0.66
+     },
+     "h5": {
+      "world_gdp": 0.72,
+      "world_cpi": 0.48,
+      "oil_price": 0.64,
+      "bank_rate": 0.78,
+      "eri": 0.74,
+      "cpisa": 0.48,
+      "cpi_energy": 0.4,
+      "uk_gdp": 0.68
+     },
+     "h6": {
+      "world_gdp": 0.78,
+      "world_cpi": 0.5,
+      "oil_price": 0.62,
+      "bank_rate": 0.84,
+      "eri": 0.72,
+      "cpisa": 0.44,
+      "cpi_energy": 0.38,
+      "uk_gdp": 0.74
+     },
+     "h7": {
+      "world_gdp": 0.82,
+      "world_cpi": 0.52,
+      "oil_price": 0.68,
+      "bank_rate": 0.84,
+      "eri": 0.64,
+      "cpisa": 0.46,
+      "cpi_energy": 0.42,
+      "uk_gdp": 0.72
+     },
+     "h8": {
+      "world_gdp": 0.82,
+      "world_cpi": 0.54,
+      "oil_price": 0.66,
+      "bank_rate": 0.84,
+      "eri": 0.68,
+      "cpisa": 0.48,
+      "cpi_energy": 0.44,
+      "uk_gdp": 0.7
+     }
+    },
+    "90": {
+     "h1": {
+      "world_gdp": 0.86,
+      "world_cpi": 0.82,
+      "oil_price": 0.88,
+      "bank_rate": 0.94,
+      "eri": 0.9,
+      "cpisa": 0.78,
+      "cpi_energy": 0.78,
+      "uk_gdp": 0.82
+     },
+     "h2": {
+      "world_gdp": 0.86,
+      "world_cpi": 0.74,
+      "oil_price": 0.88,
+      "bank_rate": 0.9,
+      "eri": 0.82,
+      "cpisa": 0.8,
+      "cpi_energy": 0.7,
+      "uk_gdp": 0.84
+     },
+     "h3": {
+      "world_gdp": 0.86,
+      "world_cpi": 0.74,
+      "oil_price": 0.84,
+      "bank_rate": 0.86,
+      "eri": 0.86,
+      "cpisa": 0.78,
+      "cpi_energy": 0.68,
+      "uk_gdp": 0.86
+     },
+     "h4": {
+      "world_gdp": 0.86,
+      "world_cpi": 0.7,
+      "oil_price": 0.84,
+      "bank_rate": 0.88,
+      "eri": 0.86,
+      "cpisa": 0.68,
+      "cpi_energy": 0.58,
+      "uk_gdp": 0.84
+     },
+     "h5": {
+      "world_gdp": 0.86,
+      "world_cpi": 0.62,
+      "oil_price": 0.84,
+      "bank_rate": 0.9,
+      "eri": 0.86,
+      "cpisa": 0.64,
+      "cpi_energy": 0.6,
+      "uk_gdp": 0.82
+     },
+     "h6": {
+      "world_gdp": 0.88,
+      "world_cpi": 0.68,
+      "oil_price": 0.84,
+      "bank_rate": 0.88,
+      "eri": 0.92,
+      "cpisa": 0.66,
+      "cpi_energy": 0.58,
+      "uk_gdp": 0.82
+     },
+     "h7": {
+      "world_gdp": 0.86,
+      "world_cpi": 0.66,
+      "oil_price": 0.84,
+      "bank_rate": 0.88,
+      "eri": 0.92,
+      "cpisa": 0.66,
+      "cpi_energy": 0.58,
+      "uk_gdp": 0.82
+     },
+     "h8": {
+      "world_gdp": 0.86,
+      "world_cpi": 0.68,
+      "oil_price": 0.86,
+      "bank_rate": 0.88,
+      "eri": 0.94,
+      "cpisa": 0.64,
+      "cpi_energy": 0.54,
+      "uk_gdp": 0.82
+     }
+    }
+   },
+   "mean_coverage": {
+    "levels": {
+     "68": 0.6097,
+     "90": 0.7869
+    },
+    "yoy": {
+     "68": 0.6241,
+     "90": 0.795
+    }
+   },
+   "relative_rmse_vs_random_walk": {
+    "h1": {
+     "world_gdp": 1.1075094118276472,
+     "world_cpi": 0.6183340023704755,
+     "oil_price": 1.1617563959408863,
+     "bank_rate": 1.3684343003481296,
+     "eri": 1.4124826080427784,
+     "cpisa": 0.5344859869784145,
+     "cpi_energy": 0.9832231964162219,
+     "uk_gdp": 1.045809878034546
+    },
+    "h2": {
+     "world_gdp": 1.1464489978352306,
+     "world_cpi": 0.6163731216937797,
+     "oil_price": 1.1516078093019628,
+     "bank_rate": 1.5637408044888064,
+     "eri": 1.4893067919495873,
+     "cpisa": 0.5031160654596045,
+     "cpi_energy": 0.9901703012977309,
+     "uk_gdp": 1.0832168880003665
+    },
+    "h3": {
+     "world_gdp": 1.0874101413659345,
+     "world_cpi": 0.6433464975497927,
+     "oil_price": 1.150554319842255,
+     "bank_rate": 1.5523642825729267,
+     "eri": 1.5066788812864766,
+     "cpisa": 0.5509253724509644,
+     "cpi_energy": 1.0380085638712389,
+     "uk_gdp": 1.044263607991356
+    },
+    "h4": {
+     "world_gdp": 1.0140832466022145,
+     "world_cpi": 0.6586813931526246,
+     "oil_price": 1.1248939998317196,
+     "bank_rate": 1.4832678973906623,
+     "eri": 1.5065142834747558,
+     "cpisa": 0.5877536757361065,
+     "cpi_energy": 1.0892558853163643,
+     "uk_gdp": 1.0366074914723435
+    },
+    "h5": {
+     "world_gdp": 0.9433924090727512,
+     "world_cpi": 0.6631904216774068,
+     "oil_price": 1.1070895553588287,
+     "bank_rate": 1.402028046727984,
+     "eri": 1.498940104752888,
+     "cpisa": 0.6195131294183298,
+     "cpi_energy": 1.1145204287000938,
+     "uk_gdp": 1.0298475370773574
+    },
+    "h6": {
+     "world_gdp": 0.8468268440994643,
+     "world_cpi": 0.6635949039734438,
+     "oil_price": 1.0782769739580886,
+     "bank_rate": 1.3087364515711248,
+     "eri": 1.5131304374583499,
+     "cpisa": 0.6374134618861022,
+     "cpi_energy": 1.1376995980884583,
+     "uk_gdp": 0.9894275263098354
+    },
+    "h7": {
+     "world_gdp": 0.7591265195926662,
+     "world_cpi": 0.6640691010426292,
+     "oil_price": 1.0576181594889624,
+     "bank_rate": 1.2359117972532379,
+     "eri": 1.5494016276538505,
+     "cpisa": 0.6423945248310142,
+     "cpi_energy": 1.1525145808864539,
+     "uk_gdp": 0.9565807346631945
+    },
+    "h8": {
+     "world_gdp": 0.6945622716707631,
+     "world_cpi": 0.659459040991879,
+     "oil_price": 1.0543884797654866,
+     "bank_rate": 1.1809030865798813,
+     "eri": 1.5533113736764284,
+     "cpisa": 0.6421556811984525,
+     "cpi_energy": 1.188376903419078,
+     "uk_gdp": 0.9347242174861266
+    }
+   },
+   "point_rmse": {
+    "h1": {
+     "world_gdp": 2.226491845264015,
+     "world_cpi": 0.478001550331854,
+     "oil_price": 15.853889760556852,
+     "bank_rate": 0.41433909722481,
+     "eri": 3.2743919107355084,
+     "cpisa": 0.5452456318115279,
+     "cpi_energy": 5.1578084557306925,
+     "uk_gdp": 4.215246091278413
+    },
+    "h2": {
+     "world_gdp": 2.9282540531212358,
+     "world_cpi": 0.9200770714442559,
+     "oil_price": 24.074755528384834,
+     "bank_rate": 0.9074164327079076,
+     "eri": 5.462852730593699,
+     "cpisa": 0.9779723124061825,
+     "cpi_energy": 8.02443643900947,
+     "uk_gdp": 5.159378308369774
+    },
+    "h3": {
+     "world_gdp": 3.259377941153417,
+     "world_cpi": 1.4121760372449423,
+     "oil_price": 31.07825311438003,
+     "bank_rate": 1.3069427440474788,
+     "eri": 7.056189569690415,
+     "cpisa": 1.585894023098465,
+     "cpi_energy": 11.645247334686864,
+     "uk_gdp": 5.366550527562256
+    },
+    "h4": {
+     "world_gdp": 3.518845750516388,
+     "world_cpi": 1.8920127463868128,
+     "oil_price": 35.719118135191984,
+     "bank_rate": 1.6112240863923253,
+     "eri": 8.301351080696271,
+     "cpisa": 2.2201370492865737,
+     "cpi_energy": 14.968420435590568,
+     "uk_gdp": 6.163815034394972
+    },
+    "h5": {
+     "world_gdp": 3.689233383049266,
+     "world_cpi": 2.342631906769674,
+     "oil_price": 39.52750389174092,
+     "bank_rate": 1.8311053789361829,
+     "eri": 9.233905202981928,
+     "cpisa": 2.883174093579156,
+     "cpi_energy": 17.837180269077454,
+     "uk_gdp": 6.52654071288463
+    },
+    "h6": {
+     "world_gdp": 3.644264889834608,
+     "world_cpi": 2.773473115918277,
+     "oil_price": 42.52502507340429,
+     "bank_rate": 1.9632538180894294,
+     "eri": 10.048692993994088,
+     "cpisa": 3.501645551520198,
+     "cpi_energy": 20.345658391724307,
+     "uk_gdp": 6.530826902406125
+    },
+    "h7": {
+     "world_gdp": 3.5575731703545346,
+     "world_cpi": 3.193349224912934,
+     "oil_price": 45.04926786630128,
+     "bank_rate": 2.066062389949809,
+     "eri": 10.781363010565572,
+     "cpisa": 4.046104905542259,
+     "cpi_energy": 22.169371420263786,
+     "uk_gdp": 6.535747892370985
+    },
+    "h8": {
+     "world_gdp": 3.539345784722119,
+     "world_cpi": 3.5848791933530757,
+     "oil_price": 47.115278552116195,
+     "bank_rate": 2.144643358843826,
+     "eri": 11.237971959528107,
+     "cpisa": 4.546857859564434,
+     "cpi_energy": 24.206494227262194,
+     "uk_gdp": 6.576161534081183
+    }
+   },
+   "width90_ratio_to_base": {
+    "world_gdp": 1.1947,
+    "world_cpi": 1.1478,
+    "oil_price": 1.1413,
+    "bank_rate": 1.1357,
+    "eri": 1.2208,
+    "cpisa": 1.1873,
+    "cpi_energy": 1.1043,
+    "uk_gdp": 1.2481
+   },
+   "crps_ratio_to_base": {
+    "world_gdp": 1.1933,
+    "world_cpi": 1.0132,
+    "oil_price": 1.0496,
+    "bank_rate": 1.3719,
+    "eri": 1.1731,
+    "cpisa": 0.9204,
+    "cpi_energy": 1.0231,
+    "uk_gdp": 1.0329
+   },
+   "point_rmse_ratio_to_base": {
+    "h1": {
+     "world_gdp": 1.1497,
+     "world_cpi": 0.9895,
+     "oil_price": 1.1527,
+     "bank_rate": 1.579,
+     "eri": 1.3635,
+     "cpisa": 0.8649,
+     "cpi_energy": 1.0136,
+     "uk_gdp": 1.0595
+    },
+    "h2": {
+     "world_gdp": 1.2402,
+     "world_cpi": 0.964,
+     "oil_price": 1.1261,
+     "bank_rate": 1.6722,
+     "eri": 1.3492,
+     "cpisa": 0.8356,
+     "cpi_energy": 1.0163,
+     "uk_gdp": 1.102
+    },
+    "h3": {
+     "world_gdp": 1.2659,
+     "world_cpi": 0.9818,
+     "oil_price": 1.1131,
+     "bank_rate": 1.6048,
+     "eri": 1.2985,
+     "cpisa": 0.8756,
+     "cpi_energy": 1.0299,
+     "uk_gdp": 1.0868
+    },
+    "h4": {
+     "world_gdp": 1.2617,
+     "world_cpi": 0.99,
+     "oil_price": 1.0878,
+     "bank_rate": 1.4987,
+     "eri": 1.2381,
+     "cpisa": 0.9114,
+     "cpi_energy": 1.0531,
+     "uk_gdp": 1.0912
+    },
+    "h5": {
+     "world_gdp": 1.2563,
+     "world_cpi": 0.9938,
+     "oil_price": 1.0669,
+     "bank_rate": 1.4025,
+     "eri": 1.1825,
+     "cpisa": 0.9422,
+     "cpi_energy": 1.0535,
+     "uk_gdp": 1.0961
+    },
+    "h6": {
+     "world_gdp": 1.2331,
+     "world_cpi": 0.9983,
+     "oil_price": 1.0401,
+     "bank_rate": 1.309,
+     "eri": 1.147,
+     "cpisa": 0.9639,
+     "cpi_energy": 1.0549,
+     "uk_gdp": 1.0794
+    },
+    "h7": {
+     "world_gdp": 1.2073,
+     "world_cpi": 1.0072,
+     "oil_price": 1.0123,
+     "bank_rate": 1.2391,
+     "eri": 1.1305,
+     "cpisa": 0.9752,
+     "cpi_energy": 1.0498,
+     "uk_gdp": 1.0674
+    },
+    "h8": {
+     "world_gdp": 1.1839,
+     "world_cpi": 1.0135,
+     "oil_price": 0.9913,
+     "bank_rate": 1.1871,
+     "eri": 1.1004,
+     "cpisa": 0.9828,
+     "cpi_energy": 1.0611,
+     "uk_gdp": 1.0602
+    }
+   }
+  }
+ }
+}
