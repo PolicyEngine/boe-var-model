@@ -40,7 +40,13 @@ from boe_var import analysis  # noqa: E402
 from boe_var.bvar import BVAR  # noqa: E402
 from boe_var.data import load_data  # noqa: E402
 from boe_var.evaluation import evaluation_code_version  # noqa: E402
-from boe_var.identification import SHOCKS, VARIABLES, ess, identify  # noqa: E402
+from boe_var.identification import (  # noqa: E402
+    SHOCKS,
+    SIGN_RESTRICTIONS,
+    VARIABLES,
+    ess,
+    identify,
+)
 
 PAPER_CSV = os.path.join(ROOT, "data", "external",
                          "brignone_piffer_2025_fig2_fig3_irf_medians.csv")
@@ -58,6 +64,8 @@ IDENTIFIED = ["world_demand", "world_supply", "world_energy",
 # model units -> paper units (Bank Rate: percentage points -> basis points)
 UNIT_SCALE = {v: 1.0 for v in VARIABLES} | {"bank_rate": 100.0}
 REPORT_HORIZONS = (0, 4, 8, 20)
+# The file stores six decimals; two operating systems agreed to 3e-6.
+CHECK_TOL = 1e-4
 LABELS = {
     "world_gdp": "World GDP", "world_cpi": "World CPI", "oil_price": "Oil price",
     "bank_rate": "Bank Rate (bp)", "eri": "Exchange rate", "cpisa": "UK CPI",
@@ -157,7 +165,25 @@ def compare(ours: dict, paper: dict) -> dict:
             })
     n = len(cells) * HORIZONS
     compared = sum(c["sign_compared"] for c in cells)
+    # impact responses the paper restricts in sign: both medians are clear
+    # of zero there, so their ratio is well defined
+    ratios = {}
+    for shock in IDENTIFIED:
+        for i, _ in SIGN_RESTRICTIONS[shock]:
+            var = VARIABLES[i]
+            ratios[f"{shock}:{var}"] = round(
+                ours[shock][var]["median"][0] / paper[shock][var]["median"][0],
+                3)
     return {
+        "impact_ratio_sign_restricted": {
+            "note": "this replication's median impact response divided by "
+                    "the paper's, for the 23 responses Table 2 restricts in "
+                    "sign",
+            "median": round(float(np.median(list(ratios.values()))), 3),
+            "min": min(ratios.values()),
+            "max": max(ratios.values()),
+            "by_response": ratios,
+        },
         "cells": cells,
         "points": n,
         "share_inside_68": round(sum(c["inside_68"] for c in cells) / n, 4),
@@ -219,6 +245,32 @@ def markdown(report: dict) -> str:
         "shares say how far apart the two are relative to that uncertainty.",
         "",
     ]
+    imp = cmp_["impact_ratio_sign_restricted"]
+    big = max(imp["by_response"], key=imp["by_response"].get)
+    rest = sorted(v for k, v in imp["by_response"].items() if k != big)
+    L += [
+        "## Impact responses",
+        "",
+        "For the 23 impact responses that Table 2 restricts in sign, this "
+        "replication's median divided by the paper's has a median of "
+        f"{imp['median']:.2f}. Twenty-two of them lie between {rest[0]:.2f} "
+        f"and {rest[-1]:.2f}; the other is "
+        f"{LABELS[big.split(':')[0]].lower()} → {LABELS[big.split(':')[1]]} "
+        f"at {imp['by_response'][big]:.2f}.",
+        "",
+        "## Panels where the paper's median leaves the 90% set",
+        "",
+        "| Shock | Variable | Quarters inside 68% | Quarters inside 90% | "
+        "Same sign at h = 20 |",
+        "|---|---|---|---|---|",
+    ]
+    for c in sorted(cmp_["cells"], key=lambda c: c["inside_90"]):
+        if c["inside_90"] < HORIZONS:
+            same = (c["paper"]["h20"] > 0) == (c["ours"]["h20"] > 0)
+            L.append(f"| {LABELS[c['shock']]} | {LABELS[c['variable']]} | "
+                     f"{c['inside_68']} | {c['inside_90']} | "
+                     f"{'yes' if same else 'no'} |")
+    L.append("")
     by = {(c["shock"], c["variable"]): c for c in cmp_["cells"]}
     for shock in IDENTIFIED:
         L += [f"## {LABELS[shock]} shock", "",
@@ -271,7 +323,7 @@ def main() -> None:
     ap.add_argument("--check", action="store_true",
                     help="after writing, compare every number with the "
                          "committed results/irf_reference.json and exit 1 "
-                         "on any difference above 1e-6 (CI, manual)")
+                         "on any difference above 1e-4 (CI, manual)")
     args = ap.parse_args()
     report = build_report(args.draws, args.seed)
     with open(args.out_json, "w") as f:
@@ -289,7 +341,7 @@ def main() -> None:
             committed = json.load(f)
         worst = max_difference(committed, report)
         print(f"largest difference from the committed file: {worst:.3g}")
-        if worst > 1e-6:
+        if worst > CHECK_TOL:
             raise SystemExit("irf_reference.json does not reproduce")
 
 

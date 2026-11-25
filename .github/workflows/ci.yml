@@ -148,7 +148,7 @@ jobs:
     name: Impulse-response reference reproduces (issue #11, ${{ matrix.os }})
     # Manual only. Reruns scripts/run_irf_reference.py at the committed
     # settings (10,000 posterior draws) and fails if any median or band edge
-    # in results/irf_reference.json differs by more than 1e-6. Each run
+    # in results/irf_reference.json differs by more than 1e-4. Each run
     # uploads its regenerated files.
     if: github.event_name == 'workflow_dispatch'
     strategy:
