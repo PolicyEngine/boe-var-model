@@ -167,3 +167,22 @@ jobs:
         run: lscpu | grep -E 'Model name'
       - name: SV tests
         run: uv run pytest -q tests/test_common_sv.py tests/test_variable_sv.py
+      # Report only: the same short chains on every runner. If the printed
+      # digests differ between CPU models, SV artefacts cannot be pinned bit
+      # for bit across machines and need Monte Carlo tolerances instead.
+      - name: Chain digest (compare across runs by eye)
+        run: |
+          uv run python - <<'PY'
+          import hashlib
+          import numpy as np
+          from boe_var import common_sv, variable_sv
+          from boe_var.bvar import BVAR
+          from boe_var.data import load_data
+          y = load_data().to_numpy(float)[:117]
+          def digest(draws, attr="Pi"):
+              a = np.concatenate([np.ravel(getattr(d, attr)) for d in draws])
+              return hashlib.sha256(np.round(a, 9).tobytes()).hexdigest()[:12], float(a.sum())
+          print("BVAR       ", digest(BVAR(y, lags=4).sample_posterior(50, seed=4)))
+          print("common SV  ", digest(common_sv.CommonSVBVAR(y, lags=4).sample(6, seed=4, burn=200, thin=1)))
+          print("variable SV", digest(variable_sv.VariableSVBVAR(y, lags=4).sample(4, seed=4, burn=100, thin=1)))
+          PY
