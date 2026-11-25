@@ -46,6 +46,7 @@ writeup of the method and of where this replication deviates from the paper.
 │   ├── run_coverage_evaluation.py # results/coverage_evaluation.json
 │   ├── run_covid_volatility_evaluation.py # results/covid_volatility_evaluation.json
 │   ├── run_satellite_validation.py # results/unemployment_satellite_validation.json
+│   ├── run_lambda_sensitivity.py # results/lambda_sensitivity.{json,md}: accuracy and coverage at other prior tightness (report only)
 │   ├── run_external_comparison.py # numbers in results/forecast_vs_boe_obr.md
 │   ├── score_2026q3.py     # stored 2026Q3 forecasts vs first outturns -> results/score_2026q3.md
 │   ├── compare_ecb_seasonal.py # world CPI adjustment vs the ECB's -> results/ecb_seasonal_check.md
