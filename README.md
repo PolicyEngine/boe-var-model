@@ -179,5 +179,8 @@ Read these before quoting a forecast, a band or an impulse response.
   a difference of 100·log levels, about x²/200 below the simple rates the
   BoE and OBR publish (0.04pp at 2.8%). The external comparison
   (`results/forecast_vs_boe_obr.md`) converts to the simple basis with
-  `forecast.yoy_pct` (PR #18); `forecast_summary.md`, `fig1` and `fig9`
-  remain log basis.
+  `forecast.yoy_pct` (PR #18). `forecast_summary.md`, `fig1`, `fig8` and
+  `fig9` stay on the log basis, because the forecast-revision identity is
+  linear in logs, and each says so: the summary carries a basis line and
+  the figure axes read "log basis". Band coverage is the same on either
+  basis (`tests/test_coverage_yoy.py`).

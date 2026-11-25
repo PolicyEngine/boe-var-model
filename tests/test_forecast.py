@@ -232,3 +232,27 @@ def test_shock_factor_handles_a_singular_sigma_with_fixed_signs():
             assert col[np.argmax(np.abs(col))] > 0
     np.testing.assert_array_equal(shock_factor(np.zeros((3, 3))),
                                   np.zeros((3, 3)))
+
+
+def test_forecast_summary_states_its_year_on_year_basis():
+    """The forecast-revision outputs are four-quarter log differences, not
+    the simple rates ONS, the BoE and the OBR publish. The committed summary
+    (and the packaged copy PolicyEngine/macro reads) must say so in the
+    words the script writes."""
+    import importlib.util
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[1]
+    spec = importlib.util.spec_from_file_location(
+        "run_forecast_revision", root / "scripts" / "run_forecast_revision.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    assert "log differences" in mod.YOY_BASIS_NOTE
+    committed = (root / "results" / "forecast_summary.md").read_text()
+    packaged = (root / "src" / "boe_var" / "_results"
+                / "forecast_summary.md").read_text()
+    assert f"- {mod.YOY_BASIS_NOTE}\n" in committed
+    assert packaged == committed
+    # the stated size of the gap is right: x^2 / 200
+    assert log_to_simple_pct(2.8) - 2.8 == pytest.approx(0.04, abs=0.005)
+    assert log_to_simple_pct(10.0) - 10.0 == pytest.approx(0.5, abs=0.02)

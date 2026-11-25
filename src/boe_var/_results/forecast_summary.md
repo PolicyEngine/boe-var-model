@@ -18,6 +18,7 @@
 
 - YoY CPI inflation: peak effect +0.54 pp at h = 3 quarters after 2026Q2.
 - YoY GDP growth: peak effect -0.34 pp at h = 6 quarters after 2026Q2.
+- Basis: year-on-year rates here and in figures 1, 8 and 9 are four-quarter log differences (100 × the change in the log level). The simple rate that ONS, the BoE and the OBR publish is higher by about x²/200 (0.04 pp at 2.8%, 0.5 pp at 10%); convert with `forecast.log_to_simple_pct` before comparing.
 
 ## Adding-up check (Figure 9 identity)
 

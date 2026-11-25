@@ -60,6 +60,19 @@ def weighted_kde(x, w, grid):
     return kde(grid)
 
 
+# Every year-on-year number this script writes or plots (the summary's
+# composite effects, figures 1, 8 and 9) is forecast.yoy: the four-quarter
+# difference of 100*log levels. The Figure 9 adding-up identity is linear in
+# logs, so the exercise stays on that basis; the outputs say so, because the
+# rates ONS, the BoE and the OBR publish are simple rates.
+YOY_BASIS_NOTE = (
+    "Basis: year-on-year rates here and in figures 1, 8 and 9 are "
+    "four-quarter log differences (100 × the change in the log level). "
+    "The simple rate that ONS, the BoE and the OBR publish is higher by "
+    "about x²/200 (0.04 pp at 2.8%, 0.5 pp at 10%); convert with "
+    "`forecast.log_to_simple_pct` before comparing.")
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--draws", type=int, default=3000)
@@ -168,8 +181,8 @@ def main() -> None:
     x = np.arange(Hc)
     cmap = plt.get_cmap("tab10")
     fig, axes = plt.subplots(2, 2, figsize=(10, 6.5), squeeze=False)
-    for col, (v, lab) in enumerate([(I_CPI, "YoY CPI inflation (pp)"),
-                                    (I_GDP, "YoY GDP growth (pp)")]):
+    for col, (v, lab) in enumerate([(I_CPI, "YoY CPI inflation (pp, log basis)"),
+                                    (I_GDP, "YoY GDP growth (pp, log basis)")]):
         b = agg[v]
         ax = axes[0][col]
         ax.fill_between(x, b["lo90"], b["hi90"], color="#9ecae1", alpha=0.5, lw=0)
@@ -238,8 +251,8 @@ def main() -> None:
     t_m1 = np.arange(0, H + 1)
 
     fig, axes = plt.subplots(2, 1, figsize=(9, 6.5), squeeze=False)
-    for r_, (v, lab) in enumerate([(I_CPI, "YoY CPI inflation (%)"),
-                                   (I_GDP, "YoY GDP growth (%)")]):
+    for r_, (v, lab) in enumerate([(I_CPI, "YoY CPI inflation (%, log basis)"),
+                                   (I_GDP, "YoY GDP growth (%, log basis)")]):
         ax = axes[r_][0]
         ax.plot(t_hist, yoy_hist[:, v], color="k", lw=1.2, label="Data")
         ax.fill_between(t_fc, yoy_bands["lo90"][:, v], yoy_bands["hi90"][:, v],
@@ -265,8 +278,8 @@ def main() -> None:
 
     # ---- Fig 1: plain unconditional fan chart --------------------------
     fig, axes = plt.subplots(2, 1, figsize=(9, 6.5), squeeze=False)
-    for r_, (v, lab) in enumerate([(I_CPI, "YoY CPI inflation (%)"),
-                                   (I_GDP, "YoY GDP growth (%)")]):
+    for r_, (v, lab) in enumerate([(I_CPI, "YoY CPI inflation (%, log basis)"),
+                                   (I_GDP, "YoY GDP growth (%, log basis)")]):
         ax = axes[r_][0]
         ax.plot(t_hist, yoy_hist[:, v], color="k", lw=1.2, label="Data")
         ax.fill_between(t_fc, yoy_bands["lo90"][:, v], yoy_bands["hi90"][:, v],
@@ -317,6 +330,7 @@ def main() -> None:
         f"h = {pk_c} quarters after {T_q}.",
         f"- YoY GDP growth: peak effect {med_joint_gdp[pk_g]:+.2f} pp at "
         f"h = {pk_g} quarters after {T_q}.",
+        f"- {YOY_BASIS_NOTE}",
         "",
         "## Adding-up check (Figure 9 identity)",
         "",
