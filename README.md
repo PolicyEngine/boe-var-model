@@ -36,6 +36,8 @@ writeup of the method and of where this replication deviates from the paper.
 │   ├── forecast.py         # forecasts, fan bands, forecast revisions
 │   ├── evaluation.py       # rolling-origin point evaluation, code-version hash
 │   ├── covid_volatility.py # opt-in Lenza-Primiceri Covid volatility scaling
+│   ├── common_sv.py        # opt-in common stochastic volatility (CCM 2016); not the default
+│   ├── variable_sv.py      # opt-in variable-specific stochastic volatility; not the default
 │   ├── unemployment_satellite.py  # GDP growth -> unemployment mapping
 │   ├── _data/, _results/   # packaged copies of data/ and results/*.md
 ├── scripts/
@@ -45,6 +47,7 @@ writeup of the method and of where this replication deviates from the paper.
 │   ├── run_rolling_evaluation.py  # results/rolling_evaluation.json
 │   ├── run_coverage_evaluation.py # results/coverage_evaluation.json
 │   ├── run_covid_volatility_evaluation.py # results/covid_volatility_evaluation.json
+│   ├── run_common_sv_evaluation.py, run_variable_sv_evaluation.py # opt-in SV, held out (outputs not committed; see docs/band_decision.md)
 │   ├── run_satellite_validation.py # results/unemployment_satellite_validation.json
 │   ├── run_external_comparison.py # numbers in results/forecast_vs_boe_obr.md
 │   ├── score_2026q3.py     # stored 2026Q3 forecasts vs first outturns -> results/score_2026q3.md
