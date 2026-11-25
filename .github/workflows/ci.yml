@@ -75,3 +75,26 @@ jobs:
         if: always()
         continue-on-error: true
         run: uv run pytest -q --runslow -m "slow and calibration"
+
+  sv-diagnostic:
+    name: SV alignment diagnostic (scratch, ${{ matrix.os }} run ${{ matrix.run }})
+    if: github.event_name == 'workflow_dispatch'
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+        run: [1, 2, 3, 4, 5, 6]
+        include:
+          - os: macos-latest
+            run: 1
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - run: uv sync
+      - run: uv run python scripts/sv_alignment_diagnostic.py
+      - name: The backed-out no-leakage tests, five times
+        if: always()
+        run: |
+          for i in 1 2 3 4 5; do uv run pytest -q tests/test_common_sv.py tests/test_variable_sv.py -k "nothing_after or later_origins" -p no:cacheprovider 2>&1 | tail -4; done
