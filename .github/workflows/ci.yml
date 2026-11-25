@@ -156,7 +156,7 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest]
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 30
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5
@@ -166,12 +166,17 @@ jobs:
         run: |
           mkdir -p out
           uv run python scripts/run_irf_reference.py --check --out-json out/irf_reference.json --out-md out/irf_vs_paper.md
-      # Report only: the same run on the paper's own sample (to 2023Q2), to
-      # show how much of the gap to the paper's figures the longer sample
-      # explains. Nothing is compared; the files are uploaded.
-      - name: Sensitivity run on the paper's sample end
+      # Report only: the same run with one setting changed at a time, to
+      # show what does and does not explain the gap to the paper's figures:
+      # the paper's own sample end, a looser Minnesota prior (the marginal-
+      # likelihood optimum) and two lags. Nothing is compared; the files are
+      # uploaded.
+      - name: Sensitivity runs
         if: always()
-        run: uv run python scripts/run_irf_reference.py --est-end 2023Q2 --out-json out/irf_reference_2023Q2.json --out-md out/irf_vs_paper_2023Q2.md
+        run: |
+          uv run python scripts/run_irf_reference.py --est-end 2023Q2 --out-json out/irf_reference_2023Q2.json --out-md out/irf_vs_paper_2023Q2.md
+          uv run python scripts/run_irf_reference.py --lam 1.04 --out-json out/irf_reference_lam104.json --out-md out/irf_vs_paper_lam104.md
+          uv run python scripts/run_irf_reference.py --lags 2 --out-json out/irf_reference_lags2.json --out-md out/irf_vs_paper_lags2.md
       - name: Upload the regenerated files
         if: always()
         uses: actions/upload-artifact@v4

@@ -94,7 +94,8 @@ def covid_dummies(index) -> np.ndarray:
 
 
 def reference_irfs(n_draws: int = DRAWS, seed: int = SEED,
-                   horizons: int = HORIZONS, est_end: str = EST_END) -> dict:
+                   horizons: int = HORIZONS, est_end: str = EST_END,
+                   lam: float = HYPER["lam"], lags: int = LAGS) -> dict:
     """Weighted median and 68/90% sets, in the paper's units.
 
     Returns {"accepted", "ess", "irf": {shock: {variable: {stat: [h]}}}}.
@@ -105,7 +106,8 @@ def reference_irfs(n_draws: int = DRAWS, seed: int = SEED,
     df = df.loc[(df.index >= pd.Period(EST_START, "Q"))
                 & (df.index <= pd.Period(est_end, "Q"))]
     y = df.to_numpy(dtype=float)
-    model = BVAR(y, lags=LAGS, dummies=covid_dummies(df.index), **HYPER)
+    model = BVAR(y, lags=lags, dummies=covid_dummies(df.index),
+                 **(HYPER | {"lam": lam}))
     draws = model.sample_posterior(n_draws, seed=seed)
     accepted = identify(draws, rng=np.random.default_rng(seed + 1),
                         target_accepted=len(draws))
@@ -158,6 +160,11 @@ def compare(ours: dict, paper: dict) -> dict:
                 "inside_68": int(in68.sum()), "inside_90": int(in90.sum()),
                 "sign_compared": int(clear.sum()),
                 "sign_agrees": int((np.sign(pm) == np.sign(om))[clear].sum()),
+                # distance between the medians, as a share of the paper's
+                # largest response in the panel: unlike the "inside" counts
+                # it does not improve when this replication's sets widen
+                "scaled_gap": round(float(np.abs(om - pm).mean()
+                                          / np.abs(pm).max()), 4),
                 "paper": {f"h{h}": round(float(pm[h]), 4)
                           for h in REPORT_HORIZONS},
                 "ours": {f"h{h}": round(float(om[h]), 4)
@@ -194,6 +201,10 @@ def compare(ours: dict, paper: dict) -> dict:
         "panels_fully_inside_90": sum(c["inside_90"] == HORIZONS
                                       for c in cells),
         "panels_fully_outside_90": sum(c["inside_90"] == 0 for c in cells),
+        "median_scaled_gap": round(float(np.median(
+            [c["scaled_gap"] for c in cells])), 4),
+        "mean_scaled_gap": round(float(np.mean(
+            [c["scaled_gap"] for c in cells])), 4),
     }
 
 
@@ -212,6 +223,7 @@ def markdown(report: dict) -> str:
         "- **This replication:** the published run "
         f"({report['draws']:,} posterior draws, seed {report['seed']}, "
         f"{report['sample']['start']}–{report['sample']['end']}, "
+        f"{report['lags']} lags, lam {report['hyperparameters']['lam']:g}, "
         f"{report['accepted']} accepted, ESS {report['ess']}), "
         "importance-weighted pointwise medians and 68% / 90% sets "
         "(`results/irf_reference.json`).",
@@ -238,11 +250,17 @@ def markdown(report: dict) -> str:
         f"{cmp_['panels_fully_outside_90']} have it outside at every quarter;",
         f"- where the paper's median is clear of zero "
         f"({cmp_['sign_points_compared']} points), the two medians have the "
-        f"same sign at {100 * cmp_['share_sign_agrees']:.0f}%.",
+        f"same sign at {100 * cmp_['share_sign_agrees']:.0f}%;",
+        "- the average distance between the two medians over the 21 "
+        "quarters, as a share of the paper's largest response in the panel, "
+        f"is {100 * cmp_['median_scaled_gap']:.0f}% for the median panel "
+        f"and {100 * cmp_['mean_scaled_gap']:.0f}% on average.",
         "",
         "A 90% set is not a test of equality with another study's median: "
         "it measures this replication's own posterior uncertainty. The "
-        "shares say how far apart the two are relative to that uncertainty.",
+        "shares say how far apart the two are relative to that uncertainty, "
+        "and they rise when the sets widen. The distance in the last line "
+        "does not.",
         "",
     ]
     imp = cmp_["impact_ratio_sign_restricted"]
@@ -291,8 +309,9 @@ def markdown(report: dict) -> str:
 
 
 def build_report(n_draws: int = DRAWS, seed: int = SEED,
-                 est_end: str = EST_END) -> dict:
-    ref = reference_irfs(n_draws, seed, est_end=est_end)
+                 est_end: str = EST_END, lam: float = HYPER["lam"],
+                 lags: int = LAGS) -> dict:
+    ref = reference_irfs(n_draws, seed, est_end=est_end, lam=lam, lags=lags)
     return {
         "method": "importance-weighted pointwise median and 68/90% credible "
                   "sets of the impulse responses to one-standard-deviation "
@@ -300,8 +319,8 @@ def build_report(n_draws: int = DRAWS, seed: int = SEED,
                   "(percent; basis points for bank_rate)",
         "draws": n_draws,
         "seed": seed,
-        "lags": LAGS,
-        "hyperparameters": HYPER,
+        "lags": lags,
+        "hyperparameters": HYPER | {"lam": lam},
         "covid_dummies": "2020Q1-2021Q2",
         "sample": {"start": EST_START, "end": est_end},
         "accepted": ref["accepted"],
@@ -324,6 +343,13 @@ def main() -> None:
                          "committed file uses 2025Q1; 2023Q2 is the paper's "
                          "own sample end, for a sensitivity run written "
                          "elsewhere with --out-json / --out-md")
+    ap.add_argument("--lam", type=float, default=HYPER["lam"],
+                    help="Minnesota tightness, for a sensitivity run (the "
+                         "committed file uses 0.2; the marginal-likelihood "
+                         "optimum is about 1.04)")
+    ap.add_argument("--lags", type=int, default=LAGS,
+                    help="lag length, for a sensitivity run (the paper does "
+                         "not state it; the committed file uses 4)")
     ap.add_argument("--out-json", default=OUT_JSON)
     ap.add_argument("--out-md", default=OUT_MD)
     ap.add_argument("--check", action="store_true",
@@ -331,7 +357,8 @@ def main() -> None:
                          "committed results/irf_reference.json and exit 1 "
                          "on any difference above 1e-4 (CI, manual)")
     args = ap.parse_args()
-    report = build_report(args.draws, args.seed, args.est_end)
+    report = build_report(args.draws, args.seed, args.est_end, args.lam,
+                          args.lags)
     with open(args.out_json, "w") as f:
         json.dump(report, f, indent=1)
         f.write("\n")
