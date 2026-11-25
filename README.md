@@ -190,7 +190,8 @@ Read these before quoting a forecast, a band or an impulse response.
   Rate is 8bp higher on impact in the paper and 9bp here, but after five
   years it is 1bp higher in the paper and still 5bp here; UK CPI is 0.20% lower here and
   0.42% lower in the paper. Five of the seven panels where the paper's
-  median leaves the 90% set involve world CPI, which is a proxy here.
+  median leaves the 90% set involve a world series that is a proxy here
+  (four world CPI, one world GDP).
   Re-running with the paper's own sample end (2023Q2) or with two lags
   does not close the gap. Loosening the Minnesota prior from λ = 0.2 to
   the marginal-likelihood optimum (λ = 1.04) does close much of it: Bank

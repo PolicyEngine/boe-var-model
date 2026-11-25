@@ -36,7 +36,9 @@ the pinned `irf` block and its tests stand on their own.
 - The paper's median is inside this replication's 90% set at 93% of 1,008
   points, inside the 68% set at 76%, and the medians share a sign at 84%.
 - Seven of 48 panels have the paper's median outside the 90% set at some
-  quarter. Five involve world CPI, which is a proxy here.
+  quarter. Five involve a world series that is a proxy here (four world
+  CPI, one world GDP); the other two are UK demand → oil price and UK
+  monetary policy → UK CPI.
 - The largest economic difference is persistence. After a monetary-policy
   shock the paper's Bank Rate response is 8bp on impact and 1bp after five
   years; here it is 9bp and 5bp. The paper's UK CPI response is −0.42%
@@ -65,17 +67,24 @@ the sets.
   towards the paper, and it does so on every measure: sign agreement, the
   distance between medians, impact magnitudes, and the persistence of the
   monetary-policy responses.
-- This fits what the paper says about its prior. It follows Giannone,
-  Lenza and Primiceri (2015), whose method chooses the tightness from the
-  data. λ = 0.2 is a conventional fixed value. The marginal likelihood also
-  prefers λ ≈ 1.04 by 68 log points (issue #11, explosive-roots comment).
+- This is consistent with what the paper says about its prior, though the
+  paper does not say how it set the tightness. It cites Giannone, Lenza
+  and Primiceri (2015), whose method chooses the tightness from the data.
+  λ = 0.2 is a conventional fixed value. On the current data the marginal
+  likelihood is highest at λ = 1.02 for the replication specification
+  (log marginal likelihood −1696.2, against −1766.0 at λ = 0.2, a gap of
+  70) and at about 0.97 for the forecast specification (−1786.4 against
+  −1856.8). Recomputed 25 Nov with `bvar.optimize_hyperparameters` and
+  `BVAR.log_marginal_likelihood`; the 1.04 used in the runs above is the
+  value found before the world CPI adjustment, and the likelihood there
+  is within 0.1 of the maximum.
 - It does not close the gap entirely, and the world series are still
   proxies.
 
 **Decision needed (not taken here).** Whether to move the published
 replication, and the forecasts built on the same prior, from λ = 0.2 to the
-marginal-likelihood optimum. For: closer to the paper's method and to its
-figures, and a higher marginal likelihood. Against: it changes every
+marginal-likelihood optimum. For: consistent with the method the paper
+cites, closer to its figures, and a higher marginal likelihood. Against: it changes every
 published impulse response, FEVD share and forecast, and fewer draws are
 accepted (607 against 731).
 
