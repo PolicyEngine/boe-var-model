@@ -114,6 +114,13 @@ class CommonSVBVAR:
                  c_prior=C_PRIOR, offset: float = OFFSET, **bvar_kwargs):
         if law not in ("rw", "ar1"):
             raise ValueError("law must be 'rw' or 'ar1'")
+        # Fix the memory layout. pandas hands over a Fortran-ordered array
+        # and a copy of it is C-ordered; on AVX-512 CPUs the two layouts give
+        # BLAS results that differ in the last bit, and the Gibbs sampler
+        # (discrete mixture indicators) turns that into a different chain.
+        y = np.ascontiguousarray(y, dtype=float)
+        if dummies is not None:
+            dummies = np.ascontiguousarray(dummies, dtype=float)
         self.base = BVAR(y, lags=lags, dummies=dummies, **bvar_kwargs)
         self.law = law
         self.sigma2_prior = tuple(float(v) for v in sigma2_prior)

@@ -104,6 +104,10 @@ class VariableSVBVAR:
     def __init__(self, y, lags: int = 4, dummies=None,
                  sigma2_prior=SIGMA2_PRIOR, offset: float = OFFSET,
                  **bvar_kwargs):
+        # Fix the memory layout (see common_sv.CommonSVBVAR.__init__).
+        y = np.ascontiguousarray(y, dtype=float)
+        if dummies is not None:
+            dummies = np.ascontiguousarray(dummies, dtype=float)
         self.base = b = BVAR(y, lags=lags, dummies=dummies, **bvar_kwargs)
         n = b.Y.shape[0]
         self.Y, self.X = b.Y, b.X
