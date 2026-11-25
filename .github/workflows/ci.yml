@@ -143,4 +143,3 @@ jobs:
           path: |
             results/summary.md
             results/forecast_summary.md
-            results/fig*.png
