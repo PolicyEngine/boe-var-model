@@ -74,6 +74,31 @@ def main():
         ds = float(np.abs(svrun(copy[: o + 1]) - svrun(view[: o + 1])).max())
         print(f"view vs copy {i}: pointers mod 64 = {view.ctypes.data % 64}, "
               f"{copy.ctypes.data % 64}; SV max diff {ds:.3e}")
+    # layout, not alignment: the dataset as pandas returns it is Fortran-
+    # ordered, a copy is C-ordered. Compare the two for the sampler as it
+    # was (BVAR built directly on the array) and for the plain BVAR.
+    f_arr = np.asfortranarray(train)
+    c_arr = np.ascontiguousarray(train)
+    print("layout flags F/C:", f_arr.flags["F_CONTIGUOUS"], c_arr.flags["C_CONTIGUOUS"])
+    print(f"LAYOUT BVAR F vs C max diff {np.abs(bvar(f_arr) - bvar(c_arr)).max():.3e}")
+    print(f"LAYOUT SV (patched: layout fixed inside) F vs C max diff "
+          f"{np.abs(svrun(f_arr) - svrun(c_arr)).max():.3e}")
+
+    def svrun_unpatched(a):
+        m = sv.CommonSVBVAR(c_arr, lags=4)
+        b = BVAR(a, lags=4)      # the pre-patch behaviour: layout of `a` kept
+        n = b.Y.shape[0]
+        m.base, m.Y, m.X = b, b.Y, b.X
+        m._Yd, m._Xd = b._Ys[n:], b._Xs[n:]
+        d = m.sample(6, seed=4, burn=20, thin=1)
+        return np.concatenate([np.ravel(x.Pi) for x in d])
+
+    print(f"LAYOUT SV (unpatched) F vs C max diff "
+          f"{np.abs(svrun_unpatched(f_arr) - svrun_unpatched(c_arr)).max():.3e}")
+    long = np.abs(
+        np.concatenate([np.ravel(x.Pi) for x in BVAR(f_arr, lags=4).sample_posterior(2000, seed=1)])
+        - np.concatenate([np.ravel(x.Pi) for x in BVAR(c_arr, lags=4).sample_posterior(2000, seed=1)])).max()
+    print(f"LAYOUT BVAR 2000 draws F vs C max diff {long:.3e}")
     # the sampler builds its own regressor arrays, whose alignment depends
     # on the state of the allocator; perturb the heap between identical runs
     rng = np.random.default_rng(0)
