@@ -195,8 +195,8 @@ Read these before quoting a forecast, a band or an impulse response.
   does not close the gap. Loosening the Minnesota prior from λ = 0.2 to
   the marginal-likelihood optimum (λ = 1.04) does close much of it: Bank
   Rate is 1.1bp higher after five years and UK CPI 0.35% lower
-  (`docs/decisions.md`, 25 November 2026). The published run still uses
-  λ = 0.2.
+  (`docs/decisions.md`, 25 November 2026). It does not forecast better
+  on average, though (PR #39). The published run still uses λ = 0.2.
 - **Year-on-year rates are log differences.** `forecast.py` computes YoY as
   a difference of 100·log levels, about x²/200 below the simple rates the
   BoE and OBR publish (0.04pp at 2.8%). The external comparison

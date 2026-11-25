@@ -76,11 +76,22 @@ the sets.
 replication, and the forecasts built on the same prior, from λ = 0.2 to the
 marginal-likelihood optimum. For: closer to the paper's method and to its
 figures, and a higher marginal likelihood. Against: it changes every
-published impulse response, FEVD share and forecast; fewer draws are
-accepted (607 against 731); and its effect on forecast accuracy and band
-coverage has not been measured (the coverage and rolling evaluations would
-have to be re-run at the new λ first). Nothing published changes in this
-round.
+published impulse response, FEVD share and forecast, and fewer draws are
+accepted (607 against 731).
+
+The effect on the forecasts was measured separately (PR #39,
+`results/lambda_sensitivity.md`: the committed coverage and rolling
+evaluations re-run with λ as the only change). At λ = 1.04 the raw 90%
+bands are 17% wider and cover 0.795 of year-on-year outturns against 0.771,
+so a looser prior does not fix the bands. Accuracy moves in both
+directions: UK CPI improves (CRPS 8% lower), Bank Rate is 37% worse, world
+GDP 19%, the exchange rate 17%, UK GDP 3%, and the average over the eight
+variables is 10% worse. At λ = 0.5 UK CPI improves by 7%, UK GDP is
+unchanged and the average is 2% worse. So the setting closest to the
+paper's impulse responses is not the one that forecasts best on average.
+The structural replication and the forecasts could carry different priors
+(they already differ in θ); that is the choice to make. Nothing published
+changes in this round.
 
 ## 18 November 2026 (Fable 5.2 review round; PR #34)
 
