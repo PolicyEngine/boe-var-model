@@ -143,3 +143,27 @@ jobs:
           path: |
             results/summary.md
             results/forecast_summary.md
+
+  sv-runners:
+    name: Stochastic-volatility tests across runners (issue #12, run ${{ matrix.run }})
+    # Manual only. The opt-in SV samplers are chaotic Gibbs chains, so a
+    # last-bit difference in BLAS becomes a different chain. Their tests
+    # failed on some ubuntu-latest CPUs (AVX-512) until the samplers fixed
+    # the memory layout of their input. ubuntu-latest lands on different CPU
+    # models, so six runs sample several; each prints its CPU.
+    if: github.event_name == 'workflow_dispatch'
+    strategy:
+      fail-fast: false
+      matrix:
+        run: [1, 2, 3, 4, 5, 6]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - name: Install
+        run: uv sync
+      - name: CPU
+        run: lscpu | grep -E 'Model name'
+      - name: SV tests
+        run: uv run pytest -q tests/test_common_sv.py tests/test_variable_sv.py
