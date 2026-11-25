@@ -94,7 +94,7 @@ def covid_dummies(index) -> np.ndarray:
 
 
 def reference_irfs(n_draws: int = DRAWS, seed: int = SEED,
-                   horizons: int = HORIZONS) -> dict:
+                   horizons: int = HORIZONS, est_end: str = EST_END) -> dict:
     """Weighted median and 68/90% sets, in the paper's units.
 
     Returns {"accepted", "ess", "irf": {shock: {variable: {stat: [h]}}}}.
@@ -103,7 +103,7 @@ def reference_irfs(n_draws: int = DRAWS, seed: int = SEED,
 
     df = load_data()
     df = df.loc[(df.index >= pd.Period(EST_START, "Q"))
-                & (df.index <= pd.Period(EST_END, "Q"))]
+                & (df.index <= pd.Period(est_end, "Q"))]
     y = df.to_numpy(dtype=float)
     model = BVAR(y, lags=LAGS, dummies=covid_dummies(df.index), **HYPER)
     draws = model.sample_posterior(n_draws, seed=seed)
@@ -290,8 +290,9 @@ def markdown(report: dict) -> str:
     return "\n".join(L)
 
 
-def build_report(n_draws: int = DRAWS, seed: int = SEED) -> dict:
-    ref = reference_irfs(n_draws, seed)
+def build_report(n_draws: int = DRAWS, seed: int = SEED,
+                 est_end: str = EST_END) -> dict:
+    ref = reference_irfs(n_draws, seed, est_end=est_end)
     return {
         "method": "importance-weighted pointwise median and 68/90% credible "
                   "sets of the impulse responses to one-standard-deviation "
@@ -302,7 +303,7 @@ def build_report(n_draws: int = DRAWS, seed: int = SEED) -> dict:
         "lags": LAGS,
         "hyperparameters": HYPER,
         "covid_dummies": "2020Q1-2021Q2",
-        "sample": {"start": EST_START, "end": EST_END},
+        "sample": {"start": EST_START, "end": est_end},
         "accepted": ref["accepted"],
         "ess": ref["ess"],
         "horizons": list(range(HORIZONS)),
@@ -318,6 +319,11 @@ def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--draws", type=int, default=DRAWS)
     ap.add_argument("--seed", type=int, default=SEED)
+    ap.add_argument("--est-end", default=EST_END,
+                    help="last quarter of the estimation sample. The "
+                         "committed file uses 2025Q1; 2023Q2 is the paper's "
+                         "own sample end, for a sensitivity run written "
+                         "elsewhere with --out-json / --out-md")
     ap.add_argument("--out-json", default=OUT_JSON)
     ap.add_argument("--out-md", default=OUT_MD)
     ap.add_argument("--check", action="store_true",
@@ -325,7 +331,7 @@ def main() -> None:
                          "committed results/irf_reference.json and exit 1 "
                          "on any difference above 1e-4 (CI, manual)")
     args = ap.parse_args()
-    report = build_report(args.draws, args.seed)
+    report = build_report(args.draws, args.seed, args.est_end)
     with open(args.out_json, "w") as f:
         json.dump(report, f, indent=1)
         f.write("\n")

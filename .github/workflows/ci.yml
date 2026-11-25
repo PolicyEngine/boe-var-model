@@ -166,6 +166,12 @@ jobs:
         run: |
           mkdir -p out
           uv run python scripts/run_irf_reference.py --check --out-json out/irf_reference.json --out-md out/irf_vs_paper.md
+      # Report only: the same run on the paper's own sample (to 2023Q2), to
+      # show how much of the gap to the paper's figures the longer sample
+      # explains. Nothing is compared; the files are uploaded.
+      - name: Sensitivity run on the paper's sample end
+        if: always()
+        run: uv run python scripts/run_irf_reference.py --est-end 2023Q2 --out-json out/irf_reference_2023Q2.json --out-md out/irf_vs_paper_2023Q2.md
       - name: Upload the regenerated files
         if: always()
         uses: actions/upload-artifact@v4
