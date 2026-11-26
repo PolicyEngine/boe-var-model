@@ -168,7 +168,7 @@ Read these before quoting a forecast, a band or an impulse response.
   on all targets it is worse than no-change from two quarters on (1.12,
   1.31, 1.35 at h2–h4).
 - **Monetary-policy level effects do not fade.** The posterior has a unit
-  root: 99.3% of 10,000 posterior draws of the published specification have
+  root: 99.2% of 10,000 posterior draws of the published specification have
   a largest companion eigenvalue above 1 (median 1.004;
   `results/covid_volatility_evaluation.json`, `explosive_draws`), and
   nothing truncates explosive draws. For the same reason the medium-term
