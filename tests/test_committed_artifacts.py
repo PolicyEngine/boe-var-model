@@ -583,3 +583,30 @@ class TestArtifactDataVintage:
         assert art["origins"] == T - art["horizons"] - art["first_origin"], (
             "coverage origin count no longer follows from the packaged data "
             "length; re-run scripts/run_coverage_evaluation.py")
+
+
+# --------------------------------------------------------------------------
+# README figures quoted from a committed artifact
+# --------------------------------------------------------------------------
+
+def test_readme_explosive_draw_share_matches_the_artifact():
+    """The README's unit-root sentence quotes the share of posterior draws
+    with a largest companion root above 1, the number of draws and the
+    median root. All three must be the published specification's entry
+    (six Covid dummies, ``covid_dummies``) in
+    results/covid_volatility_evaluation.json, at the precision quoted."""
+    import re
+
+    text = " ".join((REPO / "README.md").read_text().split())
+    m = re.search(
+        r"([\d.]+)% of ([\d,]+) posterior draws of the published "
+        r"specification have a largest companion eigenvalue above 1 "
+        r"\(median ([\d.]+); `results/covid_volatility_evaluation\.json`, "
+        r"`explosive_draws`\)", text)
+    assert m, "the README no longer carries the explosive-draw sentence"
+    share, draws, median = m.groups()
+    block = _load("covid_volatility_evaluation.json")["explosive_draws"]
+    spec = block["covid_dummies"]
+    assert int(draws.replace(",", "")) == block["draws"]
+    assert share == f"{100 * spec['share_max_root_gt_1']:.1f}"
+    assert median == f"{spec['median_max_root']:.3f}"
