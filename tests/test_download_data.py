@@ -18,7 +18,7 @@ Every test runs with sockets disabled, ``time.sleep`` stubbed, and the
 script's ``ROOT`` / ``RAW`` / ``OUT`` pointed at ``tmp_path``, so nothing
 here can reach a publisher or overwrite a committed file.
 
-Three tests record behaviour that is questionable rather than assert that it
+Six tests record behaviour that is questionable rather than assert that it
 is right; each says so in its docstring (issue #41).
 """
 
