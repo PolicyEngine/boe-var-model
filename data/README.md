@@ -25,6 +25,10 @@ Coverage: 1992Q1–2026Q2, 138 quarters, no NaNs (the estimation window
 
 ## Construction notes and caveats
 
+The two world series are proxies. `docs/world_proxies.md` lists each leg, its
+source, why it was chosen, how the GDP proxy compares with the Bank's
+published figures, and which closer published series exist.
+
 - **UK CPI SA (`cpisa`)**: ONS does not publish a seasonally adjusted CPI (the
   Bank's paper uses an internal SA series). We take monthly `D7BT` (NSA),
   average to quarterly, then apply a simple multiplicative classical seasonal
